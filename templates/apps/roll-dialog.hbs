@@ -1,0 +1,76 @@
+<section class="roll-dialog-body">
+  {{#if label}}
+  <div class="roll-source">
+    {{#if img}}<img src="{{img}}" alt="">{{/if}}
+    <div><h3 class="roll-label">{{label}}</h3>{{#if note}}<span class="note">{{note}}</span>{{/if}}</div>
+  </div>
+  {{/if}}
+  <div class="rows">
+    <label class="row"><span>{{localize "ELARIA.Dice.character"}}</span>
+      <select name="actor">{{selectOptions actorChoices selected=actorUuid}}</select></label>
+    <div class="row"><span>{{localize "ELARIA.Dice.dice"}}</span>
+      <span class="inline">
+        <input type="text" name="dice" value="{{dice}}" placeholder="3d6" autocomplete="off" class="dice-input">
+        <span class="times">×</span>
+        <input type="number" name="hits" value="{{hits}}" min="1" max="50" step="1" class="small-num">
+        <span class="unit">{{localize "ELARIA.Dice.hitsPerTarget"}}</span>
+      </span></div>
+    <label class="row"><span>{{localize "ELARIA.Dice.stat"}}</span>
+      <select name="stat" {{#unless hasActor}}disabled{{/unless}}>{{selectOptions statChoices selected=stat}}</select></label>
+    <div class="row"><span>{{localize "ELARIA.Dice.bonus"}}</span>
+      <span class="inline">
+        <input type="text" name="bonus" value="{{bonus}}" placeholder="{{localize 'ELARIA.Dice.bonusHint'}}" autocomplete="off">
+        <label class="check per-hit-option" data-tooltip="ELARIA.Dice.perHitHint">
+          <input type="checkbox" name="bonusPerHit" {{checked bonusPerHit}}> {{localize "ELARIA.Dice.eachHit"}}</label>
+      </span></div>
+    <p class="bonus-error" hidden></p>
+    <div class="row"><span>{{localize "ELARIA.Dice.targets"}}</span>
+      <span class="inline">
+        <input type="number" name="targets" value="{{targets}}" min="1" max="50" step="1" class="small-num">
+        <label class="check aoe-option" data-tooltip="ELARIA.Dice.aoeHint">
+          <input type="checkbox" name="aoe" {{checked aoe}}> {{localize "ELARIA.Dice.aoeOption"}}</label>
+      </span></div>
+    <label class="row"><span>{{localize "ELARIA.Dice.penalty"}}</span>
+      <input type="number" name="penalty" value="{{penalty}}" min="0" step="1"></label>
+  </div>
+
+  <fieldset class="crit">
+    <legend><i class="fa-solid fa-burst"></i> {{localize "ELARIA.Dice.critSection"}}</legend>
+    <div class="crit-grid">
+      <div class="crit-field">
+        <span class="crit-label">{{localize "ELARIA.Dice.critChance"}}</span>
+        <span class="crit-sum">
+          <span class="base" data-tooltip="ELARIA.Dice.critBase">{{critChanceBase}}%</span>
+          <span class="plus">+</span>
+          <input type="number" name="critChanceBonus" value="{{critChanceBonus}}" step="1" placeholder="0"><b>%</b>
+          <span class="eq">=</span> <span class="crit-total chance">{{critChanceBase}}%</span>
+        </span>
+      </div>
+      <div class="crit-field">
+        <span class="crit-label">{{localize "ELARIA.Dice.critDamage"}}</span>
+        <span class="crit-sum">
+          <span class="base" data-tooltip="ELARIA.Dice.critBase">{{critDamageBase}}%</span>
+          <span class="plus">+</span>
+          <input type="number" name="critDamageBonus" value="{{critDamageBonus}}" step="1" placeholder="0"><b>%</b>
+          <span class="eq">=</span> <span class="crit-total damage">{{critDamageBase}}%</span>
+        </span>
+      </div>
+    </div>
+    <p class="hint">{{critSource}}</p>
+  </fieldset>
+
+  <div class="preview-row"><span class="preview"></span></div>
+
+  <footer class="roll-buttons">
+    {{#if skipLabel}}
+    <button type="button" data-action="skip" class="skip" data-tooltip="{{skipHint}}">
+      <i class="fa-solid fa-forward"></i> {{skipLabel}}</button>
+    {{/if}}
+    <button type="button" data-action="roll" data-mode="normal" class="normal">
+      <i class="fa-solid fa-dice"></i> {{localize "ELARIA.Dice.roll"}}</button>
+    <button type="button" data-action="roll" data-mode="advantage" class="adv">
+      <i class="fa-solid fa-angles-up"></i> {{localize "ELARIA.Dice.rollAdvantage"}}</button>
+    <button type="button" data-action="roll" data-mode="disadvantage" class="dis">
+      <i class="fa-solid fa-angles-down"></i> {{localize "ELARIA.Dice.rollDisadvantage"}}</button>
+  </footer>
+</section>

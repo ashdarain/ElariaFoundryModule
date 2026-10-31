@@ -1,0 +1,93 @@
+<section class="tab stats {{tab.cssClass}}" data-group="primary" data-tab="stats">
+  <div class="stats-layout">
+    <div class="stat-table">
+      <div class="stat-row heading">
+        <span>{{localize "ELARIA.Stats.scaling"}}</span>
+        <span>{{localize "ELARIA.Stats.stat"}}</span>
+        <span data-tooltip="ELARIA.Stats.totalHint">{{localize "ELARIA.Stats.total"}}</span>
+        <span>{{localize "ELARIA.Stats.points"}}</span>
+        <span>{{localize "ELARIA.Stats.bonus"}}</span>
+        <span>{{localize "ELARIA.Stats.mod"}}</span>
+      </div>
+
+      {{#each statGroups}}
+      <div class="stat-group">
+        <h4>{{localize label}}</h4>
+        {{#each stats}}
+        <div class="stat-row {{#if major}}major{{else}}minor{{/if}} {{#if overCap}}over{{/if}}">
+          <select name="system.stats.{{key}}.scaling" class="scaling {{scaling}}">
+            {{selectOptions scalingChoices selected=scaling}}
+          </select>
+          <span class="stat-name">
+            <a class="stat-roll" data-action="rollStat" data-stat="{{key}}" data-tooltip="ELARIA.Stats.rollName">{{localize label}}</a>
+            <small>{{#if major}}{{localize "ELARIA.Stats.major"}}{{else}}{{localize "ELARIA.Stats.minor"}}{{/if}}</small>
+          </span>
+          <span class="total">{{total}}</span>
+          <input type="number" name="system.stats.{{key}}.points" value="{{points}}" min="0" step="1"
+            {{#if overCap}}data-tooltip="{{localize 'ELARIA.Stats.overCap' cap=../../system.statPoints.perStatCap}}"{{/if}}>
+          <input type="number" name="system.stats.{{key}}.bonus" value="{{bonus}}" step="1" data-tooltip="ELARIA.Stats.bonusHint">
+          <a class="mod" data-action="rollStat" data-stat="{{key}}" data-tooltip="{{modTooltip}}">{{numberFormat mod sign=true}}</a>
+        </div>
+        {{/each}}
+      </div>
+      {{/each}}
+
+      <div class="stat-footer">
+        <span class="points {{#if system.statPoints.over}}over{{/if}}">
+          {{localize "ELARIA.Stats.pointsAssigned"}}
+          <b>{{system.statPoints.assigned}} / {{system.statPoints.available}}</b>
+          {{#if system.statPoints.over}}<em>{{localize "ELARIA.Over"}}</em>{{/if}}
+        </span>
+        {{#if scalingWarning}}<span class="warning"><i class="fa-solid fa-triangle-exclamation"></i> {{scalingWarningText}}</span>{{/if}}
+        {{#if editMode}}
+        <label class="checkbox editing" data-tooltip="ELARIA.Stats.scalingEnabledHint">
+          <input type="checkbox" name="system.scalingEnabled" {{checked system.scalingEnabled}}>
+          {{localize "ELARIA.Stats.scalingEnabled"}}
+        </label>
+        {{else}}{{#unless system.scalingEnabled}}<span class="warning">{{localize "ELARIA.Stats.scalingOff"}}</span>{{/unless}}{{/if}}
+      </div>
+      <p class="hint">{{localize "ELARIA.Stats.rollHint"}}</p>
+    </div>
+
+    <aside class="derived-panel">
+      {{#each substatGroups}}
+      <table class="substats">
+        <thead>
+          <tr>
+            <th class="label">{{localize label}}</th>
+            <th>{{localize "ELARIA.Stats.base"}}</th>
+            <th>{{localize "ELARIA.Stats.bonus"}}</th>
+            <th>{{localize "ELARIA.Stats.total"}}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {{#each rows}}
+          <tr class="{{#if strong}}strong{{/if}}">
+            <td class="label" {{#if hint}}data-tooltip="{{hint}}"{{/if}}>{{localize label}}</td>
+            <td class="base">
+              {{#if input}}<input type="number" name="{{input}}" value="{{inputValue}}" min="{{#if noBonus}}1{{else}}0{{/if}}" step="1">
+              {{else}}{{base}}{{/if}}
+            </td>
+            <td class="bonus">
+              {{#unless noBonus}}<input type="number" name="system.bonuses.{{key}}" value="{{bonus}}" step="1">{{/unless}}
+            </td>
+            <td class="total">{{total}}{{suffix}}</td>
+          </tr>
+          {{/each}}
+        </tbody>
+      </table>
+      {{/each}}
+    </aside>
+  </div>
+
+  <section class="resistances">
+    <h4>{{localize "ELARIA.Resist.title"}} <small>{{localize "ELARIA.Resist.hint"}}</small></h4>
+    <div class="resist-grid">
+      {{#each resistElements}}{{> resistCell this}}{{/each}}
+    </div>
+    <h5>{{localize "ELARIA.Resist.forms"}} <small>{{localize "ELARIA.Resist.formsHint"}}</small></h5>
+    <div class="resist-grid forms">
+      {{#each resistForms}}{{> resistCell this showBase=true}}{{/each}}
+    </div>
+  </section>
+</section>

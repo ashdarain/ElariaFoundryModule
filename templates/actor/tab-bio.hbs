@@ -1,0 +1,91 @@
+<section class="tab bio {{tab.cssClass}}" data-group="primary" data-tab="bio">
+  <div class="bio-grid">
+    <fieldset>
+      <legend>{{localize "ELARIA.Bio.ancestry"}}</legend>
+      <label><span>{{localize "ELARIA.Bio.race"}}</span>
+        <select name="system.identity.race">{{selectOptions choices.races selected=system.identity.race}}</select></label>
+      <label><span>{{localize "ELARIA.Bio.heritage"}}</span>
+        <select name="system.identity.heritage">{{selectOptions choices.heritages selected=system.identity.heritage}}</select></label>
+    </fieldset>
+
+    <fieldset>
+      <legend>{{localize "ELARIA.Bio.disciplines"}}</legend>
+      <label><span>{{localize "ELARIA.Bio.discipline1"}}</span>
+        <select name="system.identity.discipline1">{{selectOptions choices.disciplines selected=system.identity.discipline1}}</select></label>
+      <label data-tooltip="ELARIA.Bio.discipline2Hint"><span>{{localize "ELARIA.Bio.discipline2"}}</span>
+        <select name="system.identity.discipline2">{{selectOptions choices.slot2 selected=system.identity.discipline2}}</select></label>
+      <label><span>{{localize "ELARIA.Bio.profession"}}</span>
+        <select name="system.identity.profession">{{selectOptions choices.professions selected=system.identity.profession}}</select></label>
+    </fieldset>
+
+    <fieldset>
+      <legend>{{localize "ELARIA.Bio.elements"}}</legend>
+      <label><span>{{localize "ELARIA.Bio.element" n=1}}</span>
+        <select name="system.identity.element1">{{selectOptions choices.elements selected=system.identity.element1}}</select></label>
+      <label><span>{{localize "ELARIA.Bio.element" n=2}}</span>
+        <select name="system.identity.element2">{{selectOptions choices.elements selected=system.identity.element2}}</select></label>
+      {{#if showThirdElement}}
+      <label><span>{{localize "ELARIA.Bio.element" n=3}}</span>
+        <select name="system.identity.element3">{{selectOptions choices.elements selected=system.identity.element3}}</select></label>
+      {{/if}}
+      <p class="combos">{{localize "ELARIA.Bio.combos"}}: {{#each system.combos}}<span class="chip">{{this}}</span>{{else}}—{{/each}}</p>
+    </fieldset>
+
+    <fieldset>
+      <legend>{{localize "ELARIA.Bio.faith"}}</legend>
+      <label><span>{{localize "ELARIA.Bio.deity"}}</span>
+        <select name="system.identity.deity">{{selectOptions choices.deities selected=system.identity.deity}}</select></label>
+      <label><span>{{localize "ELARIA.Bio.deityRole"}}</span>
+        <select name="system.identity.deityRole">{{selectOptions choices.deityRoles selected=system.identity.deityRole}}</select></label>
+      <label><span>{{localize "ELARIA.Bio.alignment"}}</span>
+        <select name="system.identity.alignment">{{selectOptions choices.alignments selected=system.identity.alignment}}</select></label>
+      <label><span>{{localize "ELARIA.Bio.alignment2"}}</span>
+        <select name="system.identity.alignment2">{{selectOptions choices.alignments2 selected=system.identity.alignment2}}</select></label>
+      {{#if alignmentConflict}}<p class="warning"><i class="fa-solid fa-triangle-exclamation"></i> {{alignmentConflict}}</p>{{/if}}
+      <label><span>{{localize "ELARIA.Bio.background"}}</span>
+        <input type="text" name="system.identity.background" value="{{system.identity.background}}"></label>
+    </fieldset>
+  </div>
+
+  <div class="bio-split">
+    <fieldset class="burst">
+      <legend>{{localize "ELARIA.Burst.title"}}</legend>
+      <div class="burst-stats">
+        <label><span>{{localize "ELARIA.Burst.gauge"}}</span>
+          {{!-- No name attribute: the header has the named copies of these fields; a second named copy
+                would make the form submit an array. data-actor-field saves straight to the actor instead. --}}
+          <input type="number" data-actor-field="system.conditions.burst.value" value="{{system.conditions.burst.value}}" min="0" step="1">
+          <span class="of">/</span>
+          <b class="burst-max" data-tooltip="ELARIA.Burst.maxHint">{{system.conditions.burst.max}}</b></label>
+        <label><span>{{localize "ELARIA.Burst.mood"}}</span>
+          <select name="system.conditions.burst.mood">{{selectOptions moodChoices selected=system.conditions.burst.mood}}</select></label>
+        <label class="checkbox"><input type="checkbox" name="system.conditions.burst.usedToday" {{checked system.conditions.burst.usedToday}}>
+          {{localize "ELARIA.Burst.usedToday"}}</label>
+      </div>
+
+      <div class="burst-trigger">
+        <span class="label">{{localize "ELARIA.Burst.trigger"}}</span>
+        {{#each alignmentTriggers}}
+        <p><b>{{name}}:</b> {{trigger}}
+          {{#if motto}}<span class="motto">{{motivation}} · “{{motto}}”</span>{{/if}}</p>
+        {{else}}<em class="muted">{{localize "ELARIA.Burst.noAlignment"}}</em>{{/each}}
+      </div>
+
+      <details class="burst-sources">
+        <summary>{{localize "ELARIA.Burst.sources"}}</summary>
+        <ul>{{#each burstSources}}<li><span>{{label}}</span><b>+{{n}}</b></li>{{/each}}</ul>
+        <p class="hint">{{localize "ELARIA.Burst.rules"}}</p>
+      </details>
+
+      <span class="label">{{localize "ELARIA.Burst.effect"}}</span>
+      <prose-mirror name="system.identity.burstEffect" value="{{system.identity.burstEffect}}" toggled
+        {{#unless editable}}disabled{{/unless}}>{{{burstEffectHTML}}}</prose-mirror>
+    </fieldset>
+
+    <fieldset class="biography">
+      <legend>{{localize "ELARIA.Bio.biography"}}</legend>
+      <prose-mirror name="system.identity.biography" value="{{system.identity.biography}}" toggled
+        {{#unless editable}}disabled{{/unless}}>{{{biographyHTML}}}</prose-mirror>
+    </fieldset>
+  </div>
+</section>

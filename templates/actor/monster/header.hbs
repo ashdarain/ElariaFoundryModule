@@ -1,0 +1,33 @@
+<header class="monster-header">
+  <img class="portrait" src="{{actor.img}}" alt="" data-action="editImage" data-edit="img" data-tooltip="ELARIA.Monster.portrait">
+  <div class="monster-identity">
+    <div class="name-row">
+      <input class="name" type="text" name="name" value="{{actor.name}}" placeholder="{{localize 'ELARIA.Monster.name'}}">
+      {{#if isGM}}
+      <span class="dc" data-tooltip="ELARIA.Monster.dcHint">{{localize "ELARIA.Monster.dc"}} {{system.natureDC.overview}}</span>
+      <span class="dc" data-tooltip="ELARIA.Monster.dcVitalsHint">{{localize "ELARIA.Monster.dcVitals"}} {{system.natureDC.vitals}}</span>
+      {{/if}}
+    </div>
+    <div class="id-grid">
+      <label><span>{{localize "ELARIA.Monster.type"}}</span>
+        <input type="text" name="system.details.type" value="{{system.details.type}}" placeholder="{{localize 'ELARIA.Monster.typeHint'}}"></label>
+      <label><span>{{localize "ELARIA.Monster.power"}}</span>
+        <input type="number" name="system.details.power" value="{{system.details.power}}" step="1"></label>
+      <label><span>{{localize "ELARIA.Monster.size"}}</span>
+        <input type="text" name="system.details.size" value="{{system.details.size}}" placeholder="{{localize 'ELARIA.Monster.sizeHint'}}"></label>
+      <label><span>{{localize "ELARIA.Monster.elements"}}</span>
+        <input type="text" name="system.details.elements" value="{{system.details.elements}}" placeholder="{{localize 'ELARIA.Monster.elementsHint'}}"></label>
+    </div>
+    <div class="monster-vitals">
+      {{#each resourceList}}
+      <div class="m-resource {{key}}">
+        <span class="resource-label">{{localize label}}</span>
+        <input type="number" name="system.resources.{{key}}.value" value="{{value}}" min="0" step="1">
+        <span class="of">/</span>
+        <input class="max" type="number" name="system.resources.{{key}}.max" value="{{max}}" min="0" step="1" data-tooltip="ELARIA.Monster.max">
+        <div class="bar"><div class="fill" style="width: {{pct}}%"></div></div>
+      </div>
+      {{/each}}
+    </div>
+  </div>
+</header>

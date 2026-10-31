@@ -1,0 +1,6 @@
+<div class="resist {{state}}" data-tooltip="{{tooltip}}">
+  <span class="name">{{label}}</span>
+  {{#if showBase}}<span class="base">{{numberFormat base sign=true}}%</span>{{/if}}
+  <input type="number" name="system.resistances.{{key}}" value="{{bonus}}" step="5">
+  <span class="total">{{numberFormat total sign=true}}%</span>
+</div>

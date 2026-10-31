@@ -1,0 +1,111 @@
+<section class="importer">
+  <p class="intro">{{localize "ELARIA.Importer.intro"}}</p>
+
+  <fieldset>
+    <legend>{{localize "ELARIA.Importer.sheet"}}</legend>
+    <div class="path-row">
+      <input type="text" name="link" value="{{link}}" placeholder="https://docs.google.com/spreadsheets/d/…"
+        spellcheck="false" autocomplete="off" {{#if busy}}disabled{{/if}}>
+      <button type="button" data-action="check" {{#if busy}}disabled{{/if}}>
+        <i class="fa-solid fa-cloud-arrow-down"></i> {{localize "ELARIA.Importer.check"}}
+      </button>
+    </div>
+    {{#unless linkValid}}<p class="error small">{{localize "ELARIA.Importer.badLinkInline"}}</p>{{/unless}}
+    <p class="hint"><i class="fa-solid fa-lock"></i> {{localize "ELARIA.Importer.linkHint"}}</p>
+  </fieldset>
+
+  {{#if busy}}
+  <div class="importer-progress">
+    <div class="bar"><div class="fill" style="width: {{progress.pct}}%"></div></div>
+    <span class="label">{{progress.label}}</span>
+  </div>
+  {{/if}}
+
+  {{#if error}}
+  <p class="error"><i class="fa-solid fa-triangle-exclamation"></i> {{error}}</p>
+  {{/if}}
+
+  {{#if report}}
+  <fieldset>
+    <legend>{{localize "ELARIA.Importer.preview"}}</legend>
+    <p class="meta">{{localize "ELARIA.Importer.downloaded"}} <b>{{downloadedAt}}</b></p>
+    <table class="diff">
+      <thead>
+        <tr>
+          <th class="l">{{localize "ELARIA.Importer.compendium"}}</th>
+          <th>{{localize "ELARIA.Importer.total"}}</th>
+          <th>{{localize "ELARIA.Importer.new"}}</th>
+          <th>{{localize "ELARIA.Importer.changed"}}</th>
+          <th>{{localize "ELARIA.Importer.unchanged"}}</th>
+          <th>{{localize "ELARIA.Importer.removed"}}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{#each diffRows}}
+        <tr>
+          <td class="l">{{label}}{{#unless exists}} <em class="new-pack">{{localize "ELARIA.Importer.willCreate"}}</em>{{/unless}}</td>
+          <td>{{total}}</td>
+          <td class="{{#if created}}hl{{/if}}">{{created}}</td>
+          <td class="{{#if changed}}hl{{/if}}">{{changed}}</td>
+          <td>{{unchanged}}</td>
+          <td class="{{#if removed}}warn{{/if}}">{{removed}}</td>
+        </tr>
+        {{/each}}
+      </tbody>
+      {{#if totals}}
+      <tfoot>
+        <tr>
+          <td class="l">{{localize "ELARIA.Importer.total"}}</td>
+          <td>{{totals.total}}</td><td>{{totals.created}}</td><td>{{totals.changed}}</td>
+          <td>{{totals.unchanged}}</td><td>{{totals.removed}}</td>
+        </tr>
+      </tfoot>
+      {{/if}}
+    </table>
+
+    <p class="hint">{{localize "ELARIA.Importer.mergedNote" n=report.merged}}</p>
+    {{#if report.keptSeparate.length}}
+    <details>
+      <summary>{{localize "ELARIA.Importer.keptSeparate" n=report.keptSeparate.length}}</summary>
+      <ul>{{#each report.keptSeparate}}<li><b>{{name}}</b> <code>{{ref}}</code> ≠ {{#each differsIn}}<code>{{this}}</code> {{/each}}</li>{{/each}}</ul>
+    </details>
+    {{/if}}
+    {{#if sheetWarnings.length}}
+    <details>
+      <summary>{{localize "ELARIA.Importer.sheetWarnings" n=sheetWarnings.length}}</summary>
+      <p class="hint">{{localize "ELARIA.Importer.sheetWarningsHint"}}</p>
+      <ul>{{#each sheetWarnings}}<li><code>{{where}}</code> {{msg}}</li>{{/each}}</ul>
+    </details>
+    {{/if}}
+    {{#if unknownTags.length}}
+    <details>
+      <summary>{{localize "ELARIA.Importer.unknownTags" n=unknownTags.length}}</summary>
+      <ul class="tags">{{#each unknownTags}}<li>{{tag}} <span class="count">({{n}})</span></li>{{/each}}</ul>
+    </details>
+    {{/if}}
+    {{#if report.warnings.length}}
+    <details>
+      <summary>{{localize "ELARIA.Importer.warnings" n=report.warnings.length}}</summary>
+      <ul>{{#each report.warnings}}<li>{{this}}</li>{{/each}}</ul>
+    </details>
+    {{/if}}
+
+    <label class="checkbox">
+      <input type="checkbox" name="removeMissing" {{checked removeMissing}} {{#if busy}}disabled{{/if}}>
+      {{localize "ELARIA.Importer.removeMissing"}}
+    </label>
+  </fieldset>
+  {{/if}}
+
+  {{#if summary}}
+  <p class="done"><i class="fa-solid fa-circle-check"></i>
+    {{localize "ELARIA.Importer.summary" created=summary.created updated=summary.updated removed=summary.removed}}
+    {{#if summary.savedTo}}<br><span class="hint">{{localize "ELARIA.Importer.savedTo" path=summary.savedTo}}</span>{{/if}}</p>
+  {{/if}}
+
+  <footer class="buttons">
+    <button type="button" data-action="runImport" {{#unless canImport}}disabled{{/unless}} {{#if busy}}disabled{{/if}}>
+      <i class="fa-solid fa-file-import"></i> {{localize "ELARIA.Importer.import"}}
+    </button>
+  </footer>
+</section>

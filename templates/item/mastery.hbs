@@ -1,0 +1,127 @@
+{{#if editing}}
+<section class="mastery-sheet editing">
+  <header class="sheet-header">
+    <img class="portrait" src="{{item.img}}" alt="" data-action="editImage" data-edit="img">
+    <input class="name" type="text" name="name" value="{{item.name}}">
+    <label class="checkbox"><input type="checkbox" name="system.isReaction" {{checked system.isReaction}}> (rxn)</label>
+    <a class="edit-mode on" data-action="toggleEdit" data-tooltip="ELARIA.Mastery.doneEditing">
+      <i class="fa-solid fa-check"></i>
+    </a>
+  </header>
+
+  {{#if system.ref}}
+  <p class="imported-note" data-tooltip="ELARIA.Mastery.ref">
+    <i class="fa-solid fa-file-import"></i> {{localize "ELARIA.Mastery.imported"}} · <code>{{system.ref}}</code>
+    {{#if (eq system.verified "no")}}<span class="unverified">{{localize "ELARIA.Mastery.unverified"}}</span>{{/if}}
+  </p>
+  {{/if}}
+
+  <div class="grid">
+    <label><span>{{localize "ELARIA.Mastery.FIELDS.reqLevel"}}</span>
+      <input type="number" name="system.reqLevel" value="{{system.reqLevel}}" min="0" max="20" step="1"
+        placeholder="{{localize 'ELARIA.Mastery.noLevel'}}"></label>
+    <label><span>{{localize "ELARIA.Mastery.FIELDS.value"}}</span>
+      <input type="number" name="system.value" value="{{system.value}}" min="0" step="1" placeholder="—"></label>
+    <label><span>{{localize "ELARIA.Mastery.FIELDS.category"}}</span>
+      <select name="system.category">{{selectOptions categories selected=system.category}}</select></label>
+    {{#if (eq system.category "any")}}
+    <label><span>{{localize "ELARIA.Mastery.FIELDS.equippedCategory"}}</span>
+      <select name="system.equippedCategory">{{selectOptions equipCategories selected=system.equippedCategory}}</select></label>
+    {{/if}}
+
+    <label><span>{{localize "ELARIA.Mastery.FIELDS.sourceType"}}</span>
+      <select name="firstSource.type">{{selectOptions sourceTypes selected=firstSource.type}}</select></label>
+    <label><span>{{localize "ELARIA.Mastery.FIELDS.sourceName"}}</span>
+      <input type="text" name="firstSource.name" value="{{firstSource.name}}" placeholder="Rogue, Fire/Ice, Hecate…"></label>
+    {{#if otherSources.length}}
+    <p class="wide other-sources">{{localize "ELARIA.Mastery.alsoIn"}}
+      {{#each otherSources}}<span class="chip">{{name}}</span>{{/each}}</p>
+    {{/if}}
+
+    <label><span>{{localize "ELARIA.Mastery.FIELDS.skillMod"}}</span>
+      <input type="text" name="system.skillMod.raw" value="{{system.skillMod.raw}}" placeholder="2+Fin"></label>
+    <label><span>{{localize "ELARIA.Mastery.FIELDS.damage"}}</span>
+      <input type="text" name="system.damage.raw" value="{{system.damage.raw}}" placeholder="3d6+Str"></label>
+    <label><span>{{localize "ELARIA.Mastery.FIELDS.cost"}}</span>
+      <input type="text" name="system.cost" value="{{system.cost}}" placeholder="3 ftg"></label>
+    <label><span>{{localize "ELARIA.Mastery.FIELDS.usageLimit"}}</span>
+      <span class="usage">
+        <input type="number" name="system.usageLimit.count" value="{{system.usageLimit.count}}" min="1" step="1" placeholder="—">
+        <select name="system.usageLimit.per">{{selectOptions usagePers selected=system.usageLimit.per}}</select>
+      </span></label>
+    <label class="wide"><span>{{localize "ELARIA.Mastery.FIELDS.tags"}}</span>
+      <input type="text" name="tagsText" value="{{tagsText}}" placeholder="Melee, Physical Damage, Bleed"></label>
+    {{#if system.requirementsRaw}}
+    <p class="wide"><span class="label">{{localize "ELARIA.Mastery.requirements"}}</span> {{system.requirementsRaw}}</p>
+    {{/if}}
+    {{#if system.minBondTier}}
+    <p class="wide"><span class="label">{{localize "ELARIA.Mastery.bondTier"}}</span> {{system.minBondTier}}</p>
+    {{/if}}
+    <label class="checkbox wide"><input type="checkbox" name="system.equipped" {{checked system.equipped}}> {{localize "ELARIA.Mastery.FIELDS.equipped"}}</label>
+  </div>
+
+  <fieldset class="details">
+    <legend>{{localize "ELARIA.Mastery.FIELDS.details"}}</legend>
+    <prose-mirror name="system.details" value="{{system.details}}" toggled
+      {{#unless editable}}disabled{{/unless}}>{{{detailsHTML}}}</prose-mirror>
+  </fieldset>
+</section>
+{{else}}
+<section class="mastery-sheet mastery-view">
+  <header class="mv-header">
+    <img class="mv-icon" src="{{item.img}}" alt="">
+    <div class="mv-title">
+      <h1>{{item.name}}</h1>
+      {{#if sourceLabel}}<div class="mv-sub">{{sourceLabel}}</div>{{/if}}
+    </div>
+    <div class="mv-actions">
+      {{#if hasDamage}}
+      <a class="mv-btn roll" data-action="rollDamage" data-tooltip="ELARIA.Mastery.useHint"><i class="fa-solid fa-dice"></i></a>
+      {{/if}}
+      <a class="mv-btn" data-action="postToChat" data-tooltip="ELARIA.Mastery.postHint"><i class="fa-solid fa-comment"></i></a>
+      {{#if editable}}
+      <a class="mv-btn" data-action="toggleEdit" data-tooltip="ELARIA.Edit"><i class="fa-solid fa-pen"></i></a>
+      {{/if}}
+    </div>
+  </header>
+
+  <div class="mv-badges">
+    <span class="badge cat {{system.category}}">{{categoryLabel}}</span>
+    {{#if system.isReaction}}<span class="badge rxn">{{localize "ELARIA.Mastery.reaction"}}</span>{{/if}}
+    {{#if (ne system.reqLevel null)}}<span class="badge">{{localize "ELARIA.Mastery.FIELDS.reqLevel"}} {{system.reqLevel}}</span>{{/if}}
+    {{#if (ne system.value null)}}<span class="badge">{{localize "ELARIA.Mastery.FIELDS.value"}} {{system.value}}</span>{{/if}}
+    {{#if system.minBondTier}}<span class="badge">{{localize "ELARIA.Mastery.bondTier"}} {{system.minBondTier}}</span>{{/if}}
+    {{#if owned}}
+    <span class="badge {{#if system.equipped}}equipped{{/if}}">
+      <i class="fa-solid {{#if system.equipped}}fa-circle-check{{else}}fa-circle{{/if}}"></i>
+      {{#if system.equipped}}{{localize "ELARIA.Mastery.FIELDS.equipped"}}{{else}}{{localize "ELARIA.Mastery.notEquipped"}}{{/if}}
+    </span>
+    {{/if}}
+    {{#if (eq system.verified "no")}}<span class="badge warn">{{localize "ELARIA.Mastery.unverified"}}</span>{{/if}}
+  </div>
+
+  {{#if statBlocks.length}}
+  <dl class="mv-stats">
+    {{#each statBlocks}}
+    <div class="mv-stat"><dt>{{label}}</dt><dd>{{value}}</dd></div>
+    {{/each}}
+  </dl>
+  {{/if}}
+
+  {{#if system.requirementsRaw}}
+  <p class="mv-req"><i class="fa-solid fa-lock"></i> <b>{{localize "ELARIA.Mastery.requirements"}}:</b> {{system.requirementsRaw}}</p>
+  {{/if}}
+
+  <div class="mv-details">
+    {{#if detailsHTML}}{{{detailsHTML}}}{{else}}<p class="empty">{{localize "ELARIA.Mastery.noDetails"}}</p>{{/if}}
+  </div>
+
+  {{#if system.tags.length}}
+  <div class="mv-tags">{{#each system.tags}}<span class="chip">{{this}}</span>{{/each}}</div>
+  {{/if}}
+
+  {{#if system.ref}}
+  <footer class="mv-footer"><i class="fa-solid fa-file-import"></i> {{localize "ELARIA.Mastery.imported"}}</footer>
+  {{/if}}
+</section>
+{{/if}}

@@ -1,0 +1,28 @@
+<li class="gear-row draggable {{#if system.broken}}broken{{/if}}" data-item-id="{{id}}">
+  {{#if canEquip}}
+  <a class="equip {{#if equipped}}on{{/if}}" data-action="toggleGearEquip"
+     data-tooltip="{{#if equipped}}ELARIA.Gear.toBag{{else}}{{#if (eq system.kind 'weapon')}}ELARIA.Gear.toBelt{{else}}ELARIA.Gear.wear{{/if}}{{/if}}">
+    <i class="fa-solid {{#if equipped}}fa-circle-check{{else}}fa-circle{{/if}}"></i></a>
+  {{else}}<span class="equip none"></span>{{/if}}
+  <img src="{{img}}" alt="">
+  <div class="gear-main">
+    <a class="gear-name" data-action="useItem" data-tooltip="{{#if canRoll}}ELARIA.Gear.rollAttack{{else}}ELARIA.Mastery.postHint{{/if}}">
+      {{#if canRoll}}<i class="fa-solid fa-dice-six roll-icon"></i> {{/if}}{{name}}</a>
+    <div class="gear-meta">
+      <span class="kind">{{kindLabel}}{{#if system.classTrinket}} · {{localize "ELARIA.Gear.classTrinket"}}{{/if}}</span>
+      {{#each stats}}<span>{{this}}</span>{{/each}}
+      {{#if tooHeavy}}<span class="bad" data-tooltip="{{tooHeavyTip}}"><i class="fa-solid fa-weight-hanging"></i> {{localize "ELARIA.Gear.tooHeavyShort"}}</span>{{/if}}
+      {{#if system.levelTooHigh}}<span class="bad">{{localize "ELARIA.Mastery.lvl"}} {{system.reqLevel}}</span>{{/if}}
+      {{#if system.broken}}<span class="bad"><i class="fa-solid fa-heart-crack"></i> {{localize "ELARIA.Gear.broken"}}</span>{{/if}}
+    </div>
+    {{#if effects}}<div class="gear-effects">{{effects}}</div>{{/if}}
+  </div>
+  {{#if bag}}
+  <label class="qty" data-tooltip="ELARIA.Gear.quantity">×<input type="number" data-item-field="system.quantity" value="{{system.quantity}}" min="0" step="1"></label>
+  {{/if}}
+  <div class="controls">
+    <a data-action="postItem" data-tooltip="ELARIA.Mastery.postHint"><i class="fa-solid fa-comment"></i></a>
+    <a data-action="editItem" data-tooltip="ELARIA.Edit"><i class="fa-solid fa-pen-to-square"></i></a>
+    <a data-action="deleteItem" data-tooltip="ELARIA.Delete"><i class="fa-solid fa-trash"></i></a>
+  </div>
+</li>

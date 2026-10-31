@@ -1,0 +1,69 @@
+{
+  "id": "elaria",
+  "title": "Elaria",
+  "description": "Game system for the Elaria TTRPG (rules 2.2, work in progress).",
+  "version": "0.11.0",
+  "compatibility": {
+    "minimum": "13",
+    "verified": "14"
+  },
+  "authors": [
+    {
+      "name": "Ash"
+    }
+  ],
+  "esmodules": [
+    "elaria.mjs"
+  ],
+  "styles": [
+    "styles/elaria.css"
+  ],
+  "languages": [
+    {
+      "lang": "en",
+      "name": "English",
+      "path": "lang/en.json"
+    }
+  ],
+  "documentTypes": {
+    "Actor": {
+      "character": {
+        "htmlFields": [
+          "identity.biography"
+        ]
+      },
+      "monster": {
+        "htmlFields": [
+          "details.description",
+          "loot.unique",
+          "loot.tables"
+        ]
+      }
+    },
+    "Item": {
+      "mastery": {
+        "htmlFields": [
+          "details"
+        ]
+      },
+      "ability": {
+        "htmlFields": [
+          "details"
+        ]
+      },
+      "gear": {
+        "htmlFields": [
+          "effects",
+          "description"
+        ]
+      }
+    }
+  },
+  "grid": {
+    "distance": 1,
+    "units": "m"
+  },
+  "primaryTokenAttribute": "resources.hp",
+  "secondaryTokenAttribute": "resources.mp",
+  "initiative": "3d6 + @fin - @initiativePenalty"
+}

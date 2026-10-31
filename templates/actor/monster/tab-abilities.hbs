@@ -1,0 +1,35 @@
+<section class="tab monster-abilities {{tab.cssClass}}" data-group="primary" data-tab="abilities">
+  <div class="section-head">
+    <h3>{{localize "ELARIA.Monster.abilities"}}</h3>
+    {{#if isGM}}<span class="dc">{{localize "ELARIA.Monster.dc"}} {{system.natureDC.abilities}}</span>{{/if}}
+    {{#if editable}}<a class="create" data-action="createAbility"><i class="fa-solid fa-plus"></i> {{localize "ELARIA.Monster.addAbility"}}</a>{{/if}}
+  </div>
+  <ol class="ability-list">
+    {{#each abilities}}
+    <li class="ability draggable" data-item-id="{{id}}">
+      <img src="{{img}}" alt="">
+      <div class="ability-main">
+        <a class="ability-name" data-action="useItem" data-tooltip="{{#if canRoll}}ELARIA.Mastery.useHint{{else}}ELARIA.Mastery.postHint{{/if}}">
+          {{#if canRoll}}<i class="fa-solid fa-dice-six roll-icon"></i> {{/if}}{{name}}{{#if isReaction}} <em>(rxn)</em>{{/if}}
+        </a>
+        <div class="ability-meta">
+          {{#if skillMod}}<span><b>{{localize "ELARIA.Mastery.FIELDS.skillMod"}}</b> {{skillMod}}</span>{{/if}}
+          {{#if damage}}<span><b>{{localize "ELARIA.Mastery.FIELDS.damage"}}</b> {{damage}}</span>{{/if}}
+          {{#if cost}}<span><b>{{localize "ELARIA.Mastery.FIELDS.cost"}}</b> {{cost}}</span>{{/if}}
+          {{#each tags}}<span class="tag">{{this}}</span>{{/each}}
+        </div>
+        {{#if summary}}<div class="ability-summary">{{summary}}</div>{{/if}}
+      </div>
+      <div class="controls">
+        <a data-action="postItem" data-tooltip="ELARIA.Mastery.postHint"><i class="fa-solid fa-comment"></i></a>
+        {{#if ../editable}}
+        <a data-action="editItem" data-tooltip="ELARIA.Edit"><i class="fa-solid fa-pen-to-square"></i></a>
+        <a data-action="deleteItem" data-tooltip="ELARIA.Delete"><i class="fa-solid fa-trash"></i></a>
+        {{/if}}
+      </div>
+    </li>
+    {{else}}
+    <li class="empty">{{localize "ELARIA.Monster.noAbilities"}}</li>
+    {{/each}}
+  </ol>
+</section>

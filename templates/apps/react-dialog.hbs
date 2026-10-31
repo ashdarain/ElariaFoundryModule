@@ -1,0 +1,43 @@
+<section class="roll-dialog-body">
+  {{#if item}}
+  <div class="roll-source">
+    <img src="{{item.img}}" alt="">
+    <div><h3 class="roll-label">{{item.name}}</h3><span class="note">{{localize "ELARIA.React.usingRxn"}}</span></div>
+  </div>
+  {{/if}}
+  <div class="react-status {{#if outOfRap}}out{{/if}}">
+    <i class="fa-solid fa-shield-halved"></i> <span>{{rapText}}</span>
+    {{#if outOfRap}}<b>{{localize "ELARIA.React.outOfRap"}}</b>{{/if}}
+  </div>
+  <div class="rows">
+    <label class="row"><span>{{localize "ELARIA.React.unit"}}</span>
+      <select name="actor">{{selectOptions actorChoices selected=actorUuid}}</select></label>
+    {{#if noActor}}<p class="bonus-error">{{localize "ELARIA.React.pickUnit"}}</p>{{/if}}
+    <label class="row"><span>{{localize "ELARIA.React.reactingTo"}}</span>
+      <select name="type">{{selectOptions typeChoices selected=type}}</select></label>
+    <label class="row skill-row"><span>{{localize "ELARIA.React.attackerSkill"}}</span>
+      <input type="number" name="skillMod" value="{{skillMod}}" step="1" placeholder="{{localize 'ELARIA.React.attackerSkillHint'}}"></label>
+    <label class="row"><span data-tooltip="ELARIA.React.nHint">{{localize "ELARIA.React.n"}}</span>
+      <input type="number" name="n" value="{{n}}" min="0" step="2" class="small-num"></label>
+    <label class="row"><span>{{localize "ELARIA.React.dcMod"}}</span>
+      <input type="number" name="dcMod" value="{{dcMod}}" step="1" class="small-num" placeholder="0" data-tooltip="ELARIA.React.dcModHint"></label>
+  </div>
+  <div class="preview-row"><span class="dc-preview"></span></div>
+  <div class="rows">
+    <label class="row"><span>{{localize "ELARIA.React.rollWith"}}</span>
+      <select name="stat">{{selectOptions statChoices selected=stat}}</select></label>
+    <label class="row"><span>{{localize "ELARIA.Dice.bonus"}}</span>
+      <input type="text" name="bonus" value="{{bonus}}" placeholder="{{localize 'ELARIA.Dice.bonusHint'}}" autocomplete="off"></label>
+    <p class="bonus-error" hidden>{{localize "ELARIA.Dice.badBonus"}}</p>
+    <label class="row"><span>{{localize "ELARIA.Dice.penalty"}}</span>
+      <input type="number" name="penalty" value="{{penalty}}" min="0" step="1"></label>
+  </div>
+  <footer class="roll-buttons">
+    <button type="button" data-action="roll" data-mode="normal" class="normal">
+      <i class="fa-solid fa-shield-halved"></i> {{localize "ELARIA.React.roll"}}</button>
+    <button type="button" data-action="roll" data-mode="advantage" class="adv">
+      <i class="fa-solid fa-angles-up"></i> {{localize "ELARIA.Dice.rollAdvantage"}}</button>
+    <button type="button" data-action="roll" data-mode="disadvantage" class="dis">
+      <i class="fa-solid fa-angles-down"></i> {{localize "ELARIA.Dice.rollDisadvantage"}}</button>
+  </footer>
+</section>

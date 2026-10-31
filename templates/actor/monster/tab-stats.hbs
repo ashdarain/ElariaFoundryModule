@@ -1,0 +1,38 @@
+<section class="tab monster-stats {{tab.cssClass}}" data-group="primary" data-tab="stats">
+  <div class="section-head">
+    <h3>{{localize "ELARIA.Monster.stats"}}</h3>
+    {{#if isGM}}<span class="dc">{{localize "ELARIA.Monster.dc"}} {{system.natureDC.stats}}</span>{{/if}}
+    <span class="hint">{{localize "ELARIA.Monster.statsHint"}}</span>
+  </div>
+  <div class="m-stat-groups">
+    {{#each statGroups}}
+    <div class="m-stat-group">
+      <h4>{{localize label}}</h4>
+      {{#each stats}}
+      <div class="m-stat-row">
+        <a class="stat-roll" data-action="rollStat" data-stat="{{key}}" data-tooltip="ELARIA.Stats.rollName">{{localize label}}</a>
+        <input type="number" name="system.stats.{{key}}.value" value="{{value}}" step="1">
+        <a class="mod" data-action="rollStat" data-stat="{{key}}" data-tooltip="ELARIA.Stats.rollName">{{numberFormat mod sign=true}}</a>
+      </div>
+      {{/each}}
+    </div>
+    {{/each}}
+  </div>
+
+  <div class="m-defence-grid">
+    <fieldset>
+      <legend>{{localize "ELARIA.Monster.defence"}}</legend>
+      {{#each defenceRows}}
+      <label class="m-field"><span>{{label}}</span><input type="number" name="system.defence.{{key}}" value="{{value}}" step="1"></label>
+      {{/each}}
+      <label class="m-field wide"><span>{{localize "ELARIA.Monster.elementalRes"}}</span>
+        <input type="text" name="system.defence.elementalRes" value="{{system.defence.elementalRes}}" placeholder="{{localize 'ELARIA.Monster.elementalResHint'}}"></label>
+    </fieldset>
+    <fieldset>
+      <legend>{{localize "ELARIA.Monster.combat"}}</legend>
+      {{#each combatRows}}
+      <label class="m-field"><span>{{label}}</span><input type="number" name="system.combat.{{key}}" value="{{value}}" step="1"></label>
+      {{/each}}
+    </fieldset>
+  </div>
+</section>

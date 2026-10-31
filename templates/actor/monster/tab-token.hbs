@@ -1,0 +1,25 @@
+<section class="tab monster-token {{tab.cssClass}}" data-group="primary" data-tab="token">
+  <p class="hint">{{localize "ELARIA.Monster.tokenIntro"}}</p>
+  <div class="token-grid">
+    <label class="m-field wide"><span>{{localize "ELARIA.Monster.tokenName"}}</span>
+      <input type="text" name="prototypeToken.name" value="{{token.name}}"></label>
+    <div class="m-field wide"><span>{{localize "ELARIA.Monster.tokenImage"}}</span>
+      <div class="token-image-row">
+        <img src="{{token.texture.src}}" alt="">
+        <file-picker name="prototypeToken.texture.src" type="imagevideo" value="{{token.texture.src}}"></file-picker>
+      </div></div>
+    <label class="m-field"><span>{{localize "ELARIA.Monster.disposition"}}</span>
+      <select name="prototypeToken.disposition" data-dtype="Number">{{selectOptions dispositions selected=token.disposition}}</select></label>
+    <label class="m-field"><span>{{localize "ELARIA.Monster.tokenSize"}}</span>
+      <span class="size-pair">
+        <input type="number" name="prototypeToken.width" value="{{token.width}}" min="0.5" step="0.5">
+        <span>×</span>
+        <input type="number" name="prototypeToken.height" value="{{token.height}}" min="0.5" step="0.5">
+      </span></label>
+    <label class="m-field check"><input type="checkbox" name="prototypeToken.actorLink" {{checked token.actorLink}}>
+      <span>{{localize "ELARIA.Monster.actorLink"}}</span></label>
+    <p class="hint wide">{{localize "ELARIA.Monster.actorLinkHint"}}</p>
+  </div>
+  <button type="button" class="full-token" data-action="openTokenConfig">
+    <i class="fa-solid fa-user-gear"></i> {{localize "ELARIA.Monster.fullTokenSettings"}}</button>
+</section>

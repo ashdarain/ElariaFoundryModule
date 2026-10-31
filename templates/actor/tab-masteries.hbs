@@ -1,0 +1,45 @@
+<section class="tab masteries {{tab.cssClass}}" data-group="primary" data-tab="masteries">
+  <div class="output-bar {{#if system.mastery.output.over}}over{{/if}}">
+    <span>{{localize "ELARIA.Mastery.output"}}</span>
+    <b>{{system.mastery.output.used}} / {{system.mastery.output.max}}</b>
+    {{#if system.mastery.output.over}}<em>{{localize "ELARIA.Over"}}</em>{{/if}}
+    <a class="create" data-action="createMastery"><i class="fa-solid fa-plus"></i> {{localize "ELARIA.Mastery.create"}}</a>
+  </div>
+
+  <div class="sources">
+    <span class="label">{{localize "ELARIA.Mastery.sources"}}</span>
+    {{#each sources}}<span class="chip">{{this}}</span>{{/each}}
+  </div>
+
+  {{#each categories}}
+  <section class="category {{key}} {{#if over}}over{{/if}}">
+    <header>
+      <h4>{{localize label}}</h4>
+      <span class="cap">{{used}} / {{cap}}{{#if over}} <em>{{localize "ELARIA.Over"}}</em>{{/if}}</span>
+    </header>
+    <ol class="mastery-list">
+      {{#each items}}{{> masteryRow this equipped=true categoryChoices=../../categoryChoices}}{{else}}
+      <li class="empty">{{localize "ELARIA.Mastery.noneEquipped"}}</li>
+      {{/each}}
+    </ol>
+  </section>
+  {{/each}}
+
+  {{#if noBudget.length}}
+  <section class="category no-budget">
+    <header><h4>{{localize "ELARIA.Mastery.noBudget"}}</h4><span class="cap">{{localize "ELARIA.Mastery.noBudgetHint"}}</span></header>
+    <ol class="mastery-list">
+      {{#each noBudget}}{{> masteryRow this equipped=true categoryChoices=../categoryChoices}}{{/each}}
+    </ol>
+  </section>
+  {{/if}}
+
+  <section class="category unequipped">
+    <header><h4>{{localize "ELARIA.Mastery.known"}}</h4></header>
+    <ol class="mastery-list">
+      {{#each unequipped}}{{> masteryRow this equipped=false categoryChoices=../categoryChoices}}{{else}}
+      <li class="empty">{{localize "ELARIA.Mastery.dropHint"}}</li>
+      {{/each}}
+    </ol>
+  </section>
+</section>

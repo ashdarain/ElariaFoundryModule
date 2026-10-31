@@ -1,0 +1,20 @@
+<section class="picker">
+  <div class="filters">
+    <div class="search-row">
+      <i class="fa-solid fa-magnifying-glass"></i>
+      <input type="search" name="text" value="{{filters.text}}" placeholder="{{localize 'ELARIA.Picker.search'}}" autocomplete="off">
+      <a class="clear" data-action="clear" data-tooltip="ELARIA.Picker.clear"><i class="fa-solid fa-filter-circle-xmark"></i></a>
+    </div>
+    <div class="select-row">
+      <select name="pack">{{selectOptions packChoices selected=filters.pack}}</select>
+      <select name="category">{{selectOptions categoryChoices selected=filters.category}}</select>
+    </div>
+    <div class="check-row">
+      <label {{#unless hasActor}}hidden{{/unless}} {{#if isGear}}hidden{{/if}}><input type="checkbox" name="mine" {{checked filters.mine}}> {{localize "ELARIA.Picker.mine"}}</label>
+      <label {{#unless hasActor}}hidden{{/unless}}><input type="checkbox" name="level" {{checked filters.level}}> {{localize "ELARIA.Picker.upToLevel" level=level}}</label>
+      <span class="count"></span>
+    </div>
+  </div>
+  <ol class="results"></ol>
+  <p class="hint">{{#if hasActor}}{{localize "ELARIA.Picker.dragHint"}}{{else}}{{localize "ELARIA.Picker.browseHint"}}{{/if}}</p>
+</section>

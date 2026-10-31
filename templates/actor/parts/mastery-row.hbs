@@ -1,0 +1,32 @@
+<li class="mastery draggable {{#if system.levelTooHigh}}too-high{{/if}}" data-item-id="{{id}}">
+  <a class="equip {{#if system.equipped}}on{{/if}}" data-action="toggleEquip"
+     data-tooltip="{{#if system.equipped}}ELARIA.Mastery.unequip{{else}}ELARIA.Mastery.equip{{/if}}">
+    <i class="fa-solid {{#if system.equipped}}fa-circle-check{{else}}fa-circle{{/if}}"></i>
+  </a>
+  <img src="{{img}}" alt="">
+  <div class="mastery-main">
+    <a class="mastery-name" data-action="useItem" data-tooltip="{{#if canRoll}}ELARIA.Mastery.useHint{{else}}ELARIA.Mastery.postHint{{/if}}">
+      {{#if canRoll}}<i class="fa-solid fa-dice-six roll-icon"></i> {{/if}}{{name}}{{#if system.isReaction}} <em>(rxn)</em>{{/if}}
+    </a>
+    <div class="mastery-meta">
+      <span class="source">{{sourceLabel}}</span>
+      {{#if (ne system.reqLevel null)}}<span class="req {{#if system.levelTooHigh}}bad{{/if}}"
+        {{#if system.levelTooHigh}}data-tooltip="ELARIA.Mastery.levelTooHigh"{{/if}}>{{localize "ELARIA.Mastery.lvl"}} {{system.reqLevel}}</span>{{/if}}
+      {{#if system.skillMod.raw}}<span>{{localize "ELARIA.Mastery.FIELDS.skillMod"}} {{system.skillMod.raw}}</span>{{/if}}
+      {{#if system.damage.raw}}<span>{{system.damage.raw}}</span>{{/if}}
+      {{#if system.cost}}<span>{{system.cost}}</span>{{/if}}
+      {{#each tags}}<span class="tag">{{this}}</span>{{/each}}
+    </div>
+  </div>
+  {{#if anyCategory}}
+  <select data-item-field="system.equippedCategory" data-tooltip="ELARIA.Mastery.anyCategoryHint">
+    {{selectOptions categoryChoices selected=system.equippedCategory}}
+  </select>
+  {{/if}}
+  <span class="value" data-tooltip="ELARIA.Mastery.FIELDS.value">{{#if (eq system.value null)}}—{{else}}{{system.value}}{{/if}}</span>
+  <div class="controls">
+    <a data-action="postItem" data-tooltip="ELARIA.Mastery.postHint"><i class="fa-solid fa-comment"></i></a>
+    <a data-action="editItem" data-tooltip="ELARIA.Edit"><i class="fa-solid fa-pen-to-square"></i></a>
+    <a data-action="deleteItem" data-tooltip="ELARIA.Delete"><i class="fa-solid fa-trash"></i></a>
+  </div>
+</li>

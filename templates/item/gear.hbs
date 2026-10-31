@@ -1,0 +1,87 @@
+{{#if editing}}
+<section class="mastery-sheet editing">
+  <header class="sheet-header">
+    <img class="portrait" src="{{item.img}}" alt="" data-action="editImage" data-edit="img">
+    <input class="name" type="text" name="name" value="{{item.name}}">
+    <a class="edit-mode on" data-action="toggleEdit" data-tooltip="ELARIA.Mastery.doneEditing"><i class="fa-solid fa-check"></i></a>
+  </header>
+  {{#if system.ref}}<p class="imported-note"><i class="fa-solid fa-file-import"></i> {{localize "ELARIA.Mastery.imported"}} · <code>{{system.ref}}</code></p>{{/if}}
+  <div class="grid">
+    <label><span>{{localize "ELARIA.Gear.kindLabel"}}</span>
+      <select name="system.kind">{{selectOptions kinds selected=system.kind}}</select></label>
+    <label><span>{{localize "ELARIA.Gear.quantity"}}</span>
+      <input type="number" name="system.quantity" value="{{system.quantity}}" min="0" step="1"></label>
+    <label><span>{{localize "ELARIA.Gear.family"}}</span>
+      <input type="text" name="system.family" value="{{system.family}}" placeholder="Straight Sword"></label>
+    <label><span>{{localize "ELARIA.Mastery.FIELDS.reqLevel"}}</span>
+      <input type="number" name="system.reqLevel" value="{{system.reqLevel}}" min="0" step="1" placeholder="—"></label>
+    {{#if (eq system.kind "weapon")}}
+    <label><span>{{localize "ELARIA.Gear.baseAttack"}}</span>
+      <input type="text" name="system.baseAttack.raw" value="{{system.baseAttack.raw}}" placeholder="2d6+Str"></label>
+    <label><span>{{localize "ELARIA.Gear.damageType"}}</span>
+      <input type="text" name="system.damageType" value="{{system.damageType}}" placeholder="Phy. Slashing"></label>
+    {{/if}}
+    {{#if (eq system.kind "armour")}}
+    <label><span>AAR</span>
+      <input type="number" name="system.armourRating" value="{{system.armourRating}}" min="0" step="1"></label>
+    <label><span>{{localize "ELARIA.Gear.weight"}}</span>
+      <input type="text" name="system.weight" value="{{system.weight}}" placeholder="light"></label>
+    {{/if}}
+    <label><span>{{localize "ELARIA.Gear.affinity"}}</span>
+      <input type="text" name="system.affinity" value="{{system.affinity}}" placeholder="Fire"></label>
+    <label><span>{{localize "ELARIA.Gear.equipLoad"}}</span>
+      <input type="number" name="system.equipLoad" value="{{system.equipLoad}}" min="0" step="1" placeholder="—"></label>
+    <label><span>{{localize "ELARIA.Gear.breakpoint"}}</span>
+      <input type="number" name="system.breakpoint" value="{{system.breakpoint}}" min="0" step="1" placeholder="—"></label>
+    <label><span>{{localize "ELARIA.Gear.materials"}}</span>
+      <input type="text" name="system.materials" value="{{system.materials}}" placeholder="2 Metal, 1 Wood"></label>
+    <label class="wide"><span>{{localize "ELARIA.Mastery.FIELDS.tags"}}</span>
+      <input type="text" name="tagsText" value="{{tagsText}}" placeholder="Sword, 1 handed, Melee"></label>
+    <label class="checkbox wide"><input type="checkbox" name="system.broken" {{checked system.broken}}> {{localize "ELARIA.Gear.broken"}}</label>
+  </div>
+  <fieldset class="details">
+    <legend>{{localize "ELARIA.Gear.effects"}}</legend>
+    <prose-mirror name="system.effects" value="{{system.effects}}" toggled {{#unless editable}}disabled{{/unless}}>{{{effectsHTML}}}</prose-mirror>
+  </fieldset>
+  <fieldset class="details">
+    <legend>{{localize "ELARIA.Monster.description"}}</legend>
+    <prose-mirror name="system.description" value="{{system.description}}" toggled {{#unless editable}}disabled{{/unless}}>{{{descriptionHTML}}}</prose-mirror>
+  </fieldset>
+</section>
+{{else}}
+<section class="mastery-sheet mastery-view">
+  <header class="mv-header">
+    <img class="mv-icon" src="{{item.img}}" alt="">
+    <div class="mv-title">
+      <h1>{{item.name}}</h1>
+      <div class="mv-sub">{{kindLabel}}{{#if system.classTrinket}} · {{localize "ELARIA.Gear.classTrinket"}}{{/if}}{{#if system.family}} · {{system.family}}{{/if}}{{#if system.tier}} · {{localize "ELARIA.Gear.tierN" n=system.tier}}{{/if}}</div>
+    </div>
+    <div class="mv-actions">
+      {{#if canRoll}}<a class="mv-btn roll" data-action="rollDamage" data-tooltip="ELARIA.Gear.rollAttack"><i class="fa-solid fa-dice"></i></a>{{/if}}
+      <a class="mv-btn" data-action="postToChat" data-tooltip="ELARIA.Mastery.postHint"><i class="fa-solid fa-comment"></i></a>
+      {{#if editable}}<a class="mv-btn" data-action="toggleEdit" data-tooltip="ELARIA.Edit"><i class="fa-solid fa-pen"></i></a>{{/if}}
+    </div>
+  </header>
+  <div class="mv-badges">
+    <span class="badge cat">{{kindLabel}}</span>
+    {{#if (ne system.reqLevel null)}}<span class="badge {{#if system.levelTooHigh}}warn{{/if}}">{{localize "ELARIA.Mastery.FIELDS.reqLevel"}} {{system.reqLevel}}</span>{{/if}}
+    {{#if owned}}<span class="badge {{#if system.equipped}}equipped{{/if}}">{{locationLabel}}{{#if (gt system.quantity 1)}} · ×{{system.quantity}}{{/if}}</span>{{/if}}
+    {{#if system.broken}}<span class="badge warn">{{localize "ELARIA.Gear.broken"}}</span>{{/if}}
+    {{#if system.evolvesFrom}}<span class="badge">{{localize "ELARIA.Gear.evolvesFrom"}} {{system.evolvesFrom}}</span>{{/if}}
+  </div>
+  {{#if statBlocks.length}}
+  <dl class="mv-stats">
+    {{#each statBlocks}}<div class="mv-stat"><dt>{{label}}</dt><dd>{{value}}</dd></div>{{/each}}
+  </dl>
+  {{/if}}
+  {{#if system.grants}}<p class="mv-req"><i class="fa-solid fa-star"></i> <b>{{localize "ELARIA.Gear.grants"}}:</b> {{system.grants}}</p>{{/if}}
+  <div class="mv-details">
+    {{#if effectsHTML}}{{{effectsHTML}}}{{else}}<p class="empty">{{localize "ELARIA.Gear.noEffects"}}</p>{{/if}}
+    {{#if descriptionHTML}}<div class="gear-description">{{{descriptionHTML}}}</div>{{/if}}
+  </div>
+  {{#if system.materials}}<p class="mv-req materials"><i class="fa-solid fa-hammer"></i> <b>{{localize "ELARIA.Gear.materials"}}:</b> {{system.materials}}</p>{{/if}}
+  {{#if system.tags.length}}
+  <div class="mv-tags">{{#each system.tags}}<span class="chip">{{this}}</span>{{/each}}</div>
+  {{/if}}
+</section>
+{{/if}}

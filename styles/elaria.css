@@ -1,0 +1,848 @@
+/* Elaria system styles. Everything is scoped under .elaria so core and other modules are untouched. */
+
+.elaria {
+  --el-ink: #2b2118;
+  --el-muted: #6f6253;
+  --el-paper: #f4ecdd;
+  --el-panel: #ebe0cb;
+  --el-line: #c9b896;
+  --el-accent: #7a2e1d;
+  --el-accent-soft: #a8543f;
+  --el-good: #3f6b3a;
+  --el-bad: #b3261e;
+  --el-hp: #a3352a;
+  --el-mp: #2f5c9a;
+  --el-ftg: #4f8a3c;
+  --el-radius: 6px;
+}
+
+.elaria.sheet.character { min-width: 700px; min-height: 500px; }
+
+.application.elaria.sheet .window-content {
+  background: var(--el-paper);
+  color: var(--el-ink);
+  padding: 0;
+  gap: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.elaria input[type="number"] { text-align: center; }
+.application.elaria :is(input[type="number"], input[type="text"], select) {
+  background: rgba(255, 255, 255, 0.55); border: 1px solid var(--el-line); color: var(--el-ink); box-shadow: none;
+}
+.application.elaria :is(input[type="number"], input[type="text"], select):focus {
+  border-color: var(--el-accent); box-shadow: 0 0 0 1px var(--el-accent);
+}
+.elaria .over, .elaria .over b, .elaria em { color: var(--el-bad); }
+.elaria em { font-style: normal; font-weight: bold; }
+.elaria .hint { color: var(--el-muted); font-size: var(--font-size-12, 12px); margin: 0.5rem 0 0; }
+.elaria a[data-action] { cursor: pointer; }
+.elaria .chip {
+  display: inline-block; padding: 1px 8px; margin: 2px 4px 2px 0;
+  border: 1px solid var(--el-line); border-radius: 999px; background: var(--el-panel); font-size: 12px;
+}
+.elaria label.checkbox { display: inline-flex; align-items: center; gap: 4px; }
+
+/* ---------------- Header (layout A: portrait column) ---------------- */
+
+.elaria .sheet-header {
+  display: grid; grid-template-columns: 130px minmax(0, 1fr); gap: 12px; padding: 10px 12px; margin: 0; flex: 0 0 auto;
+  align-items: stretch;
+  background: var(--el-panel); border-bottom: 2px solid var(--el-line);
+}
+.elaria .header-side .portrait {
+  display: block; width: 130px; height: 130px; object-fit: cover; margin-bottom: 6px;
+  border: 2px solid var(--el-line); border-radius: var(--el-radius); cursor: pointer;
+}
+/* Compact identity list: tiny label column + value, so the side column stays no taller than the vitals. */
+.application.elaria .header-side dl.identity {
+  display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 1px 6px; margin: 0; font-size: 12px; line-height: 1.25;
+}
+.application.elaria .header-side dl.identity dt {
+  font-weight: normal; color: var(--el-muted); font-size: 9px; text-transform: uppercase; letter-spacing: 0.04em;
+  padding-top: 2px; margin: 0;
+}
+.application.elaria .header-side dl.identity dd { margin: 0; overflow-wrap: anywhere; }
+.application.elaria .header-side dl.identity dd.chips { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 2px; }
+.elaria .header-side dl.identity .chip { margin: 0 2px 1px 0; padding: 0 5px; font-size: 10px; line-height: 15px; }
+.elaria .header-side dl.identity select { width: 100%; height: 22px; font-size: 12px; }
+
+.elaria .header-main { display: flex; flex-direction: column; justify-content: space-between; gap: 6px; min-width: 0; }
+.elaria .identity-row { display: flex; gap: 8px; align-items: center; }
+.application.elaria .identity-row input.name {
+  flex: 1; min-width: 0; font-size: 22px; height: 32px; font-family: var(--font-h1, serif);
+  background: transparent; border: none; border-bottom: 1px solid var(--el-line); border-radius: 0; box-shadow: none;
+}
+.elaria .identity-row .level { display: flex; align-items: center; gap: 4px; font-weight: bold; }
+.elaria .identity-row .level input { width: 42px; }
+
+.elaria .resources {
+  display: flex; flex-direction: column; gap: 4px; padding: 6px 8px;
+  border: 1px solid var(--el-line); border-radius: var(--el-radius); background: var(--el-paper);
+}
+.elaria .resource {
+  display: grid; grid-template-columns: 32px 18px 40px 18px auto minmax(40px, 1fr) auto; align-items: center; gap: 4px;
+}
+.elaria .resource .resource-label { font-weight: bold; }
+.elaria .resource input[type="number"] { width: 40px; height: 24px; padding: 0 2px; }
+.elaria .resource .max { color: var(--el-muted); white-space: nowrap; }
+.elaria .resource .step {
+  width: 18px; height: 18px; display: inline-flex; align-items: center; justify-content: center; font-size: 9px;
+  border: 1px solid var(--el-line); border-radius: 50%; color: var(--el-muted); background: var(--el-panel);
+}
+.elaria .resource .step:hover { color: white; background: var(--el-accent); border-color: var(--el-accent); }
+.elaria .resource .bar { height: 7px; background: var(--el-line); border-radius: 4px; overflow: hidden; }
+.elaria .resource .bar .fill { height: 100%; background: var(--el-accent); }
+.elaria .resource.hp .fill { background: var(--el-hp); }
+.elaria .resource.mp .fill { background: var(--el-mp); }
+.elaria .resource.ftg .fill { background: var(--el-ftg); }
+.elaria .resource .temp { display: flex; align-items: center; gap: 3px; color: var(--el-muted); font-size: 11px; }
+.elaria .resource .temp input[type="number"] { width: 32px; height: 20px; font-size: 12px; }
+
+.elaria .status-row, .elaria .combat-row { display: flex; align-items: center; gap: 6px 12px; flex-wrap: wrap; }
+.elaria .resource.life { grid-template-columns: 32px auto 1fr auto; }
+.elaria .resource.life .restore {
+  justify-self: end; display: inline-flex; align-items: center; gap: 4px; padding: 1px 8px; font-size: 12px; white-space: nowrap;
+  color: var(--el-muted); border: 1px solid var(--el-line); border-radius: var(--el-radius); background: var(--el-panel);
+}
+.elaria .resource.life .restore:hover { color: var(--el-accent); border-color: var(--el-accent); text-shadow: none; }
+.elaria .resource.life .max { font-size: 12px; }
+.elaria .pips { display: flex; justify-content: center; align-items: center; gap: 4px; }
+.elaria .pip { width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--el-accent); background: transparent; }
+.elaria .pip.filled { background: var(--el-accent); }
+.elaria .conditions { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: center; }
+.elaria .conditions label { display: flex; align-items: center; gap: 3px; }
+.elaria .conditions input[type="number"] { width: 34px; height: 22px; padding: 0 2px; }
+.elaria .conditions .of { color: var(--el-muted); }
+
+.elaria .derived { display: flex; flex-wrap: wrap; gap: 3px 12px; }
+.elaria .combat-row .actions { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+.application.elaria .combat-row a.initiative {
+  display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; white-space: nowrap;
+  border: 1px solid var(--el-accent); border-radius: var(--el-radius);
+  background: var(--el-paper); color: var(--el-accent); font-weight: normal; text-shadow: none;
+}
+.application.elaria .combat-row a.initiative b { font-weight: bold; }
+.elaria .derived span { color: var(--el-muted); }
+.elaria .derived b { color: var(--el-ink); font-weight: bold; }
+.application.elaria .combat-row a.initiative:hover {
+  background: var(--el-accent); color: #fff8ee; text-shadow: none; box-shadow: none;
+}
+
+.elaria .edit-mode {
+  width: 28px; height: 28px; flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center;
+  border: 1px solid var(--el-line); border-radius: var(--el-radius); color: var(--el-muted);
+}
+.elaria .edit-mode.on { color: white; background: var(--el-accent); border-color: var(--el-accent); }
+.elaria .editing { outline: 1px dashed var(--el-accent); outline-offset: 2px; border-radius: 3px; }
+
+/* ---------------- Tabs ---------------- */
+
+/* Foundry's core sheet-tabs stretch each tab across the full width; keep ours compact and left-aligned. */
+.application.elaria.sheet nav.tabs {
+  flex: 0 0 auto; display: flex; justify-content: flex-start; gap: 0; margin: 0; padding: 0 12px;
+  height: auto; min-height: 0; border: none; border-bottom: 1px solid var(--el-line); background: var(--el-panel);
+}
+.application.elaria.sheet nav.tabs > [data-tab] {
+  flex: 0 0 auto; padding: 6px 14px; margin: 0; height: auto; font-weight: bold; color: var(--el-muted);
+  border: none; border-bottom: 3px solid transparent; border-radius: 0; background: none; text-shadow: none;
+}
+.application.elaria.sheet nav.tabs > [data-tab].active {
+  color: var(--el-accent); border-bottom-color: var(--el-accent);
+}
+.elaria .tab { padding: 10px 12px; }
+.elaria section.tab:not(.active) { display: none; }
+.elaria section.tab.active { flex: 1; overflow-y: auto; }
+
+/* ---------------- Stats ---------------- */
+
+.elaria .stats-layout { display: grid; grid-template-columns: minmax(0, 1fr) 230px; gap: 12px; }
+.elaria .stat-row {
+  display: grid; grid-template-columns: 58px minmax(0, 1fr) 34px 46px 46px 50px; gap: 5px; align-items: center;
+  padding: 2px 4px; border-radius: 4px;
+}
+.elaria .stat-row:not(.heading):hover { background: var(--el-panel); }
+.elaria .stat-row.heading { font-size: 11px; text-transform: uppercase; color: var(--el-muted); }
+.elaria .stat-row.heading span:not(:nth-child(2)) { text-align: center; }
+.elaria .stat-row select { height: 24px; font-size: 12px; width: 58px; padding: 0 2px; }
+.elaria .stat-row select.bst { color: var(--el-good); font-weight: bold; }
+.elaria .stat-row select.null { color: var(--el-bad); }
+.elaria .stat-row .stat-name { font-weight: bold; }
+.elaria .stat-row.minor .stat-name { font-weight: normal; }
+.elaria .stat-row .stat-name small { color: var(--el-muted); font-weight: normal; font-size: 10px; margin-left: 4px; }
+.elaria .stat-row .total { text-align: center; color: var(--el-muted); }
+.elaria .stat-row .stat-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.elaria .stat-row input { height: 24px; width: 100%; }
+.elaria .stat-row.over input[name$=".points"] { border-color: var(--el-bad); color: var(--el-bad); }
+.elaria .stat-row .mod {
+  text-align: center; font-weight: bold; font-size: 16px; padding: 1px 0;
+  border: 1px solid var(--el-line); border-radius: var(--el-radius); background: var(--el-panel);
+}
+.elaria .stat-row .mod:hover { background: var(--el-accent); color: white; }
+.elaria .stat-group h4 {
+  margin: 8px 0 2px; padding-bottom: 2px; border-bottom: 1px solid var(--el-line);
+  font-size: 13px; color: var(--el-accent); text-transform: uppercase; letter-spacing: 0.05em;
+}
+.elaria .stat-footer {
+  display: flex; flex-wrap: wrap; gap: 6px 16px; align-items: center; margin-top: 10px; padding-top: 8px;
+  border-top: 1px solid var(--el-line);
+}
+.elaria .stat-footer .warning { color: var(--el-bad); }
+
+.elaria .derived-panel {
+  padding: 8px 10px; background: var(--el-panel); border: 1px solid var(--el-line); border-radius: var(--el-radius);
+  align-self: start;
+}
+/* Foundry styles every table (borders, header background); reset all of it first. */
+.application.elaria table.substats,
+.application.elaria table.substats :is(thead, tbody, tr, th, td) {
+  border: none; background: none; box-shadow: none; text-shadow: none; outline: none;
+}
+.elaria table.substats { width: 100%; border-collapse: collapse; margin: 0 0 8px; }
+.elaria table.substats th {
+  font-size: 10px; font-weight: normal; text-transform: uppercase; color: var(--el-muted); text-align: center; padding: 2px;
+}
+.elaria table.substats th.label {
+  text-align: left; font-size: 13px; font-weight: bold; color: var(--el-accent); padding-left: 0;
+}
+.elaria table.substats tr:nth-child(odd), .elaria table.substats tr:nth-child(even) { background: none; }
+.elaria table.substats td { padding: 1px 2px; text-align: center; border: none; }
+.elaria table.substats td.label { text-align: left; color: var(--el-muted); padding-left: 0; }
+.elaria table.substats td.base { color: var(--el-muted); }
+.elaria table.substats td.total { font-weight: bold; min-width: 34px; }
+.elaria table.substats tr.strong td.label { color: var(--el-ink); font-weight: bold; }
+.elaria table.substats input { width: 36px; height: 22px; padding: 0 2px; }
+
+/* ---------------- Resistances ---------------- */
+
+.elaria .resistances { margin-top: 12px; padding-top: 6px; border-top: 1px solid var(--el-line); }
+.elaria .resistances h4, .elaria .resistances h5 {
+  margin: 4px 0 6px; color: var(--el-accent); text-transform: uppercase; font-size: 13px; border: none;
+}
+.elaria .resistances h5 { font-size: 12px; margin-top: 10px; }
+.elaria .resistances small { text-transform: none; color: var(--el-muted); font-weight: normal; }
+.elaria .resist-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 6px; }
+.elaria .resist-grid.forms { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.elaria .resist {
+  min-width: 0; display: flex; align-items: center; gap: 4px; padding: 3px 6px;
+  border: 1px solid var(--el-line); border-radius: var(--el-radius); background: var(--el-paper);
+}
+.elaria .resist .name { flex: 1; min-width: 0; font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.elaria .resist .base { font-size: 11px; color: var(--el-muted); }
+.elaria .resist input { width: 38px; height: 22px; padding: 0 2px; }
+.elaria .resist .total { min-width: 36px; text-align: right; font-weight: bold; color: var(--el-muted); }
+.elaria .resist.is-resist { border-color: var(--el-good); }
+.elaria .resist.is-resist .total { color: var(--el-good); }
+.elaria .resist.is-weak { border-color: var(--el-bad); }
+.elaria .resist.is-weak .total { color: var(--el-bad); }
+
+/* ---------------- Masteries ---------------- */
+
+.elaria .output-bar {
+  display: flex; gap: 10px; align-items: center; padding: 6px 10px; margin-bottom: 8px;
+  background: var(--el-panel); border: 1px solid var(--el-line); border-radius: var(--el-radius);
+}
+.elaria .output-bar .create { margin-left: auto; }
+.elaria .sources { margin-bottom: 8px; }
+.elaria .sources .label { color: var(--el-muted); margin-right: 6px; }
+.elaria .category { margin-bottom: 10px; }
+.elaria .category > header {
+  display: flex; justify-content: space-between; align-items: baseline;
+  border-bottom: 1px solid var(--el-line); margin-bottom: 4px;
+}
+.elaria .category > header h4 { margin: 0; color: var(--el-accent); text-transform: uppercase; font-size: 13px; }
+.elaria .mastery-list { list-style: none; margin: 0; padding: 0; }
+.elaria .mastery-list .empty { color: var(--el-muted); font-style: italic; padding: 2px 4px; }
+.elaria .mastery {
+  display: flex; align-items: center; gap: 8px; padding: 4px; border-radius: 4px;
+}
+.elaria .mastery:hover { background: var(--el-panel); }
+.elaria .mastery img { width: 28px; height: 28px; border: none; }
+.elaria .mastery .equip { color: var(--el-muted); }
+.elaria .mastery .equip.on { color: var(--el-good); }
+.elaria .mastery-main { flex: 1; min-width: 0; }
+.elaria .mastery-name { font-weight: bold; }
+.elaria .mastery-meta { display: flex; flex-wrap: wrap; gap: 2px 8px; font-size: 11px; color: var(--el-muted); }
+.elaria .mastery-meta .tag { border: 1px solid var(--el-line); border-radius: 999px; padding: 0 5px; }
+.elaria .mastery-meta .bad, .elaria .mastery.too-high .mastery-name { color: var(--el-bad); }
+.elaria .mastery select { width: 100px; height: 24px; font-size: 12px; }
+.elaria .mastery .value {
+  width: 26px; height: 26px; line-height: 24px; text-align: center; font-weight: bold;
+  border: 1px solid var(--el-line); border-radius: 50%; background: var(--el-paper);
+}
+.elaria .mastery .controls { display: flex; gap: 6px; color: var(--el-muted); }
+
+/* ---------------- Bio ---------------- */
+
+.elaria .bio-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.elaria fieldset { border: 1px solid var(--el-line); border-radius: var(--el-radius); padding: 6px 10px 8px; }
+.elaria fieldset legend { color: var(--el-accent); font-weight: bold; padding: 0 4px; }
+.elaria .bio-grid label { display: grid; grid-template-columns: 110px 1fr; align-items: center; gap: 6px; margin: 3px 0; }
+.elaria .bio-grid .combos { margin: 6px 0 0; }
+.elaria .bio-split { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 10px; align-items: stretch; }
+.elaria .bio-split fieldset { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.elaria .bio-split prose-mirror { flex: 1; min-height: 160px; }
+.elaria .bio-split .biography prose-mirror { min-height: 300px; }
+.elaria .bio-split .label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--el-muted); }
+.elaria .burst-stats { display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: center; }
+.elaria .burst-stats label { display: flex; align-items: center; gap: 4px; }
+.elaria .burst-stats input[type="number"] { width: 38px; height: 22px; }
+.elaria .burst-stats input[type="text"] { width: 90px; height: 22px; }
+.elaria .burst-stats .of { color: var(--el-muted); }
+.elaria .burst-trigger { font-size: 12px; line-height: 1.35; }
+.elaria .burst-trigger .label { display: block; }
+.elaria .burst-trigger p { margin: 0 0 3px; }
+.elaria .burst-trigger .motto { display: block; color: var(--el-muted); font-size: 11px; font-style: italic; }
+.elaria .burst-stats select { height: 22px; font-size: 12px; }
+.elaria .burst-max { min-width: 18px; text-align: center; }
+.elaria .bio-grid .warning { margin: 2px 0 0; color: var(--el-bad); font-size: 12px; }
+.elaria .burst-trigger .muted { color: var(--el-muted); font-weight: normal; font-style: italic; }
+.elaria .burst-sources summary { cursor: pointer; font-size: 12px; color: var(--el-accent); }
+.elaria .burst-sources ul { list-style: none; margin: 4px 0; padding: 0; font-size: 12px; }
+.elaria .burst-sources li { display: flex; justify-content: space-between; border-bottom: 1px dotted var(--el-line); padding: 1px 0; }
+.elaria .burst-sources .hint { margin: 4px 0 0; }
+
+/* ---------------- Mastery item sheet ---------------- */
+
+.elaria.mastery .mastery-sheet { display: flex; flex-direction: column; gap: 10px; padding: 10px 12px; height: 100%; }
+.elaria.mastery .sheet-header { align-items: center; background: none; border: none; padding: 0; }
+.elaria.mastery .sheet-header .portrait { width: 52px; height: 52px; }
+.elaria.mastery .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 12px; }
+.elaria.mastery .grid label:not(.checkbox) { display: flex; flex-direction: column; gap: 2px; font-size: 12px; color: var(--el-muted); }
+.elaria.mastery .grid .wide { grid-column: 1 / -1; }
+.elaria.mastery fieldset.details { flex: 1; }
+.elaria.mastery .imported-note { margin: 0; font-size: 12px; color: var(--el-muted); }
+.elaria.mastery .imported-note code { font-size: 11px; }
+.elaria.mastery .imported-note .unverified { margin-left: 6px; color: var(--el-bad); }
+.elaria.mastery .grid p { margin: 0; font-size: 12px; }
+.elaria.mastery .grid .label { color: var(--el-muted); }
+.elaria.mastery .usage { display: flex; gap: 4px; }
+.elaria.mastery .usage input { width: 54px; }
+.elaria.mastery .usage select { flex: 1; }
+.elaria.mastery fieldset.details prose-mirror { min-height: 180px; }
+
+/* ---------------- Chat card ---------------- */
+
+.elaria.chat-card header { display: flex; align-items: center; gap: 6px; }
+.elaria.chat-card header img { width: 32px; height: 32px; border: none; }
+.elaria.chat-card header h3 { margin: 0; border: none; }
+.elaria.chat-card dl { display: grid; grid-template-columns: auto 1fr; gap: 1px 8px; margin: 6px 0; }
+.chat-message .elaria.chat-card dt,
+.elaria.chat-card dt {
+  font-family: var(--font-body, inherit); font-weight: bold; color: #4b3b2a; text-shadow: none; filter: none;
+}
+.chat-message .elaria.chat-card dd,
+.elaria.chat-card dd { margin: 0; color: #191813; text-shadow: none; }
+.elaria.chat-card .tags span {
+  display: inline-block; font-size: 11px; border: 1px solid #999; border-radius: 999px; padding: 0 6px; margin: 1px;
+}
+
+/* ---------------- Data importer ---------------- */
+
+.application.elaria.data-importer .window-content { padding: 10px 12px; background: var(--el-paper); color: var(--el-ink); }
+.elaria.data-importer .importer { display: flex; flex-direction: column; gap: 10px; }
+.elaria.data-importer .intro { margin: 0; }
+.elaria.data-importer fieldset { border: 1px solid var(--el-line); border-radius: var(--el-radius); padding: 6px 10px 8px; }
+.elaria.data-importer legend { color: var(--el-accent); font-weight: bold; padding: 0 4px; }
+.elaria.data-importer .path-row { display: flex; gap: 6px; align-items: center; }
+.elaria.data-importer .path-row input { flex: 1; height: 28px; text-align: left; }
+.elaria.data-importer .path-row button { flex: 0 0 auto; width: auto; height: 28px; padding: 0 10px; white-space: nowrap; }
+.elaria.data-importer code { font-size: 11px; word-break: break-all; }
+.elaria.data-importer .importer-progress .bar { height: 10px; border-radius: 5px; background: var(--el-line); overflow: hidden; }
+.elaria.data-importer .importer-progress .fill { height: 100%; background: var(--el-accent); transition: width 0.2s; }
+.elaria.data-importer .importer-progress .label { font-size: 12px; color: var(--el-muted); }
+.elaria.data-importer .error { margin: 0; color: var(--el-bad); font-weight: bold; }
+.elaria.data-importer .error.small { font-size: 12px; font-weight: normal; margin-top: 4px; }
+.elaria.data-importer .hint .fa-lock { color: var(--el-good); }
+.elaria.data-importer ul.tags { columns: 3; list-style: none; padding-left: 4px; }
+.elaria.data-importer ul.tags .count { color: var(--el-muted); }
+.elaria.data-importer .done { margin: 0; color: var(--el-good); font-weight: bold; }
+.elaria.data-importer .meta { margin: 0 0 6px; font-size: 12px; }
+.application.elaria.data-importer table.diff,
+.application.elaria.data-importer table.diff :is(thead, tbody, tfoot, tr, th, td) { border: none; background: none; text-shadow: none; }
+.elaria.data-importer table.diff { width: 100%; border-collapse: collapse; margin: 0 0 6px; }
+.elaria.data-importer table.diff th { font-size: 11px; color: var(--el-muted); font-weight: normal; text-transform: uppercase; }
+.elaria.data-importer table.diff td, .elaria.data-importer table.diff th { text-align: center; padding: 2px 4px; }
+.elaria.data-importer table.diff .l { text-align: left; }
+.elaria.data-importer table.diff tbody tr { border-top: 1px solid var(--el-line); }
+.elaria.data-importer table.diff tfoot td { font-weight: bold; border-top: 2px solid var(--el-line); }
+.elaria.data-importer table.diff .hl { color: var(--el-good); font-weight: bold; }
+.elaria.data-importer table.diff .warn { color: var(--el-bad); font-weight: bold; }
+.elaria.data-importer .new-pack { font-size: 11px; color: var(--el-muted); font-weight: normal; }
+.elaria.data-importer details { font-size: 12px; margin: 2px 0; }
+.elaria.data-importer details ul { margin: 4px 0; padding-left: 18px; max-height: 160px; overflow-y: auto; }
+.elaria.data-importer .buttons { display: flex; justify-content: flex-end; }
+.elaria.data-importer .buttons button { width: auto; padding: 0 16px; height: 32px; }
+.elaria-import-button { margin-top: 4px; width: 100%; }
+
+/* ---------------- Mastery item sheet: read-only view ---------------- */
+
+.elaria.mastery .mastery-sheet.editing .sheet-header { display: flex; gap: 8px; }
+.elaria.mastery .mastery-sheet.editing .sheet-header .name { flex: 1; height: 32px; font-size: 18px; }
+.elaria.mastery .mastery-sheet.editing .sheet-header .checkbox { display: flex; align-items: center; gap: 3px; white-space: nowrap; }
+.elaria.mastery .mastery-view { gap: 12px; padding: 14px 16px; }
+.elaria.mastery .mv-header { display: flex; align-items: center; gap: 12px; padding-bottom: 10px; border-bottom: 2px solid var(--el-line); }
+.elaria.mastery .mv-icon { width: 56px; height: 56px; flex: 0 0 auto; border: 2px solid var(--el-line); border-radius: var(--el-radius); background: var(--el-panel); }
+.elaria.mastery .mv-title { flex: 1; min-width: 0; }
+.elaria.mastery .mv-title h1 {
+  margin: 0; border: none; font-size: 22px; line-height: 1.15; color: var(--el-accent);
+  font-family: var(--font-h1, var(--font-primary)); font-weight: bold;
+}
+.elaria.mastery .mv-sub { margin-top: 3px; font-size: 12px; color: var(--el-muted); }
+.elaria.mastery .mv-actions { display: flex; gap: 4px; align-self: flex-start; }
+.elaria.mastery .mv-btn {
+  width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center;
+  border: 1px solid var(--el-line); border-radius: var(--el-radius); color: var(--el-muted); background: var(--el-paper);
+}
+.elaria.mastery .mv-btn:hover { color: white; background: var(--el-accent); border-color: var(--el-accent); text-shadow: none; }
+.elaria.mastery .mv-badges { display: flex; flex-wrap: wrap; gap: 5px; }
+.elaria.mastery .badge {
+  display: inline-flex; align-items: center; gap: 4px; padding: 1px 9px; font-size: 12px;
+  border: 1px solid var(--el-line); border-radius: 999px; background: var(--el-panel); color: var(--el-ink);
+}
+.elaria.mastery .badge.cat { background: var(--el-accent); border-color: var(--el-accent); color: white; font-weight: bold; }
+.elaria.mastery .badge.cat.none { background: var(--el-muted); border-color: var(--el-muted); }
+.elaria.mastery .badge.rxn { border-color: var(--el-mp); color: var(--el-mp); }
+.elaria.mastery .badge.equipped { border-color: var(--el-good); color: var(--el-good); }
+.elaria.mastery .badge.warn { border-style: dashed; color: var(--el-muted); background: transparent; }
+.elaria.mastery .mv-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 6px; margin: 0; }
+.elaria.mastery .mv-stat {
+  border: 1px solid var(--el-line); border-radius: var(--el-radius); background: rgba(255, 255, 255, 0.45);
+  padding: 4px 8px; text-align: center;
+}
+.elaria.mastery .mv-stat dt { font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--el-muted); }
+.elaria.mastery .mv-stat dd { margin: 1px 0 0; font-size: 15px; font-weight: bold; color: var(--el-ink); }
+.elaria.mastery .mv-req {
+  margin: 0; padding: 5px 8px; font-size: 12px; border-left: 3px solid var(--el-accent-soft);
+  background: rgba(168, 84, 63, 0.08); border-radius: 0 var(--el-radius) var(--el-radius) 0;
+}
+.elaria.mastery .mv-req .fa-lock { color: var(--el-accent-soft); }
+.elaria.mastery .mv-details { flex: 1; font-size: 14px; line-height: 1.45; }
+.elaria.mastery .mv-details p { margin: 0 0 0.6em; }
+.elaria.mastery .mv-details .empty { color: var(--el-muted); font-style: italic; }
+.elaria.mastery .mv-tags { display: flex; flex-wrap: wrap; gap: 4px; padding-top: 8px; border-top: 1px solid var(--el-line); }
+.elaria.mastery .mv-footer { font-size: 11px; color: var(--el-muted); }
+
+/* ---------------- Add mastery dialog & picker ---------------- */
+
+.application.elaria.add-mastery-dialog .form-footer button { white-space: nowrap; }
+
+.application.elaria.mastery-picker .window-content { padding: 0; background: var(--el-paper); color: var(--el-ink); }
+.elaria.mastery-picker .picker { display: flex; flex-direction: column; height: 100%; min-height: 0; }
+.elaria.mastery-picker .filters {
+  display: flex; flex-direction: column; gap: 6px; padding: 10px 12px 8px;
+  background: var(--el-panel); border-bottom: 2px solid var(--el-line);
+}
+.elaria.mastery-picker .search-row { display: flex; align-items: center; gap: 6px; }
+.elaria.mastery-picker .search-row > .fa-magnifying-glass { color: var(--el-muted); }
+.elaria.mastery-picker .search-row input { flex: 1; height: 30px; font-size: 14px; }
+.elaria.mastery-picker .search-row .clear { color: var(--el-muted); padding: 0 4px; }
+.elaria.mastery-picker .select-row { display: flex; gap: 6px; }
+.elaria.mastery-picker .select-row select { flex: 1; min-width: 0; height: 26px; }
+.elaria.mastery-picker .check-row { display: flex; align-items: center; gap: 14px; font-size: 12px; }
+.elaria.mastery-picker .check-row label { display: flex; align-items: center; gap: 4px; }
+.elaria.mastery-picker .check-row input { margin: 0; }
+.elaria.mastery-picker .count { margin-left: auto; color: var(--el-muted); }
+.elaria.mastery-picker .results { flex: 1; min-height: 0; overflow-y: auto; list-style: none; margin: 0; padding: 4px 8px; }
+.elaria.mastery-picker .pick {
+  display: flex; align-items: center; gap: 8px; padding: 5px 6px; border-bottom: 1px solid var(--el-line); cursor: grab;
+}
+.elaria.mastery-picker .pick:hover { background: rgba(255, 255, 255, 0.5); }
+.elaria.mastery-picker .pick img { width: 32px; height: 32px; flex: 0 0 auto; border: 1px solid var(--el-line); border-radius: 4px; }
+.elaria.mastery-picker .pick-main { flex: 1; min-width: 0; }
+.elaria.mastery-picker .pick-name { font-weight: bold; color: var(--el-ink); }
+.elaria.mastery-picker .pick-name:hover { color: var(--el-accent); text-shadow: none; }
+.elaria.mastery-picker .pick-source { font-size: 11px; color: var(--el-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.elaria.mastery-picker .pick-source .pack { opacity: 0.75; }
+.elaria.mastery-picker .pick-meta { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 2px; }
+.elaria.mastery-picker .pick-meta span {
+  font-size: 11px; padding: 0 6px; border: 1px solid var(--el-line); border-radius: 999px; background: var(--el-panel);
+}
+.elaria.mastery-picker .pick-add, .elaria.mastery-picker .pick-owned {
+  width: 28px; height: 28px; flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 50%; border: 1px solid var(--el-accent); color: var(--el-accent);
+}
+.elaria.mastery-picker .pick-add:hover { background: var(--el-accent); color: white; text-shadow: none; }
+.elaria.mastery-picker .pick-add.busy { opacity: 0.4; pointer-events: none; }
+.elaria.mastery-picker .pick-owned { border-color: var(--el-good); color: var(--el-good); background: rgba(63, 107, 58, 0.1); }
+.elaria.mastery-picker .pick.owned .pick-name { color: var(--el-muted); }
+.elaria.mastery-picker .results .empty { padding: 20px; text-align: center; color: var(--el-muted); font-style: italic; }
+.elaria.mastery-picker .hint { margin: 0; padding: 6px 12px; border-top: 1px solid var(--el-line); background: var(--el-panel); }
+
+/* ---------------- Dice: chat buttons ---------------- */
+
+.elaria-dice-bar {
+  display: flex; gap: 4px; margin-top: 4px; flex: 0 0 auto; width: 100%; box-sizing: border-box;
+  position: relative; z-index: 1; pointer-events: auto;
+}
+.elaria-dice-bar button { pointer-events: auto; cursor: pointer; }
+.elaria-dice-bar button {
+  flex: 1; height: 30px; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  font-weight: bold; white-space: nowrap; line-height: 1;
+}
+
+/* ---------------- Dice: roll window ---------------- */
+
+.application.elaria.roll-dialog .window-content { padding: 10px 12px 12px; background: var(--el-paper); color: var(--el-ink); }
+.elaria.roll-dialog .roll-dialog-body { display: flex; flex-direction: column; gap: 10px; }
+.elaria.roll-dialog .roll-label { margin: 0; border: none; color: var(--el-accent); }
+.elaria.roll-dialog .rows { display: flex; flex-direction: column; gap: 6px; }
+.elaria.roll-dialog .row { display: grid; grid-template-columns: 120px 1fr; align-items: center; gap: 8px; }
+.elaria.roll-dialog .row > span { font-weight: bold; color: var(--el-muted); font-size: 13px; }
+.elaria.roll-dialog .row input, .elaria.roll-dialog .row select { height: 28px; width: 100%; }
+.elaria.roll-dialog .row input[name=penalty] { width: 70px; }
+.elaria.roll-dialog .bonus-error { margin: -2px 0 0 128px; color: var(--el-bad); font-size: 12px; }
+.elaria.roll-dialog fieldset.crit { margin: 0; border: 1px solid var(--el-line); border-radius: var(--el-radius); padding: 4px 10px 8px; }
+.elaria.roll-dialog fieldset.crit legend { color: var(--el-good); font-weight: bold; padding: 0 4px; }
+.elaria.roll-dialog .crit-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.elaria.roll-dialog .crit-grid label { display: flex; flex-direction: column; gap: 2px; font-size: 12px; color: var(--el-muted); }
+.elaria.roll-dialog .pct { display: flex; align-items: center; gap: 4px; }
+.elaria.roll-dialog .pct input { width: 70px; height: 28px; text-align: center; }
+.elaria.roll-dialog .pct b { color: var(--el-ink); }
+.elaria.roll-dialog .crit .hint { margin: 6px 0 0; font-size: 11px; }
+.elaria.roll-dialog .preview-row {
+  text-align: center; padding: 6px; background: var(--el-panel); border-radius: var(--el-radius); font-size: 16px; font-weight: bold;
+}
+.elaria.roll-dialog .preview small { font-weight: normal; color: var(--el-muted); font-size: 11px; }
+.elaria.roll-dialog .preview.invalid { color: var(--el-bad); }
+.elaria.roll-dialog .roll-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.elaria.roll-dialog .roll-buttons button {
+  height: 34px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; white-space: nowrap; font-weight: bold;
+}
+.elaria.roll-dialog .roll-buttons .normal {
+  grid-column: 1 / -1; height: 40px; font-size: 16px; color: white; background: var(--el-accent); border-color: var(--el-accent);
+}
+.elaria.roll-dialog .roll-buttons .normal:hover { background: var(--el-accent-soft); }
+.elaria.roll-dialog .roll-buttons .adv { color: var(--el-good); border-color: var(--el-good); }
+.elaria.roll-dialog .roll-buttons .dis { color: var(--el-bad); border-color: var(--el-bad); }
+
+/* ---------------- Dice: chat card ---------------- */
+
+.elaria.roll-card { color: #191813; }
+.elaria.roll-card header { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
+.elaria.roll-card header img { width: 30px; height: 30px; border: 1px solid #c9b896; border-radius: 4px; flex: 0 0 auto; }
+.elaria.roll-card header .titles { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.elaria.roll-card header .note { font-size: 11px; color: #6f6253; }
+.elaria.roll-card .set { flex-wrap: wrap; }
+.chat-message .elaria.roll-card h3,
+.elaria.roll-card h3 { margin: 0; border: none; font-size: 15px; color: #7a2e1d; flex: 1; }
+.elaria.roll-card .mode { font-size: 11px; padding: 0 7px; border-radius: 999px; border: 1px solid; font-weight: bold; }
+.elaria.roll-card .mode.advantage { color: #3f6b3a; }
+.elaria.roll-card .mode.disadvantage { color: #b3261e; }
+.elaria.roll-card .sets { display: flex; flex-direction: column; gap: 3px; }
+.elaria.roll-card .set { display: flex; align-items: center; gap: 3px; }
+.elaria.roll-card .set.dropped { opacity: 0.4; text-decoration: line-through; }
+.elaria.roll-card .die {
+  min-width: 24px; height: 24px; padding: 0 3px; display: inline-flex; align-items: center; justify-content: center;
+  border: 1px solid #8a7a62; border-radius: 5px; background: #fffaf0; font-weight: bold; font-size: 13px;
+}
+.elaria.roll-card .eq { margin-left: 4px; font-weight: bold; }
+.elaria.roll-card .breakdown { margin-top: 4px; font-size: 12px; color: #4b3b2a; }
+.elaria.roll-card .breakdown small { color: #6f6253; }
+.elaria.roll-card .crit-check { display: flex; align-items: center; gap: 6px; margin-top: 5px; font-size: 12px; color: #6f6253; }
+.elaria.roll-card .crit-check .die.d100 { min-width: 30px; }
+.elaria.roll-card .crit-check.hit { color: #2f6b2a; }
+.elaria.roll-card .crit-check.hit .die { border-color: #2f6b2a; background: #e1f0d9; }
+.elaria.roll-card .results { display: grid; grid-template-columns: 1fr; gap: 4px; margin-top: 6px; }
+.elaria.roll-card .results.two { grid-template-columns: 1fr 1fr; }
+.elaria.roll-card .result {
+  display: flex; flex-direction: column; align-items: center; padding: 3px 4px;
+  border: 1px solid #c9b896; border-radius: 6px; background: rgba(255, 255, 255, 0.5);
+}
+.elaria.roll-card .result .label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; color: #6f6253; }
+.elaria.roll-card .result .value { font-size: 22px; font-weight: bold; line-height: 1.1; }
+.elaria.roll-card .result.crit { border-color: #2f6b2a; background: #e1f0d9; }
+.elaria.roll-card .result.crit .value, .elaria.roll-card .result.crit .label { color: #2f6b2a; }
+.elaria.roll-card .result.nat20 .value { color: #3f6b3a; }
+.elaria.roll-card .result.nat1 .value { color: #b3261e; }
+
+/* Placeholder (example) text in every Elaria window: italic, softer grey */
+.application.elaria input::placeholder,
+.application.elaria textarea::placeholder { font-style: italic; color: #7a7a7a; opacity: 1; }
+
+/* Roll window: where the roll came from (a mastery) */
+.elaria.roll-dialog .roll-source { display: flex; align-items: center; gap: 8px; padding-bottom: 8px; border-bottom: 1px solid var(--el-line); }
+.elaria.roll-dialog .roll-source img { width: 36px; height: 36px; border: 1px solid var(--el-line); border-radius: 4px; }
+.elaria.roll-dialog .roll-source .note { font-size: 12px; color: var(--el-muted); }
+.elaria.roll-dialog .row input.dice-input { width: 90px; text-align: center; font-weight: bold; }
+
+/* Mastery rows / view: damage masteries roll when clicked */
+.elaria .mastery-name .roll-icon { color: var(--el-accent-soft); font-size: 0.9em; }
+.elaria.mastery .mv-btn.roll { color: var(--el-accent); border-color: var(--el-accent); }
+
+/* Roll window: a non-zero injury/exhaustion penalty shows in red */
+.elaria.roll-dialog .row input[name=penalty].has-penalty {
+  color: var(--el-bad); font-weight: bold; border-color: var(--el-bad);
+  background: #fbe4dc; box-shadow: 0 0 0 1px var(--el-bad);
+}
+.elaria.roll-dialog .row:has(input.has-penalty) > span { color: var(--el-bad); }
+
+/* Stat names roll too */
+.elaria .stat-row .stat-roll { color: inherit; cursor: pointer; }
+.elaria .stat-row .stat-roll:hover { color: var(--el-accent); text-decoration: underline; text-shadow: none; }
+.elaria .mastery-list .mastery.draggable { cursor: grab; }
+
+/* Chat cards: reroll (top right), skill mod / damage buttons */
+.elaria.roll-card .reroll,
+.elaria.chat-card .reroll {
+  flex: 0 0 auto; width: 24px; height: 24px; display: inline-flex; align-items: center; justify-content: center;
+  border: 1px solid #c9b896; border-radius: 50%; color: #6f6253; background: rgba(255, 255, 255, 0.5); font-size: 12px;
+}
+.elaria.roll-card .reroll:hover { color: white; background: #7a2e1d; border-color: #7a2e1d; text-shadow: none; }
+.elaria.roll-card .skill-roll,
+.elaria.chat-card .card-buttons button {
+  display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; margin-top: 6px;
+  height: 28px; font-size: 13px; font-weight: bold; color: #2b2118; line-height: 1;
+  background: #ebe0cb; border: 1px solid #c9b896; border-radius: 6px; cursor: pointer;
+}
+.elaria.roll-card .skill-roll:hover,
+.elaria.chat-card .card-buttons button:hover { border-color: #7a2e1d; color: #7a2e1d; }
+.elaria.chat-card .card-buttons { display: flex; flex-direction: column; gap: 0; }
+
+/* Roll window: crit = base (from the sheet) + input */
+.elaria.roll-dialog .crit-grid { grid-template-columns: 1fr; gap: 6px; }
+.elaria.roll-dialog .crit-field { display: grid; grid-template-columns: 110px 1fr; align-items: center; gap: 8px; }
+.elaria.roll-dialog .crit-label { font-size: 13px; font-weight: bold; color: var(--el-muted); }
+.elaria.roll-dialog .crit-sum { display: flex; align-items: center; gap: 5px; }
+.elaria.roll-dialog .crit-sum .base {
+  min-width: 46px; height: 28px; display: inline-flex; align-items: center; justify-content: center;
+  border: 1px dashed var(--el-line); border-radius: 4px; background: var(--el-panel); font-weight: bold;
+}
+.elaria.roll-dialog .crit-sum input { width: 60px; height: 28px; text-align: center; }
+.elaria.roll-dialog .crit-sum .plus, .elaria.roll-dialog .crit-sum .eq { color: var(--el-muted); }
+.elaria.roll-dialog .crit-sum .crit-total { font-weight: bold; color: var(--el-good); min-width: 40px; }
+
+/* Roll window: hits / targets / AoE */
+.elaria.roll-dialog .row .inline { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.elaria.roll-dialog .row .inline input[name=bonus] { flex: 1; min-width: 0; }
+.elaria.roll-dialog .row input.small-num { width: 52px; text-align: center; }
+.elaria.roll-dialog .row .times { color: var(--el-muted); font-weight: bold; }
+.elaria.roll-dialog .row .unit { font-size: 12px; color: var(--el-muted); white-space: nowrap; }
+.elaria.roll-dialog .row .check { display: flex; align-items: center; gap: 4px; font-size: 12px; white-space: nowrap; }
+.elaria.roll-dialog .row .check input { margin: 0; width: auto; height: auto; }
+.elaria.roll-dialog .row .check.inactive { opacity: 0.45; }
+
+/* Roll card: several targets */
+.elaria.roll-card .roll-tags { display: flex; gap: 4px; margin: 0 0 4px; }
+.elaria.roll-card .roll-tags .tag { font-size: 11px; padding: 0 7px; border: 1px solid #c9b896; border-radius: 999px; background: #ebe0cb; }
+.elaria.roll-card .per-hit b { color: #2b2118; }
+.elaria.roll-card .aoe-shared { padding: 4px 6px; border: 1px dashed #c9b896; border-radius: 6px; margin-bottom: 4px; }
+.elaria.roll-card .aoe-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; color: #6f6253; }
+.elaria.roll-card .targets { display: flex; flex-direction: column; gap: 6px; }
+.elaria.roll-card .target { padding: 4px 6px 6px; border: 1px solid #c9b896; border-radius: 6px; background: rgba(255, 255, 255, 0.3); }
+.elaria.roll-card .target.is-crit { border-color: #2f6b2a; }
+.elaria.roll-card .target-name { font-weight: bold; font-size: 12px; color: #7a2e1d; margin-bottom: 2px; }
+.elaria.roll-card .target .results { margin-top: 4px; }
+.elaria.roll-card .target .result .value { font-size: 18px; }
+
+/* Roll window: "No reaction" skips the skill mod roll */
+.elaria.roll-dialog .roll-buttons .skip {
+  grid-column: 1 / -1; height: 32px; color: var(--el-ink); background: transparent; border: 1px dashed var(--el-muted);
+}
+.elaria.roll-dialog .roll-buttons .skip:hover { border-style: solid; border-color: var(--el-accent); color: var(--el-accent); }
+
+/* Skill mod card: carry on to damage */
+.elaria.roll-card .next-roll {
+  display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; margin-top: 6px; height: 32px;
+  font-size: 14px; font-weight: bold; line-height: 1; color: white; background: #7a2e1d; border: 1px solid #7a2e1d;
+  border-radius: 6px; cursor: pointer;
+}
+.elaria.roll-card .next-roll:hover { background: #a8543f; }
+
+/* Roll card: one row per hit */
+.elaria.roll-card .hit-list { display: flex; flex-direction: column; gap: 3px; }
+.elaria.roll-card .hit-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.elaria.roll-card .hit-row .sets { flex: 0 1 auto; }
+.elaria.roll-card .hit-row .eq { display: none; }
+.elaria.roll-card .hit-label { font-size: 11px; font-weight: bold; color: #6f6253; min-width: 34px; }
+.elaria.roll-card .hit-math { font-size: 12px; margin-left: auto; white-space: nowrap; }
+
+/* ---------------- Combat tracker: reaction pips ---------------- */
+
+.elaria-reactions { display: flex; align-items: center; gap: 4px; margin-top: 2px; flex-wrap: wrap; }
+.elaria-reactions .pip {
+  width: 13px; height: 13px; flex: 0 0 auto; border-radius: 50%;
+  border: 2px solid rgba(220, 210, 190, 0.85); background: transparent; box-sizing: border-box;
+}
+.elaria-reactions.editable .pip { cursor: pointer; }
+.elaria-reactions.editable .pip:hover { box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.35); }
+.elaria-reactions .pip.pass { background: #4caf50; border-color: #2e7d32; }
+.elaria-reactions .pip.fail { background: #e0453a; border-color: #a12a22; }
+
+/* ---------------- Monster sheet ---------------- */
+
+.elaria.monster .monster-header { display: flex; gap: 12px; padding: 10px 12px; background: var(--el-panel); border-bottom: 2px solid var(--el-line); }
+.elaria.monster .monster-header .portrait {
+  width: 120px; height: 120px; flex: 0 0 auto; object-fit: cover; border: 2px solid var(--el-line); border-radius: var(--el-radius); cursor: pointer;
+}
+.elaria.monster .monster-identity { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.elaria.monster .name-row { display: flex; align-items: center; gap: 8px; }
+.elaria.monster .name-row .name { flex: 1; height: 34px; font-size: 20px; font-weight: bold; color: var(--el-accent); }
+.elaria.monster .id-grid { display: grid; grid-template-columns: 1.2fr 60px 1fr 1.2fr; gap: 6px; }
+.elaria.monster .id-grid label { display: flex; flex-direction: column; gap: 1px; font-size: 11px; color: var(--el-muted); min-width: 0; }
+.elaria.monster .id-grid input { height: 26px; width: 100%; min-width: 0; box-sizing: border-box; }
+.elaria.monster .name-row .name { min-width: 0; }
+.elaria.monster .dc {
+  flex: 0 0 auto; font-size: 11px; padding: 1px 7px; border-radius: 999px; white-space: nowrap;
+  border: 1px dashed var(--el-accent-soft); color: var(--el-accent-soft); background: rgba(255, 255, 255, 0.4); font-weight: normal;
+}
+.elaria.monster .monster-vitals { display: flex; align-items: center; gap: 6px; min-width: 0; }
+
+.elaria.monster .m-resource {
+  flex: 1; min-width: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 3px;
+  padding: 4px 6px; border: 1px solid var(--el-line); border-radius: var(--el-radius); background: var(--el-paper);
+}
+.elaria.monster .m-resource .resource-label { font-weight: bold; font-size: 12px; margin-right: auto; }
+.elaria.monster .m-resource input { width: 46px; flex: 0 0 46px; height: 24px; text-align: center; padding: 0 2px; }
+.elaria.monster .m-resource .of { color: var(--el-muted); }
+.elaria.monster .m-resource .step {
+  width: 16px; height: 16px; flex: 0 0 16px; display: inline-flex; align-items: center; justify-content: center; font-size: 8px;
+  border: 1px solid var(--el-line); border-radius: 50%; color: var(--el-muted); background: var(--el-panel);
+}
+.elaria.monster .m-resource .step:hover { color: white; background: var(--el-accent); border-color: var(--el-accent); }
+.elaria.monster .m-resource .bar { flex: 0 0 100%; height: 5px; background: var(--el-line); border-radius: 3px; overflow: hidden; margin-top: 3px; }
+.elaria.monster .m-resource .fill { height: 100%; background: var(--el-accent); }
+.elaria.monster .m-resource.hp .fill { background: var(--el-hp); }
+.elaria.monster .m-resource.mp .fill { background: var(--el-mp); }
+.elaria.monster .m-resource.ftg .fill { background: var(--el-ftg); }
+
+.elaria.monster .tab { padding: 10px 12px; }
+.elaria.monster .section-head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.elaria.monster .section-head h3 { margin: 0; border: none; color: var(--el-accent); font-size: 16px; }
+.elaria.monster .section-head .hint { margin: 0 0 0 auto; font-size: 11px; }
+.elaria.monster .section-head .create { margin-left: auto; font-weight: bold; color: var(--el-accent); }
+.elaria.monster .m-stat-groups { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+.elaria.monster .m-stat-group h4 { margin: 0 0 4px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--el-muted); border-bottom: 1px solid var(--el-line); }
+.elaria.monster .m-stat-row { display: grid; grid-template-columns: 1fr 44px 34px; align-items: center; gap: 4px; padding: 2px 0; }
+.elaria.monster .m-stat-row .stat-roll { font-size: 13px; color: var(--el-ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.elaria.monster .m-stat-row .stat-roll:hover { color: var(--el-accent); text-decoration: underline; text-shadow: none; }
+.elaria.monster .m-stat-row input { height: 24px; text-align: center; padding: 0 2px; }
+.elaria.monster .m-stat-row .mod {
+  text-align: center; font-weight: bold; border: 1px solid var(--el-accent); border-radius: 4px; color: var(--el-accent); padding: 1px 0;
+}
+.elaria.monster .m-stat-row .mod:hover { background: var(--el-accent); color: white; text-shadow: none; }
+.elaria.monster .m-defence-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
+.elaria.monster .m-defence-grid fieldset { margin: 0; border: 1px solid var(--el-line); border-radius: var(--el-radius); padding: 4px 10px 8px; }
+.elaria.monster .m-defence-grid legend { color: var(--el-accent); font-weight: bold; padding: 0 4px; }
+.elaria.monster .m-field { display: grid; grid-template-columns: 1fr 70px; align-items: center; gap: 6px; padding: 2px 0; font-size: 13px; }
+.elaria.monster .m-field input { height: 24px; text-align: center; }
+.elaria.monster .m-field.wide { grid-template-columns: 1fr; gap: 2px; }
+.elaria.monster .m-field.wide input { text-align: left; }
+
+.elaria.monster .ability-list { list-style: none; margin: 0; padding: 0; }
+.elaria.monster .ability { display: flex; align-items: flex-start; gap: 8px; padding: 6px 4px; border-bottom: 1px solid var(--el-line); }
+.elaria.monster .ability img { width: 36px; height: 36px; flex: 0 0 auto; border: 1px solid var(--el-line); border-radius: 4px; }
+.elaria.monster .ability-main { flex: 1; min-width: 0; }
+.elaria.monster .ability-name { font-weight: bold; color: var(--el-ink); font-size: 14px; }
+.elaria.monster .ability-name:hover { color: var(--el-accent); text-shadow: none; }
+.elaria.monster .ability-name .roll-icon { color: var(--el-accent-soft); font-size: 0.9em; }
+.elaria.monster .ability-meta { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 2px; font-size: 12px; }
+.elaria.monster .ability-meta span { padding: 0 7px; border: 1px solid var(--el-line); border-radius: 999px; background: var(--el-panel); }
+.elaria.monster .ability-meta b { color: var(--el-muted); font-weight: normal; }
+.elaria.monster .ability-summary { margin-top: 3px; font-size: 12px; color: var(--el-muted); }
+.elaria.monster .ability .controls { display: flex; gap: 6px; color: var(--el-muted); }
+.elaria.monster .ability-list .empty { padding: 16px; text-align: center; color: var(--el-muted); font-style: italic; }
+
+.elaria.monster .m-prose { margin: 0 0 10px; border: 1px solid var(--el-line); border-radius: var(--el-radius); padding: 4px 10px 8px; }
+.elaria.monster .m-prose legend { color: var(--el-accent); font-weight: bold; padding: 0 4px; display: flex; gap: 6px; align-items: center; }
+.elaria.monster .m-prose prose-mirror { min-height: 120px; }
+.elaria.monster .m-loot { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+.elaria.monster .monster-token .token-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 14px; }
+.elaria.monster .monster-token .m-field { grid-template-columns: 1fr; gap: 2px; font-size: 12px; color: var(--el-muted); }
+.elaria.monster .monster-token .m-field.wide, .elaria.monster .monster-token .hint.wide { grid-column: 1 / -1; }
+.elaria.monster .monster-token .m-field.check { display: flex; align-items: center; gap: 6px; color: var(--el-ink); font-size: 13px; grid-column: 1 / -1; }
+.elaria.monster .monster-token .m-field.check input { width: auto; height: auto; margin: 0; }
+.elaria.monster .token-image-row { display: flex; align-items: center; gap: 8px; }
+.elaria.monster .token-image-row img { width: 56px; height: 56px; border: 1px solid var(--el-line); border-radius: 4px; object-fit: contain; }
+.elaria.monster .token-image-row file-picker { flex: 1; }
+.elaria.monster .size-pair { display: flex; align-items: center; gap: 6px; }
+.elaria.monster .size-pair input { width: 70px; text-align: center; }
+.elaria.monster .monster-token .hint { margin: 0 0 10px; }
+.elaria.monster .full-token { margin-top: 14px; display: inline-flex; align-items: center; gap: 6px; width: auto; padding: 0 14px; height: 32px; }
+
+/* ---------------- React button (bottom left of the hotbar) ---------------- */
+
+.elaria-react-button {
+  pointer-events: auto; flex: 0 0 auto; align-self: flex-end; display: flex; flex-direction: column; align-items: center;
+  justify-content: center; gap: 2px; width: 56px; height: 56px; margin-right: 6px; padding: 0;
+  font-size: 11px; font-weight: bold; line-height: 1; cursor: pointer;
+  color: #f0e6d2; background: rgba(122, 46, 29, 0.92); border: 2px solid #c9a46a; border-radius: 8px;
+}
+.elaria-react-button i { font-size: 20px; }
+.elaria-react-button:hover { background: #a8543f; box-shadow: 0 0 8px rgba(201, 164, 106, 0.8); }
+
+/* ---------------- React window and card ---------------- */
+
+.elaria.react-dialog .react-status {
+  display: flex; align-items: center; gap: 6px; padding: 5px 8px; border-radius: var(--el-radius);
+  background: var(--el-panel); font-size: 13px;
+}
+.elaria.react-dialog .react-status.out { background: #fbe4dc; color: var(--el-bad); }
+.elaria.react-dialog .react-status b { margin-left: auto; }
+.elaria.react-dialog .row.inactive { opacity: 0.4; }
+.elaria.react-dialog .dc-preview b { font-size: 18px; color: var(--el-accent); }
+.elaria.react-dialog .dc-preview small { color: var(--el-muted); font-weight: normal; }
+.elaria.react-dialog .row input[name=penalty].has-penalty {
+  color: var(--el-bad); font-weight: bold; border-color: var(--el-bad); background: #fbe4dc; box-shadow: 0 0 0 1px var(--el-bad);
+}
+.elaria.roll-card .dc-line { margin-top: 4px; font-size: 13px; }
+.elaria.roll-card .dc-line small { color: #6f6253; }
+.elaria.roll-card .result.verdict.pass { border-color: #2f6b2a; background: #e1f0d9; }
+.elaria.roll-card .result.verdict.pass .value, .elaria.roll-card .result.verdict.pass .label { color: #2f6b2a; }
+.elaria.roll-card .result.verdict.fail { border-color: #b3261e; background: #fbe4dc; }
+.elaria.roll-card .result.verdict.fail .value, .elaria.roll-card .result.verdict.fail .label { color: #b3261e; }
+.elaria.roll-card .react-foot { margin: 5px 0 0; font-size: 11px; color: #6f6253; }
+
+/* ---------------- Inventory tab ---------------- */
+
+.elaria .inventory { display: flex; flex-direction: column; gap: 10px; }
+.elaria .inventory-top { display: flex; align-items: flex-end; gap: 10px; flex-wrap: wrap; }
+.elaria .coins { display: flex; gap: 6px; flex: 1; }
+.elaria .coin { display: flex; flex-direction: column; align-items: center; gap: 1px; font-size: 11px; color: var(--el-muted); }
+.elaria .coin input { width: 62px; height: 26px; text-align: center; font-weight: bold; }
+.elaria .coin.pp input { border-color: #8fa3b8; }
+.elaria .coin.gp input { border-color: #c9a227; }
+.elaria .coin.sp input { border-color: #a9a9a9; }
+.elaria .coin.cp input { border-color: #b87333; }
+.elaria .coin.ironne input { border-color: #5a5a5a; }
+.elaria .carry { display: flex; align-items: center; gap: 12px; font-size: 13px; }
+.elaria .carry b { color: var(--el-muted); font-weight: normal; }
+.elaria .carry .create { font-weight: bold; color: var(--el-accent); }
+.elaria .gear-section { border: 1px solid var(--el-line); border-radius: var(--el-radius); overflow: hidden; }
+.elaria .gear-section > header {
+  display: flex; align-items: center; gap: 8px; padding: 3px 8px; background: var(--el-panel); border-bottom: 1px solid var(--el-line);
+}
+.elaria .gear-section > header h4 { margin: 0; font-size: 13px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--el-accent); border: none; }
+.elaria .gear-section > header .note { font-size: 12px; color: var(--el-good); }
+.elaria .gear-section > header .note.over { color: var(--el-bad); }
+.elaria .gear-section > header .cap { margin-left: auto; font-size: 12px; color: var(--el-muted); }
+.elaria .gear-section.over > header .cap { color: var(--el-bad); font-weight: bold; }
+.elaria .gear-list { list-style: none; margin: 0; padding: 0; }
+.elaria .gear-list .empty { padding: 6px 10px; color: var(--el-muted); font-style: italic; font-size: 12px; }
+.elaria .gear-row { display: flex; align-items: flex-start; gap: 6px; padding: 5px 8px; border-bottom: 1px dotted var(--el-line); cursor: grab; }
+.elaria .gear-row:last-child { border-bottom: none; }
+.elaria .gear-row.broken { opacity: 0.6; }
+.elaria .gear-row .equip { width: 16px; padding-top: 7px; color: var(--el-muted); }
+.elaria .gear-row .equip.on { color: var(--el-good); }
+.elaria .gear-row img { width: 30px; height: 30px; flex: 0 0 auto; border: 1px solid var(--el-line); border-radius: 4px; }
+.elaria .gear-main { flex: 1; min-width: 0; }
+.elaria .gear-name { font-weight: bold; color: var(--el-ink); }
+.elaria .gear-name:hover { color: var(--el-accent); text-shadow: none; }
+.elaria .gear-name .roll-icon { color: var(--el-accent-soft); font-size: 0.9em; }
+.elaria .gear-meta { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 2px; font-size: 11px; }
+.elaria .gear-meta span { padding: 0 6px; border: 1px solid var(--el-line); border-radius: 999px; background: var(--el-panel); }
+.elaria .gear-meta .kind { color: var(--el-muted); }
+.elaria .gear-meta .bad { color: var(--el-bad); border-color: var(--el-bad); background: #fbe4dc; }
+.elaria .gear-effects { margin-top: 2px; font-size: 12px; color: var(--el-muted); }
+.elaria .gear-row .qty { display: flex; align-items: center; gap: 2px; font-size: 12px; color: var(--el-muted); padding-top: 4px; }
+.elaria .gear-row .qty input { width: 44px; height: 22px; text-align: center; }
+.elaria .gear-row .controls { display: flex; gap: 6px; padding-top: 6px; color: var(--el-muted); }
+.elaria.gear .mv-req.materials { border-left-color: var(--el-muted); background: rgba(0, 0, 0, 0.03); }
+.elaria.gear .gear-description { margin-top: 8px; font-style: italic; color: var(--el-muted); }
+
+/* Compendium sidebar: Browse masteries / gear */
+.elaria-browse-buttons { display: flex; gap: 4px; width: 100%; margin-bottom: 4px; flex: 0 0 100%; }
+.elaria-browse-buttons button { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 5px; white-space: nowrap; }

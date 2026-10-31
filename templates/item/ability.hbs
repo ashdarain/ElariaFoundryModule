@@ -1,0 +1,52 @@
+{{#if editing}}
+<section class="mastery-sheet editing">
+  <header class="sheet-header">
+    <img class="portrait" src="{{item.img}}" alt="" data-action="editImage" data-edit="img">
+    <input class="name" type="text" name="name" value="{{item.name}}">
+    <label class="checkbox"><input type="checkbox" name="system.isReaction" {{checked system.isReaction}}> (rxn)</label>
+    <a class="edit-mode on" data-action="toggleEdit" data-tooltip="ELARIA.Mastery.doneEditing"><i class="fa-solid fa-check"></i></a>
+  </header>
+  <p class="hint">{{localize "ELARIA.Ability.hint"}}</p>
+  <div class="grid">
+    <label><span>{{localize "ELARIA.Mastery.FIELDS.skillMod"}}</span>
+      <input type="text" name="system.skillMod.raw" value="{{system.skillMod.raw}}" placeholder="2+Str"></label>
+    <label><span>{{localize "ELARIA.Mastery.FIELDS.damage"}}</span>
+      <input type="text" name="system.damage.raw" value="{{system.damage.raw}}" placeholder="3d6+Str x2"></label>
+    <label><span>{{localize "ELARIA.Mastery.FIELDS.cost"}}</span>
+      <input type="text" name="system.cost" value="{{system.cost}}" placeholder="3 ftg"></label>
+    <label><span>{{localize "ELARIA.Mastery.FIELDS.tags"}}</span>
+      <input type="text" name="tagsText" value="{{tagsText}}" placeholder="Melee, AOE, Bleed"></label>
+  </div>
+  <fieldset class="details">
+    <legend>{{localize "ELARIA.Monster.description"}}</legend>
+    <prose-mirror name="system.details" value="{{system.details}}" toggled
+      {{#unless editable}}disabled{{/unless}}>{{{detailsHTML}}}</prose-mirror>
+  </fieldset>
+</section>
+{{else}}
+<section class="mastery-sheet mastery-view">
+  <header class="mv-header">
+    <img class="mv-icon" src="{{item.img}}" alt="">
+    <div class="mv-title">
+      <h1>{{item.name}}</h1>
+      <div class="mv-sub">{{localize "TYPES.Item.ability"}}{{#if system.isReaction}} · {{localize "ELARIA.Mastery.reaction"}}{{/if}}</div>
+    </div>
+    <div class="mv-actions">
+      {{#if canRoll}}<a class="mv-btn roll" data-action="rollDamage" data-tooltip="ELARIA.Mastery.useHint"><i class="fa-solid fa-dice"></i></a>{{/if}}
+      <a class="mv-btn" data-action="postToChat" data-tooltip="ELARIA.Mastery.postHint"><i class="fa-solid fa-comment"></i></a>
+      {{#if editable}}<a class="mv-btn" data-action="toggleEdit" data-tooltip="ELARIA.Edit"><i class="fa-solid fa-pen"></i></a>{{/if}}
+    </div>
+  </header>
+  {{#if statBlocks.length}}
+  <dl class="mv-stats">
+    {{#each statBlocks}}<div class="mv-stat"><dt>{{label}}</dt><dd>{{value}}</dd></div>{{/each}}
+  </dl>
+  {{/if}}
+  <div class="mv-details">
+    {{#if detailsHTML}}{{{detailsHTML}}}{{else}}<p class="empty">{{localize "ELARIA.Mastery.noDetails"}}</p>{{/if}}
+  </div>
+  {{#if system.tags.length}}
+  <div class="mv-tags">{{#each system.tags}}<span class="chip">{{this}}</span>{{/each}}</div>
+  {{/if}}
+</section>
+{{/if}}

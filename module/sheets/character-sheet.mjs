@@ -1,0 +1,482 @@
+import { ELARIA } from "../config.mjs";
+import { ElariaMasteryPicker } from "../apps/mastery-picker.mjs";
+import { addMasteriesToActor, addGearToActor } from "../helpers/masteries.mjs";
+
+const { HandlebarsApplicationMixin } = foundry.applications.api;
+const { ActorSheetV2 } = foundry.applications.sheets;
+
+const TEMPLATES = "systems/elaria/templates/actor";
+
+/** Turn a string list into {value: label} choices with a blank first entry. */
+const choicesFrom = (list, blank = "—") => ({ "": blank, ...Object.fromEntries(list.map(v => [v, v])) });
+
+export class ElariaCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
+
+  static DEFAULT_OPTIONS = {
+    classes: ["elaria", "sheet", "actor", "character"],
+    position: { width: 760, height: 820 },
+    window: { resizable: true },
+    form: { submitOnChange: true },
+    actions: {
+      rollStat: ElariaCharacterSheet.#onRollStat,
+      rollInitiative: ElariaCharacterSheet.#onRollInitiative,
+      adjustResource: ElariaCharacterSheet.#onAdjustResource,
+      restoreResources: ElariaCharacterSheet.#onRestoreResources,
+      toggleEditMode: ElariaCharacterSheet.#onToggleEditMode,
+      setLifePoints: ElariaCharacterSheet.#onSetLifePoints,
+      createMastery: ElariaCharacterSheet.#onCreateMastery,
+      editItem: ElariaCharacterSheet.#onEditItem,
+      deleteItem: ElariaCharacterSheet.#onDeleteItem,
+      toggleEquip: ElariaCharacterSheet.#onToggleEquip,
+      postItem: ElariaCharacterSheet.#onPostItem,
+      createGear: ElariaCharacterSheet.#onCreateGear,
+      toggleGearEquip: ElariaCharacterSheet.#onToggleGearEquip,
+      useItem: ElariaCharacterSheet.#onUseItem
+    }
+  };
+
+  static PARTS = {
+    header: { template: `${TEMPLATES}/header.hbs` },
+    tabs: { template: "templates/generic/tab-navigation.hbs" },
+    stats: { template: `${TEMPLATES}/tab-stats.hbs`, scrollable: [""] },
+    masteries: { template: `${TEMPLATES}/tab-masteries.hbs`, scrollable: [""] },
+    inventory: { template: `${TEMPLATES}/tab-inventory.hbs`, scrollable: [""] },
+    bio: { template: `${TEMPLATES}/tab-bio.hbs`, scrollable: [""] }
+  };
+
+  static TABS = {
+    primary: {
+      tabs: [{ id: "stats" }, { id: "masteries" }, { id: "inventory" }, { id: "bio" }],
+      initial: "stats",
+      labelPrefix: "ELARIA.Tab"
+    }
+  };
+
+  /** Narrowest width at which the header resources and stat table still fit. */
+  static MIN_WIDTH = 700;
+  static MIN_HEIGHT = 500;
+
+  /** Stop the window from being resized (or opened) smaller than the layout needs. */
+  _updatePosition(position) {
+    const { MIN_WIDTH, MIN_HEIGHT } = ElariaCharacterSheet;
+    if (typeof position.width === "number") position.width = Math.max(position.width, MIN_WIDTH);
+    if (typeof position.height === "number") position.height = Math.max(position.height, MIN_HEIGHT);
+    return super._updatePosition(position);
+  }
+
+  /** Full editing mode: shows rarely used options (scaling toggle, damage form). Per client, not saved. */
+  #editMode = false;
+
+  /* -------------------------------------------- */
+
+  async _prepareContext(options) {
+    const context = await super._prepareContext(options);
+    const actor = this.document;
+    const system = actor.system;
+    Object.assign(context, {
+      actor,
+      system,
+      config: ELARIA,
+      editMode: this.#editMode && this.isEditable,
+      formChoices: Object.fromEntries(Object.entries(ELARIA.forms).map(([k, v]) => [k, game.i18n.localize(v)])),
+      tabs: this._prepareTabs("primary"),
+      lifePips: Array.fromRange(system.resources.lifePoints.max).map(i => ({
+        index: i + 1, filled: i < system.resources.lifePoints.value
+      })),
+      resourceList: ["hp", "mp", "ftg"].map(key => {
+        const r = system.resources[key];
+        return { key, label: `ELARIA.Resource.${key}`, value: r.value, max: r.max, temp: r.temp,
+          pct: r.max ? Math.clamp(Math.round(r.value / r.max * 100), 0, 100) : 0 };
+      }),
+      exhaustionTooltip: system.conditions.exhaustion
+        ? Array.fromRange(system.conditions.exhaustion).map(i => `${i + 1}: ${ELARIA.exhaustion[i + 1]}`).join("<br>")
+        : game.i18n.localize("ELARIA.Condition.noExhaustion"),
+      critChance: `${system.combat.critChance}%`,
+      critDamage: `${system.combat.critDamage}%`,
+      initiativeLabel: `3d6 + ${system.stats.fin.mod}${system.penalties.initiative ? ` − ${system.penalties.initiative}` : ""}`,
+      identityLine: [system.identity.race, system.identity.heritage].filter(s => s).join(" · "),
+      disciplineLine: system.disciplineList.join(" · ")
+    });
+    return context;
+  }
+
+  async _preparePartContext(partId, context, options) {
+    context = await super._preparePartContext(partId, context, options);
+    if (context.tabs?.[partId]) context.tab = context.tabs[partId];
+    switch (partId) {
+      case "stats": this.#prepareStats(context); break;
+      case "masteries": this.#prepareMasteries(context); break;
+      case "inventory": this.#prepareInventory(context); break;
+      case "bio": await this.#prepareBio(context); break;
+    }
+    return context;
+  }
+
+  #prepareStats(context) {
+    const system = context.system;
+    const scalingChoices = Object.fromEntries(Object.entries(ELARIA.scalings).map(([k, v]) => [k, game.i18n.localize(v)]));
+    context.statGroups = Object.entries(ELARIA.statGroups).map(([groupKey, groupLabel]) => ({
+      label: groupLabel,
+      stats: Object.entries(ELARIA.stats).filter(([, cfg]) => cfg.group === groupKey).map(([key, cfg]) => {
+        const s = system.stats[key];
+        return {
+          key, ...s,
+          label: cfg.label,
+          major: cfg.major,
+          scalingChoices,
+          modTooltip: game.i18n.format("ELARIA.Stats.modBreakdown", {
+            base: Math.floor(s.total / 4), bonus: s.bonus, effects: s.effectBonus
+          })
+        };
+      })
+    }));
+    context.substatGroups = Object.values(ELARIA.substats).map(group => ({
+      label: group.label,
+      rows: Object.entries(group.rows).map(([key, cfg]) => ({
+        key, ...cfg, ...system.substats[key],
+        inputValue: cfg.input ? foundry.utils.getProperty(this.document, cfg.input) : null
+      }))
+    }));
+    const resRow = (key, label) => {
+      const r = system.resistanceTotals[key];
+      return {
+        key, label, ...r,
+        state: r.total > 0 ? "is-resist" : r.total < 0 ? "is-weak" : "",
+        tooltip: r.total === 0 ? game.i18n.localize("ELARIA.Resist.neutral")
+          : game.i18n.format(r.total > 0 ? "ELARIA.Resist.less" : "ELARIA.Resist.more", { n: Math.abs(r.total) })
+      };
+    };
+    context.resistElements = Object.entries(ELARIA.resistanceElements).map(([k, label]) => resRow(k, label));
+    context.resistForms = Object.entries(ELARIA.forms).map(([k, label]) => resRow(k, game.i18n.localize(label)));
+    context.scalingWarning = !system.scaling.balanced || system.scaling.demSpcMismatch;
+    context.scalingWarningText = [
+      !system.scaling.balanced ? game.i18n.format("ELARIA.Stats.scalingUnbalanced", system.scaling) : null,
+      system.scaling.demSpcMismatch ? game.i18n.localize("ELARIA.Stats.demSpcMismatch") : null
+    ].filter(t => t).join(" ");
+  }
+
+  #prepareMasteries(context) {
+    const system = context.system;
+    const byCat = Object.fromEntries(Object.keys(ELARIA.masteryCategories).map(k => [k, []]));
+    const unequipped = [];
+    const noBudget = [];
+    const categoryChoices = Object.fromEntries(Object.entries(ELARIA.masteryCategories)
+      .map(([k, v]) => [k, game.i18n.localize(v)]));
+    const items = this.document.items.filter(i => i.type === "mastery").sort((a, b) => a.sort - b.sort);
+    for (const item of items) {
+      const entry = {
+        id: item.id, name: item.name, img: item.img, system: item.system,
+        anyCategory: item.system.category === "any",
+        tags: item.system.tagList,
+        sourceLabel: item.system.sourceLabel,
+        hasDamage: item.hasDamage,
+        canRoll: item.hasDamage || !!item.skillInfo,
+      };
+      if (item.system.equipped && byCat[item.system.slotCategory]) byCat[item.system.slotCategory].push(entry);
+      else if (item.system.equipped && item.system.slotCategory === "none") noBudget.push(entry);
+      else unequipped.push(entry);
+    }
+    context.categoryChoices = categoryChoices;
+    context.categories = Object.entries(ELARIA.masteryCategories).map(([key, label]) => ({
+      key, label, ...system.mastery.categories[key], items: byCat[key]
+    }));
+    context.unequipped = unequipped;
+    context.noBudget = noBudget;
+    context.sources = [
+      "General",
+      system.identity.race, system.identity.heritage,
+      ...system.elementList, ...system.combos,
+      system.identity.deity, ...system.disciplineList, system.identity.profession
+    ].filter(s => s);
+  }
+
+  /** Inventory tab: coins, belt, worn armour and trinkets, and the bag (Character Stats rows 106+). */
+  #prepareInventory(context) {
+    const system = context.system;
+    const L = k => game.i18n.localize(k);
+    const load = system.combat.equipLoad;
+    const strip = h => String(h ?? "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+    const rows = { belt: [], armour: [], trinkets: [], bag: [] };
+    const gear = this.document.items.filter(i => i.type === "gear").sort((a, b) => a.sort - b.sort);
+    for (const item of gear) {
+      const s = item.system;
+      const tooHeavy = s.equipLoad !== null && s.equipLoad > load;
+      const entry = {
+        id: item.id, name: item.name, img: item.img, system: s,
+        kindLabel: L(ELARIA.gearKinds[s.kind] ?? s.kind),
+        canEquip: !!s.equipSlot,
+        equipped: s.location !== "bag",
+        canRoll: item.hasDamage,
+        tooHeavy,
+        tooHeavyTip: tooHeavy ? game.i18n.format("ELARIA.Gear.tooHeavy", { need: s.equipLoad, have: load }) : "",
+        effects: strip(s.effects).slice(0, 200),
+        stats: [
+          s.baseAttack?.raw ? `${s.baseAttack.raw}${s.damageType ? ` · ${s.damageType}` : ""}` : "",
+          s.armourRating !== null ? `AAR ${s.armourRating}${s.weight ? ` · ${s.weight}` : ""}` : "",
+          s.breakpoint !== null ? `${L("ELARIA.Gear.breakpointShort")} ${s.breakpoint}` : "",
+          s.equipLoad !== null ? `${L("ELARIA.Gear.equipLoadShort")} ${s.equipLoad}` : "",
+          s.affinity ? `${L("ELARIA.Gear.affinity")} ${s.affinity}` : ""
+        ].filter(x => x)
+      };
+      if (s.location === "belt") rows.belt.push(entry);
+      else if (s.location === "worn" && s.kind === "armour") rows.armour.push(entry);
+      else if (s.location === "worn") rows.trinkets.push(entry);
+      else rows.bag.push(entry);
+    }
+    const lim = ELARIA.inventory;
+    const classWorn = rows.trinkets.filter(t => t.system.classTrinket).length;
+    const section = (key, list, max, extra = {}) => ({ key, label: `ELARIA.Inventory.${key}`, items: list, used: list.length, max,
+      over: max !== null && list.length > max, ...extra });
+    context.inventory = {
+      coins: Object.entries(ELARIA.coins).map(([k, label]) => ({ key: k, label, value: system.coins[k] })),
+      equipLoad: load,
+      aar: system.wornArmourAAR,
+      sections: [
+        section("belt", rows.belt, lim.beltSlots, { hint: "ELARIA.Inventory.beltHint" }),
+        section("armour", rows.armour, lim.armourSlots, { hint: "ELARIA.Inventory.armourHint", note: game.i18n.format("ELARIA.Inventory.aarFromArmour", { n: system.wornArmourAAR }) }),
+        section("trinkets", rows.trinkets, lim.trinketSlots, {
+          hint: "ELARIA.Inventory.trinketsHint",
+          note: classWorn ? game.i18n.format("ELARIA.Inventory.classTrinkets", { n: classWorn, max: lim.classTrinketSlots }) : "",
+          noteOver: classWorn > lim.classTrinketSlots
+        }),
+        section("bag", rows.bag, system.combat.bagSlots, { hint: "ELARIA.Inventory.bagHint", isBag: true })
+      ]
+    };
+  }
+
+  async #prepareBio(context) {
+    const system = context.system;
+    const id = system.identity;
+    context.choices = {
+      races: choicesFrom(ELARIA.races),
+      heritages: choicesFrom(ELARIA.heritages),
+      disciplines: choicesFrom(ELARIA.disciplines),
+      slot2: {
+        "": "—",
+        ...Object.fromEntries(Object.entries(ELARIA.slot2Options).map(([k, v]) => [k, game.i18n.localize(v)])),
+        ...Object.fromEntries(ELARIA.disciplines.map(d => [d, d]))
+      },
+      professions: choicesFrom(ELARIA.professions),
+      elements: choicesFrom(ELARIA.elements),
+      deities: choicesFrom(ELARIA.deities),
+      alignments: choicesFrom(ELARIA.alignments),
+      alignments2: choicesFrom(ELARIA.alignments, "— none —"),
+      deityRoles: Object.fromEntries(Object.entries(ELARIA.deityRoles).map(([k, v]) => [k, game.i18n.localize(v)]))
+    };
+    context.showThirdElement = id.discipline2 === "extraElement";
+    context.alignmentTriggers = [id.alignment, id.alignment2].filter((a, i, arr) => a && arr.indexOf(a) === i)
+      .map(name => ({ name, trigger: ELARIA.alignmentBurst[name] ?? "", ...(ELARIA.alignmentInfo[name] ?? {}) }));
+    const opposes = ELARIA.alignmentInfo[id.alignment]?.opposes ?? [];
+    context.alignmentConflict = id.alignment2 && opposes.includes(id.alignment2)
+      ? game.i18n.format("ELARIA.Burst.opposing", { a: id.alignment, b: id.alignment2 }) : "";
+    context.moodChoices = Object.fromEntries(Object.entries(ELARIA.moods)
+      .map(([mood, max]) => [mood, game.i18n.format("ELARIA.Burst.moodOption", { mood, max })]));
+    context.burstSources = ELARIA.burstGaugeSources.map(([label, n]) => ({ label, n }));
+    context.burstEffectHTML = await foundry.applications.ux.TextEditor.implementation.enrichHTML(id.burstEffect, {
+      secrets: this.document.isOwner, relativeTo: this.document
+    });
+    context.biographyHTML = await foundry.applications.ux.TextEditor.implementation.enrichHTML(id.biography, {
+      secrets: this.document.isOwner, relativeTo: this.document
+    });
+  }
+
+  /* -------------------------------------------- */
+
+  _onRender(context, options) {
+    super._onRender(context, options);
+    // Inputs that mirror a field shown elsewhere on the sheet. They have no name (so the form never submits
+    // the same field twice) and save directly instead.
+    for (const el of this.element.querySelectorAll("[data-actor-field]")) {
+      el.addEventListener("change", ev => {
+        ev.stopPropagation();
+        let value = el.type === "checkbox" ? el.checked : el.value;
+        if (el.type === "number") value = Number.isFinite(el.valueAsNumber) ? Math.round(el.valueAsNumber) : 0;
+        this.document.update({ [el.dataset.actorField]: value });
+      });
+    }
+    // Inputs that edit an embedded item rather than the actor.
+    for (const el of this.element.querySelectorAll("[data-item-field]")) {
+      el.addEventListener("change", ev => {
+        ev.stopPropagation();
+        const item = this.document.items.get(el.closest("[data-item-id]")?.dataset.itemId);
+        item?.update({ [el.dataset.itemField]: el.type === "checkbox" ? el.checked : el.value });
+      });
+    }
+  }
+
+  /* -------------------------------------------- */
+  /*  Drag and drop                               */
+  /* -------------------------------------------- */
+
+  /**
+   * A mastery dropped from a compendium, the Items directory or another actor is copied in (unequipped).
+   * Dropping one of this actor's own masteries just re-sorts it, as in core.
+   */
+  async _onDropItem(event, item) {
+    if (!this.isEditable) return null;
+    if (item.parent === this.document) return super._onDropItem(event, item);
+    if (item.type === "gear") {
+      const [created] = await addGearToActor(this.document, [item]);
+      if (created) this.changeTab("inventory", "primary");
+      return created ?? null;
+    }
+    if (item.type !== "mastery") {
+      ui.notifications.warn(game.i18n.localize("ELARIA.Mastery.onlyMasteries"));
+      return null;
+    }
+    const [created] = await addMasteriesToActor(this.document, [item]);
+    if (created) this.changeTab("masteries", "primary");
+    return created ?? null;
+  }
+
+  /** Dropping a folder of masteries (e.g. a whole discipline from the compendium) adds them all, after a check. */
+  async _onDropFolder(event, folder) {
+    if (!this.isEditable || folder.type !== "Item") return super._onDropFolder(event, folder);
+    const items = folder.pack
+      ? await game.packs.get(folder.pack).getDocuments({ folder: folder.id })
+      : folder.contents;
+    const masteries = items.filter(i => i.type === "mastery");
+    const gear = items.filter(i => i.type === "gear");
+    if (!masteries.length && gear.length) {
+      const ok = await foundry.applications.api.DialogV2.confirm({
+        window: { title: game.i18n.localize("ELARIA.Gear.addTitle") },
+        content: `<p>${game.i18n.format("ELARIA.Gear.addFolder", {
+          n: gear.length, folder: foundry.utils.escapeHTML(folder.name), name: foundry.utils.escapeHTML(this.document.name)
+        })}</p>`
+      });
+      if (!ok) return null;
+      await addGearToActor(this.document, gear);
+      this.changeTab("inventory", "primary");
+      return folder;
+    }
+    if (!masteries.length) return null;
+    const confirmed = await foundry.applications.api.DialogV2.confirm({
+      window: { title: game.i18n.localize("ELARIA.Mastery.addTitle") },
+      content: `<p>${game.i18n.format("ELARIA.Mastery.addFolder", {
+        n: masteries.length, folder: foundry.utils.escapeHTML(folder.name), name: foundry.utils.escapeHTML(this.document.name)
+      })}</p>`
+    });
+    if (!confirmed) return null;
+    await addMasteriesToActor(this.document, masteries);
+    this.changeTab("masteries", "primary");
+    return folder;
+  }
+
+  /* -------------------------------------------- */
+  /*  Actions                                     */
+  /* -------------------------------------------- */
+
+  /** Click: open the roll window with this stat. Shift-click / Ctrl-click: roll at once with (dis)advantage. */
+  static #onRollStat(event, target) {
+    const stat = target.dataset.stat;
+    if (event.shiftKey) return this.document.rollStat(stat, { mode: "advantage" });
+    if (event.ctrlKey || event.metaKey) return this.document.rollStat(stat, { mode: "disadvantage" });
+    return this.document.openRollDialog(stat);
+  }
+
+  static #onRollInitiative() {
+    return this.document.rollInitiative({ createCombatants: true });
+  }
+
+  /** +1 / −1 buttons. Losing goes through temp first; gaining stops at max. */
+  static #onAdjustResource(event, target) {
+    const delta = Number(target.dataset.delta);
+    return this.document.modifyResource(target.dataset.resource, -delta);
+  }
+
+  static async #onRestoreResources() {
+    const confirmed = await foundry.applications.api.DialogV2.confirm({
+      window: { title: game.i18n.localize("ELARIA.Resource.restoreTitle") },
+      content: `<p>${game.i18n.format("ELARIA.Resource.restoreConfirm", { name: this.document.name })}</p>`
+    });
+    if (confirmed) return this.document.restoreResources();
+  }
+
+  static #onToggleEditMode() {
+    this.#editMode = !this.#editMode;
+    return this.render();
+  }
+
+  /** Click a pip to set life points; clicking the last filled pip empties it. */
+  static #onSetLifePoints(event, target) {
+    const index = Number(target.dataset.index);
+    const current = this.document.system.resources.lifePoints.value;
+    return this.document.update({ "system.resources.lifePoints.value": index === current ? index - 1 : index });
+  }
+
+  /** "Add mastery": choose between a blank new mastery and the compendium picker. */
+  static async #onCreateMastery() {
+    const L = k => game.i18n.localize(k);
+    const choice = await foundry.applications.api.DialogV2.wait({
+      window: { title: L("ELARIA.Mastery.addTitle"), icon: "fa-solid fa-plus" },
+      classes: ["elaria", "add-mastery-dialog"],
+      content: `<p>${game.i18n.format("ELARIA.Mastery.addPrompt", { name: foundry.utils.escapeHTML(this.document.name) })}</p>`,
+      buttons: [
+        { action: "compendium", label: L("ELARIA.Mastery.fromCompendium"), icon: "fa-solid fa-book-open", default: true },
+        { action: "new", label: L("ELARIA.Mastery.createBlank"), icon: "fa-solid fa-file-circle-plus" }
+      ],
+      rejectClose: false
+    });
+    if (choice === "compendium") return ElariaMasteryPicker.open(this.document);
+    if (choice !== "new") return;
+    const [item] = await this.document.createEmbeddedDocuments("Item", [{
+      name: L("ELARIA.Mastery.new"), type: "mastery"
+    }]);
+    if (!item) return;
+    item.sheet.editMode = true;
+    item.sheet.render({ force: true });
+  }
+
+  static #onEditItem(event, target) {
+    this.document.items.get(target.closest("[data-item-id]").dataset.itemId)?.sheet.render(true);
+  }
+
+  static #onDeleteItem(event, target) {
+    return this.document.items.get(target.closest("[data-item-id]").dataset.itemId)?.deleteDialog();
+  }
+
+  static #onToggleEquip(event, target) {
+    const item = this.document.items.get(target.closest("[data-item-id]").dataset.itemId);
+    return item?.update({ "system.equipped": !item.system.equipped });
+  }
+
+  /** Click a mastery's name: damage masteries open the roll window, others go to chat. */
+  static #onUseItem(event, target) {
+    return this.document.items.get(target.closest("[data-item-id]").dataset.itemId)?.use();
+  }
+
+  /** "Add item": a blank item, or pick gear from the compendiums. */
+  static async #onCreateGear() {
+    const L = k => game.i18n.localize(k);
+    const choice = await foundry.applications.api.DialogV2.wait({
+      window: { title: L("ELARIA.Gear.addTitle"), icon: "fa-solid fa-plus" },
+      classes: ["elaria", "add-mastery-dialog"],
+      content: `<p>${game.i18n.format("ELARIA.Gear.addPrompt", { name: foundry.utils.escapeHTML(this.document.name) })}</p>`,
+      buttons: [
+        { action: "compendium", label: L("ELARIA.Mastery.fromCompendium"), icon: "fa-solid fa-book-open", default: true },
+        { action: "new", label: L("ELARIA.Gear.createBlank"), icon: "fa-solid fa-file-circle-plus" }
+      ],
+      rejectClose: false
+    });
+    if (choice === "compendium") return ElariaMasteryPicker.open(this.document, "gear");
+    if (choice !== "new") return;
+    const [item] = await this.document.createEmbeddedDocuments("Item", [{
+      name: L("ELARIA.Gear.new"), type: "gear"
+    }]);
+    if (!item) return;
+    item.sheet.editMode = true;
+    item.sheet.render({ force: true });
+  }
+
+  /** Move gear between the bag and the belt (weapons) or worn (armour, trinkets). */
+  static #onToggleGearEquip(event, target) {
+    const item = this.document.items.get(target.closest("[data-item-id]").dataset.itemId);
+    if (!item?.system.equipSlot) return;
+    return item.update({ "system.location": item.system.location === "bag" ? item.system.equipSlot : "bag" });
+  }
+
+  static #onPostItem(event, target) {
+    const item = this.document.items.get(target.closest("[data-item-id]").dataset.itemId);
+    return item?.toChat();
+  }
+}

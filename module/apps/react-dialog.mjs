@@ -1,0 +1,262 @@
+import { ELARIA } from "../config.mjs";
+import { postRolls } from "../dice/check.mjs";
+import { findCombatant, reactionSummary, recordReaction } from "../combat/reactions.mjs";
+
+const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api;
+const esc = s => foundry.utils.escapeHTML(String(s));
+const L = k => game.i18n.localize(k);
+
+/**
+ * Reaction DCs (Mechanics, "Reaction time goal numbers"). n starts at 0 each round and rises by 2 for every
+ * successful reaction that round (failed reactions don't raise it). Rolls are made from the player's side: the
+ * reactor rolls 3d6 + Awareness against the DC.
+ */
+export const REACTION_TYPES = {
+  towards: { base: 10, skill: true },     // an action done towards you: n + 10 + attacker's skill mod
+  notTowards: { base: 14, skill: true },  // an action not done towards you: n + 14 + skill mod (or relevant stat)
+  leavingMelee: { base: 12, skill: true },// an enemy leaving melee: n + 12 + skill mod (or Fin)
+  own: { base: 16, skill: false }         // your own action (a trap you're about to trigger, tripping): n + 16
+};
+
+/** Who is reacting: the selected token, else the user's character (or their only character). */
+export function reactingUnit() {
+  const token = canvas?.tokens?.controlled?.[0];
+  if (token?.actor) return { actor: token.actor, token };
+  if (game.user.character) return { actor: game.user.character, token: null };
+  if (!game.user.isGM) {
+    const owned = game.actors.filter(a => a.type === "character" && a.isOwner);
+    if (owned.length === 1) return { actor: owned[0], token: null };
+  }
+  return { actor: null, token: null };
+}
+
+/**
+ * React window: pick the reaction type, type the attacker's skill mod, roll Awareness against
+ * n + base + skill mod. The result fills the reactor's next reaction pip in the combat tracker (green / red).
+ */
+export class ElariaReactDialog extends HandlebarsApplicationMixin(ApplicationV2) {
+
+  constructor({ actor = null, token = null, item = null, ...options } = {}) {
+    super(options);
+    this.#actorUuid = actor?.uuid ?? "";
+    this.#tokenId = token?.id ?? null;
+    this.#itemUuid = item?.uuid ?? "";
+  }
+
+  static DEFAULT_OPTIONS = {
+    id: "elaria-react-dialog",
+    tag: "form",
+    classes: ["elaria", "roll-dialog", "react-dialog"],
+    position: { width: 420, height: "auto" },
+    window: { title: "ELARIA.React.title", icon: "fa-solid fa-shield-halved" },
+    form: { handler: ElariaReactDialog.#onSubmit, closeOnSubmit: false },
+    actions: { roll: ElariaReactDialog.#onRoll }
+  };
+
+  static PARTS = {
+    body: { template: "systems/elaria/templates/apps/react-dialog.hbs" }
+  };
+
+  /**
+   * @param {object} [options]
+   * @param {Actor} [options.actor]  Who reacts (default: the selected token, else the user's character).
+   * @param {Item} [options.item]    The reaction mastery / ability being used: shown at the top, and a passed
+   *                                 reaction's card gets a button to carry on with it.
+   */
+  static open({ actor = null, item = null } = {}) {
+    let token = null;
+    if (actor) token = canvas?.tokens?.controlled?.find(t => t.actor === actor) ?? null;
+    else ({ actor, token } = reactingUnit());
+    const existing = foundry.applications.instances.get("elaria-react-dialog");
+    if (existing) {
+      existing.#actorUuid = actor?.uuid ?? existing.#actorUuid;
+      existing.#tokenId = token?.id ?? null;
+      existing.#itemUuid = item?.uuid ?? "";
+      return existing.render({ force: true });
+    }
+    return new this({ actor, token, item }).render({ force: true });
+  }
+
+  #actorUuid = "";
+  #tokenId = null;
+  #itemUuid = "";
+
+  get item() {
+    return this.#itemUuid ? fromUuidSync(this.#itemUuid) : null;
+  }
+
+  get title() {
+    const item = this.item;
+    return item ? game.i18n.format("ELARIA.React.titleWith", { name: item.name }) : game.i18n.localize("ELARIA.React.title");
+  }
+  #values = { type: "towards", skillMod: "", dcMod: 0, stat: "awa", bonus: "" };
+
+  get actor() {
+    return this.#actorUuid ? fromUuidSync(this.#actorUuid) : null;
+  }
+
+  get combatant() {
+    const token = this.#tokenId ? canvas?.tokens?.get(this.#tokenId) : null;
+    return findCombatant(this.actor, token);
+  }
+
+  async _prepareContext(options) {
+    const actor = this.actor;
+    const actors = game.actors.filter(a => ["character", "monster"].includes(a.type) && a.isOwner)
+      .sort((a, b) => (a.type === b.type ? a.name.localeCompare(b.name) : a.type === "character" ? -1 : 1));
+    if (actor && !actors.includes(actor)) actors.unshift(actor);
+    const combatant = this.combatant;
+    const summary = reactionSummary(combatant, actor);
+    const sign = n => (n >= 0 ? `+${n}` : `${n}`);
+    const statChoices = Object.fromEntries(Object.entries(ELARIA.stats).map(([k, s]) => {
+      const mod = actor?.system.stats?.[k]?.mod;
+      return [k, mod === undefined ? L(s.label) : `${L(s.label)} (${sign(mod)})`];
+    }));
+    return {
+      actorChoices: { "": L("ELARIA.Dice.noActor"), ...Object.fromEntries(actors.map(a => [a.uuid, a.name])) },
+      actorUuid: this.#actorUuid,
+      typeChoices: Object.fromEntries(Object.keys(REACTION_TYPES).map(k => [k, L(`ELARIA.React.type.${k}`)])),
+      statChoices,
+      ...this.#values,
+      n: summary.n,
+      inCombat: !!combatant,
+      rapText: combatant ? game.i18n.format("ELARIA.React.rap", { used: summary.used, n: summary.count }) : L("ELARIA.React.noCombat"),
+      outOfRap: combatant && summary.used >= summary.count,
+      penalty: actor?.system.penalties?.check ?? 0,
+      noActor: !actor,
+      item: this.item ? { name: this.item.name, img: this.item.img } : null
+    };
+  }
+
+  _onRender(context, options) {
+    super._onRender(context, options);
+    const form = this.element;
+    form.querySelector("[name=actor]").addEventListener("change", ev => {
+      this.#remember();
+      this.#actorUuid = ev.target.value;
+      this.#tokenId = null;
+      this.render();
+    });
+    for (const el of form.querySelectorAll("input, select")) el.addEventListener("input", () => this.#updatePreview());
+    this.#updatePreview();
+    form.querySelector("[name=skillMod]")?.focus();
+  }
+
+  #remember() {
+    const v = this.#read();
+    this.#values = { type: v.type, skillMod: v.skillModText, dcMod: v.dcMod, stat: v.stat, bonus: v.bonus };
+  }
+
+  #read() {
+    const f = new foundry.applications.ux.FormDataExtended(this.element).object;
+    const type = REACTION_TYPES[f.type] ? f.type : "towards";
+    const t = REACTION_TYPES[type];
+    const skillMod = t.skill ? Math.round(Number(f.skillMod) || 0) : 0;
+    const n = Math.max(0, Math.round(Number(f.n) || 0));
+    const dcMod = Math.round(Number(f.dcMod) || 0);
+    return {
+      type, skillMod, skillModText: f.skillMod ?? "", n, dcMod,
+      dc: n + t.base + skillMod + dcMod,
+      stat: f.stat || "awa",
+      bonus: String(f.bonus ?? "").trim(),
+      penalty: Math.max(0, Math.round(Number(f.penalty) || 0))
+    };
+  }
+
+  #updatePreview() {
+    const v = this.#read();
+    const t = REACTION_TYPES[v.type];
+    const el = this.element;
+    el.querySelector(".skill-row").classList.toggle("inactive", !t.skill);
+    const parts = [`n ${v.n}`, `${t.base}`];
+    if (t.skill) parts.push(`${v.skillMod} <small>${L("ELARIA.React.skillShort")}</small>`);
+    if (v.dcMod) parts.push(`${v.dcMod} <small>${L("ELARIA.React.dcModShort")}</small>`);
+    el.querySelector(".dc-preview").innerHTML = `${L("ELARIA.React.dc")} <b>${v.dc}</b> <small>= ${parts.join(" + ").replace(/\+ -/g, "− ")}</small>`;
+    el.querySelector("[name=penalty]")?.classList.toggle("has-penalty", v.penalty !== 0);
+    const bad = v.bonus && !Roll.validate(v.bonus);
+    el.querySelector(".bonus-error").hidden = !bad;
+  }
+
+  static async #onRoll(event, target) {
+    const actor = this.actor;
+    if (!actor) return ui.notifications.warn(L("ELARIA.React.pickUnit"));
+    const v = this.#read();
+    if (v.bonus && !Roll.validate(v.bonus)) return ui.notifications.warn(L("ELARIA.Dice.badBonus"));
+    const combatant = this.combatant;
+    await rollReaction({ actor, combatant, ...v, item: this.item, mode: target.dataset.mode ?? "normal" });
+    this.#values.skillMod = "";
+    this.#values.dcMod = 0;
+    return this.close();
+  }
+
+  static #onSubmit(event) {
+    event.preventDefault?.();
+    return ElariaReactDialog.#onRoll.call(this, event, this.element.querySelector("[data-mode=normal]"));
+  }
+}
+
+/** Roll the reaction, post the card, and fill the next reaction pip. */
+export async function rollReaction({ actor, combatant, type, skillMod, n, dcMod, dc, stat, bonus, penalty, item = null,
+  mode = "normal" }) {
+  const t = REACTION_TYPES[type];
+  const mod = actor.system.stats?.[stat]?.mod ?? 0;
+  const dice = mode === "advantage" ? "{3d6, 3d6}kh" : mode === "disadvantage" ? "{3d6, 3d6}kl" : "3d6";
+  let formula = `${dice} + ${mod}`;
+  if (bonus) formula += ` + (${bonus})`;
+  if (penalty) formula += ` - ${penalty}`;
+  const roll = await new Roll(formula).evaluate();
+  const passed = roll.total >= dc;
+
+  const sets = roll.dice.slice(0, mode === "normal" ? 1 : 2).map(d => {
+    const faces = d.results.map(x => x.result);
+    return { faces, total: faces.reduce((a, b) => a + b, 0), kept: true };
+  });
+  if (sets.length === 2) {
+    const keep = mode === "advantage" ? (sets[0].total >= sets[1].total ? 0 : 1) : (sets[0].total <= sets[1].total ? 0 : 1);
+    sets[1 - keep].kept = false;
+  }
+  const kept = sets.find(s => s.kept)?.total ?? 0;
+  const bonusValue = roll.total - kept - mod + penalty;
+  const sign = x => (x < 0 ? `− ${Math.abs(x)}` : `+ ${x}`);
+
+  // Fill the pip (only in combat, and only if there's one left).
+  let pipNote = "";
+  if (combatant) {
+    const recorded = await recordReaction(combatant, passed ? "pass" : "fail");
+    const s = reactionSummary(combatant, actor);
+    pipNote = recorded ? game.i18n.format("ELARIA.React.rap", { used: s.used, n: s.count }) : L("ELARIA.React.noRapLeft");
+  }
+
+  const dcParts = [`n ${n}`, `${t.base}`];
+  if (t.skill) dcParts.push(`${skillMod} ${L("ELARIA.React.skillShort")}`);
+  if (dcMod) dcParts.push(`${dcMod} ${L("ELARIA.React.dcModShort")}`);
+  const modeLabel = mode === "normal" ? "" : L(`ELARIA.Dice.${mode}`);
+  const content = `
+    <div class="elaria roll-card react-card ${passed ? "passed" : "failed"}">
+      <header>
+        ${item ? `<img src="${esc(item.img)}" alt="">` : ""}
+        <div class="titles"><h3>${esc(item
+          ? game.i18n.format("ELARIA.React.cardTitleWith", { name: actor.name, item: item.name })
+          : game.i18n.format("ELARIA.React.cardTitle", { name: actor.name }))}</h3>
+          <span class="note">${esc(L(`ELARIA.React.type.${type}`))}</span></div>
+        ${modeLabel ? `<span class="mode ${mode}">${esc(modeLabel)}</span>` : ""}
+      </header>
+      <div class="sets">${sets.map(s => `
+        <div class="set ${s.kept ? "kept" : "dropped"}">${s.faces.map(f => `<span class="die d6">${f}</span>`).join("")}
+          <span class="eq">= ${s.total}</span></div>`).join("")}</div>
+      <div class="breakdown">3d6 <b>${kept}</b> ${sign(mod)} <small>${esc(L(ELARIA.stats[stat]?.label ?? stat))}</small>
+        ${bonus ? ` ${sign(bonusValue)}` : ""}${penalty ? ` − ${penalty} <small>${L("ELARIA.Dice.penaltyShort")}</small>` : ""}</div>
+      <div class="dc-line">${L("ELARIA.React.vs")} <b>${L("ELARIA.React.dc")} ${dc}</b> <small>(${esc(dcParts.join(" + ").replace(/\+ -/g, "− "))})</small></div>
+      <div class="results two">
+        <div class="result"><span class="label">${L("ELARIA.Dice.total")}</span><span class="value">${roll.total}</span></div>
+        <div class="result verdict ${passed ? "pass" : "fail"}"><span class="label">${L("ELARIA.React.result")}</span>
+          <span class="value">${passed ? L("ELARIA.React.pass") : L("ELARIA.React.fail")}</span></div>
+      </div>
+      <p class="react-foot">${passed ? L("ELARIA.React.passNote") : L("ELARIA.React.failNote")}${pipNote ? ` · ${esc(pipNote)}` : ""}</p>
+      ${passed && item ? `<button type="button" class="next-roll" data-elaria-action="useAfterReact">`
+        + `<i class="fa-solid fa-bolt"></i> ${esc(game.i18n.format("ELARIA.React.thenUse", { name: item.name }))}</button>` : ""}
+    </div>`;
+  return postRolls([roll], { actor, content, flags: { react: {
+    type, dc, passed, itemUuid: item?.uuid ?? "", actorUuid: actor.uuid
+  } } });
+}

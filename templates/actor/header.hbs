@@ -1,0 +1,107 @@
+<header class="sheet-header">
+  <aside class="header-side">
+    <img class="portrait" src="{{actor.img}}" alt="{{actor.name}}" data-action="editImage" data-edit="img">
+    <dl class="identity">
+      <dt>{{localize "ELARIA.Bio.ancestry"}}</dt>
+      <dd>{{#if identityLine}}{{identityLine}}{{else}}—{{/if}}</dd>
+      <dt>{{localize "ELARIA.Bio.disciplines"}}</dt>
+      <dd>{{#if disciplineLine}}{{disciplineLine}}{{else}}—{{/if}}</dd>
+      <dt>{{localize "ELARIA.Bio.elementsShort"}}</dt>
+      <dd class="chips">{{#each system.elementList}}<span class="chip">{{this}}</span>{{else}}—{{/each}}</dd>
+      <dt>{{localize "ELARIA.Bio.form"}}</dt>
+      <dd>
+        {{#if editMode}}
+        <select class="editing" name="system.identity.form" data-tooltip="ELARIA.Bio.formHint">
+          {{selectOptions formChoices selected=system.identity.form}}
+        </select>
+        {{else}}{{localize (lookup config.forms system.identity.form)}}{{/if}}
+      </dd>
+    </dl>
+  </aside>
+
+  <div class="header-main">
+    <div class="identity-row">
+      <input class="name" type="text" name="name" value="{{actor.name}}" placeholder="{{localize 'ELARIA.Name'}}">
+      <label class="level">
+        <span>{{localize "ELARIA.Level"}}</span>
+        <input type="number" name="system.level" value="{{system.level}}" min="1" max="20" step="1">
+      </label>
+      {{#if editable}}
+      <a class="edit-mode {{#if editMode}}on{{/if}}" data-action="toggleEditMode"
+         data-tooltip="{{#if editMode}}ELARIA.EditMode.lock{{else}}ELARIA.EditMode.unlock{{/if}}">
+        <i class="fa-solid {{#if editMode}}fa-lock-open{{else}}fa-lock{{/if}}"></i>
+      </a>
+      {{/if}}
+    </div>
+
+    <div class="resources">
+      {{#each resourceList}}
+      <div class="resource {{key}}">
+        <span class="resource-label">{{localize label}}</span>
+        <a class="step" data-action="adjustResource" data-resource="{{key}}" data-delta="-1" data-tooltip="ELARIA.Resource.minus"><i class="fa-solid fa-minus"></i></a>
+        <input type="number" name="system.resources.{{key}}.value" value="{{value}}" min="0" max="{{max}}" step="1">
+        <a class="step" data-action="adjustResource" data-resource="{{key}}" data-delta="1" data-tooltip="ELARIA.Resource.plus"><i class="fa-solid fa-plus"></i></a>
+        <span class="max">/ {{max}}</span>
+        <div class="bar"><div class="fill" style="width: {{pct}}%"></div></div>
+        <label class="temp" data-tooltip="ELARIA.Resource.tempHint">
+          <span>{{localize "ELARIA.Resource.temp"}}</span>
+          <input type="number" name="system.resources.{{key}}.temp" value="{{temp}}" min="0" step="1">
+        </label>
+      </div>
+      {{/each}}
+      <div class="resource life">
+        <span class="resource-label" data-tooltip="ELARIA.Resource.lifePointsHint">{{localize "ELARIA.Resource.lifePointsShort"}}</span>
+        <div class="pips">
+          {{#each lifePips}}
+          <a class="pip {{#if filled}}filled{{/if}}" data-action="setLifePoints" data-index="{{index}}"></a>
+          {{/each}}
+        </div>
+        <span class="max">{{system.resources.lifePoints.value}} / {{system.resources.lifePoints.max}} {{localize "ELARIA.Resource.lifePointsUnit"}}</span>
+        {{#if editable}}
+        <a class="restore" data-action="restoreResources" data-tooltip="ELARIA.Resource.restoreHint">
+          <i class="fa-solid fa-rotate-left"></i> {{localize "ELARIA.Resource.restore"}}
+        </a>
+        {{/if}}
+      </div>
+    </div>
+
+    <div class="status-row">
+      <div class="conditions">
+        <label data-tooltip="ELARIA.Condition.injuriesHint">
+          <span>{{localize "ELARIA.Condition.injuries"}}</span>
+          <input type="number" name="system.conditions.injuries" value="{{system.conditions.injuries}}" min="0" step="1">
+        </label>
+        <label data-tooltip="{{exhaustionTooltip}}">
+          <span>{{localize "ELARIA.Condition.exhaustion"}}</span>
+          <input type="number" name="system.conditions.exhaustion" value="{{system.conditions.exhaustion}}" min="0" max="7" step="1">
+          <span class="of">/7</span>
+        </label>
+        <label>
+          <span>{{localize "ELARIA.Condition.burst"}}</span>
+          <input type="number" name="system.conditions.burst.value" value="{{system.conditions.burst.value}}" min="0" step="1">
+          <span class="of">/</span>
+          <span class="of burst-max" data-tooltip="{{localize 'ELARIA.Burst.maxFromMood' mood=system.conditions.burst.mood}}">{{system.conditions.burst.max}}</span>
+        </label>
+        <label class="checkbox">
+          <input type="checkbox" name="system.conditions.secondWindUsed" {{checked system.conditions.secondWindUsed}}>
+          <span>{{localize "ELARIA.Condition.secondWindUsed"}}</span>
+        </label>
+      </div>
+    </div>
+
+    <div class="combat-row">
+      <div class="derived">
+        <span data-tooltip="ELARIA.Defence.arHint">{{localize "ELARIA.Defence.ar"}} <b>{{system.defence.ar}}</b></span>
+        <span data-tooltip="ELARIA.Defence.marHint">{{localize "ELARIA.Defence.mar"}} <b>{{system.defence.mar}}</b></span>
+        <span>{{localize "ELARIA.Combat.mv"}} <b>{{system.combat.mv}}m</b></span>
+        <span>{{localize "ELARIA.Combat.reacts"}} <b>{{system.combat.reacts}}</b></span>
+        <span>{{localize "ELARIA.Combat.passiveAwareness"}} <b>{{system.combat.passiveAwareness}}</b></span>
+      </div>
+      <div class="actions">
+        <a class="initiative" data-action="rollInitiative">
+          <i class="fa-solid fa-dice"></i> <span class="label">{{localize "ELARIA.Combat.initiative"}}</span> <b>{{initiativeLabel}}</b>
+        </a>
+      </div>
+    </div>
+  </div>
+</header>

@@ -1,0 +1,29 @@
+<section class="tab inventory {{tab.cssClass}}" data-group="primary" data-tab="inventory">
+  <div class="inventory-top">
+    <div class="coins">
+      {{#each inventory.coins}}
+      <label class="coin {{key}}"><span>{{localize label}}</span>
+        <input type="number" name="system.coins.{{key}}" value="{{value}}" min="0" step="1"></label>
+      {{/each}}
+    </div>
+    <div class="carry">
+      <span data-tooltip="ELARIA.Inventory.equipLoadHint"><b>{{localize "ELARIA.Inventory.equipLoad"}}</b> {{inventory.equipLoad}}</span>
+      {{#if editable}}<a class="create" data-action="createGear"><i class="fa-solid fa-plus"></i> {{localize "ELARIA.Gear.add"}}</a>{{/if}}
+    </div>
+  </div>
+
+  {{#each inventory.sections}}
+  <section class="gear-section {{key}} {{#if over}}over{{/if}}">
+    <header>
+      <h4 data-tooltip="{{hint}}">{{localize label}}</h4>
+      {{#if note}}<span class="note {{#if noteOver}}over{{/if}}">{{note}}</span>{{/if}}
+      <span class="cap">{{used}}{{#if (ne max null)}} / {{max}}{{/if}}{{#if over}} <em>{{localize "ELARIA.Over"}}</em>{{/if}}</span>
+    </header>
+    <ol class="gear-list">
+      {{#each items}}{{> gearRow this bag=../isBag}}{{else}}
+      <li class="empty">{{#if isBag}}{{localize "ELARIA.Inventory.bagEmpty"}}{{else}}{{localize "ELARIA.Inventory.nothing"}}{{/if}}</li>
+      {{/each}}
+    </ol>
+  </section>
+  {{/each}}
+</section>
