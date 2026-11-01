@@ -1,0 +1,90 @@
+{
+  "_help": "Optional settings for Import from Google Sheet. Edit, save, and press Check again in Foundry. Delete any line to use the default. Full explanation: README.md, section Import config.",
+  "defaultSheetLink": "",
+  "compendiums": {
+    "discipline": true,
+    "elemental": true,
+    "deity": true,
+    "ancestry": true,
+    "profession": true,
+    "set": true,
+    "bond": true,
+    "weapons": true,
+    "armour": true,
+    "trinkets": true,
+    "uniques": true
+  },
+  "tabs": {
+    "general": "General Masteries",
+    "disciplines": [
+      "Rogue Masteries",
+      "Skirmisher Masteries",
+      "Ranger Masteries",
+      "Assassin Masteries",
+      "Beastmaster(WIP) Masteries",
+      "Saboteur Masteries",
+      "Samurai Masteries",
+      "Warrior Masteries",
+      "Guardian Masteries",
+      "Cavalier Masteries",
+      "Ninja Masteries",
+      "Monk Masteries",
+      "Brawler Masteries",
+      "Dragon Mage Masteries",
+      "Spellblade Masteries",
+      "Space Mage Masteries",
+      "Summoner Masteries",
+      "Meta Mage Masteries",
+      "Scholar Masteries",
+      "Minstrel Masteries",
+      "Psychic Masteries",
+      "Shapeshifter Masteries",
+      "Occultist Masteries",
+      "Merchant Masteries",
+      "War Priest Masteries",
+      "Divine Masteries",
+      "Sword Saint Masteries",
+      "Shaman Masteries",
+      "Demonic Lineage Masteries",
+      "Super Soldier Masteries",
+      "Vampirism Masteries",
+      "Corruption Masteries (WIP)",
+      "Crow Masteries",
+      "Raven Masteries"
+    ],
+    "disciplineIndex": "Disciplines",
+    "elemental": "Elemental Masteries",
+    "set": "Set Masteries",
+    "bond": "Bond Masteries",
+    "deity": "Deity Masteries",
+    "ancestry": "Ancestry",
+    "professions": [
+      {
+        "sheet": "Professions"
+      },
+      {
+        "sheet": "Technomancy and Gnomish Engineering",
+        "requirement": "Must be a Gnome"
+      }
+    ],
+    "tags": "Tags",
+    "gear": "Gear"
+  },
+  "ignoredTabs": [
+    "Set Masteries (Discontinued)",
+    "Summoner Masteries old",
+    "Elemental Masteries sortable (needs updating)",
+    "Data table (masteries)",
+    "Data Table (set masteries)",
+    "Elemental Masteries Data"
+  ],
+  "autoDetectDisciplines": true,
+  "gearBaseAliases": {
+    "fist": "cestus",
+    "heater": "heater-shield",
+    "bo-staff": "stave",
+    "great-axe": "axe",
+    "magic-wand": "wand",
+    "long-bow": "long-bow"
+  }
+}

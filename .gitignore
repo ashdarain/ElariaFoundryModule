@@ -1,0 +1,15 @@
+# Built release files (made by the GitHub release workflow)
+*.zip
+
+# Editors and OS clutter
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Node (only used by the test scripts in tools/)
+node_modules/
+
+# Downloaded copies of the sheet for local testing: keep the sheet private
+*.xlsx

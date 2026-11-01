@@ -90,7 +90,7 @@ This runs download → read → convert → build and checks every entry against
 
 ## Gear (v0.11.0)
 
-The *Gear* tab is read like the website's `converter/gear.py` (ported line for line and checked against its output: all 186 files identical, including the 28 gear files, class trinkets and gear overview).
+The *Gear* tab is read with the same rules as the other converters (checked against a reference conversion: all 186 output files identical, including the 28 gear files, class trinkets and gear overview).
 
 | Compendium | From | Folders |
 | --- | --- | --- |

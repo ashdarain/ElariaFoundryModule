@@ -22,24 +22,57 @@ The rules and data live in the *Elaria 2.2* Google Sheet. This folder holds the 
 - Plain ES modules, no build step at first. `TypeDataModel` for data, `ApplicationV2` + Handlebars for sheets.
 - System id: `elaria`.
 
-## Installing (for testing)
+## Installing
 
-1. Copy or symlink this `Foundry` folder into your Foundry data folder as `Data/systems/elaria`. The folder name must be `elaria` to match the system id. On Windows, from an admin prompt:
-   `mklink /D "%LOCALAPPDATA%\FoundryVTT\Data\systems\elaria" "A:\Elaria\Foundry"`
-   (adjust the first path if your user data lives elsewhere). A symlink means edits here show up after a browser refresh.
-2. Restart Foundry, create a world using **Elaria**, create an Actor of type **Character**.
-3. Optional, for development: `node tools/test-rules.mjs` and `node tools/test-build.mjs <sheet link>` check the maths and the importer outside Foundry (needs Node 18+). Players and GMs never need these.
+Elaria is a Foundry **game system** (not a module).
+
+1. In Foundry's setup screen: **Game Systems → Install System**.
+2. Paste the manifest URL at the bottom of the window and press **Install**:
+   `https://github.com/<owner>/<repository>/releases/latest/download/system.json`
+3. Create a world using **Elaria**.
+
+Foundry checks the same link for updates, so new releases show up under *Update* on the Game Systems tab.
+
+## Development
+
+1. Clone this repository into your Foundry data folder as `Data/systems/elaria`, or symlink it there. The folder name must be `elaria` to match the system id, whatever the repository is called. On Windows, from an admin prompt:
+   `mklink /D "%LOCALAPPDATA%\FoundryVTT\Data\systems\elaria" "C:\path\to\this\repository"`
+   (adjust the first path if your user data lives elsewhere). A symlink means edits show up after a browser refresh.
+2. Optional: `node tools/test-rules.mjs` and `node tools/test-build.mjs <sheet link or .xlsx>` check the maths and the importer outside Foundry (Node 18+). Players and GMs never need these.
+
+## Publishing a release
+
+1. Commit and push your changes.
+2. On GitHub: **Releases → Draft a new release**, create a tag such as `v0.11.0`, and **Publish release**.
+3. The workflow in `.github/workflows/release.yml` sets the version and links in `system.json`, builds `elaria.zip`, and attaches both to the release (a minute or two; see the **Actions** tab).
+
+The manifest URL for GMs never changes: `https://github.com/<owner>/<repository>/releases/latest/download/system.json`.
 
 ## Importing masteries from the Google Sheet
 
-Everything happens inside Foundry; there's nothing to install and no files to edit.
+Everything happens inside Foundry; there's nothing to install. No sheet link ships with the system: each GM pastes the link to their own copy of the sheet.
 
 1. Make sure the Google Sheet is shared as **Anyone with the link → Viewer** (Share → General access).
 2. In Foundry, as GM: Compendium sidebar → **Import from Google Sheet** (also under Game Settings → Configure Settings → Elaria).
 3. Paste the sheet's link and press **Check**. Foundry downloads a read-only copy of the sheet, converts every mastery tab, and shows what would be added, changed or removed, plus anything in the sheet worth a look (typos, unknown tags, links it couldn't make).
 4. Press **Import**.
 
-It creates seven world compendiums ("Elaria: Discipline Masteries", "… Elemental", "… Deity", "… Ancestry", "… Profession", "… Set", "… Bond"), each with a folder per discipline / element / god / race. Run it again whenever the sheet changes: entries are updated in place (stable ids, nothing duplicated), and masteries already on characters are untouched because they're copies. Hand-made entries in those compendiums are never removed. The converted data is also saved as `worlds/<world>/elaria/elaria-data.json` so you can see exactly what was imported.
+It creates up to eleven world compendiums: seven for masteries ("Elaria: Discipline Masteries", "… Elemental", "… Deity", "… Ancestry", "… Profession", "… Set", "… Bond"), each with a folder per discipline / element / god / race, and four for gear (see *Gear and inventory*). Run it again whenever the sheet changes: entries are updated in place (stable ids, nothing duplicated), and masteries already on characters are untouched because they're copies. Hand-made entries in those compendiums are never removed. The converted data is also saved as `worlds/<world>/elaria/elaria-data.json` so you can see exactly what was imported.
+
+### Import config
+
+`import-config.json` in the system folder changes what the importer brings in. It's optional: delete any line (or the whole file) to use the defaults. Edit it with any text editor, save, and press **Check** again; no restart needed.
+
+| Setting | What it does |
+|---|---|
+| `defaultSheetLink` | A link to prefill the importer with in new worlds. Leave `""` to paste it in Foundry instead (the link is then saved in the world only). |
+| `compendiums` | Set any of `discipline`, `elemental`, `deity`, `ancestry`, `profession`, `set`, `bond`, `weapons`, `armour`, `trinkets`, `uniques` to `false` to skip it. Skipped compendiums are left exactly as they are. |
+| `tabs` | The tab names the importer reads: `general`, `disciplines` (list), `disciplineIndex`, `elemental`, `set`, `bond`, `deity`, `ancestry`, `professions` (list), `tags`, `gear`. Rename here if a tab is renamed in the sheet; set one to `""` to skip that tab. |
+| `ignoredTabs` | Tabs that look like mastery tabs but should be skipped (old copies, helper tables). |
+| `autoDetectDisciplines` | `true`: any new "… Masteries" tab not listed is converted as a discipline. |
+| `gearBaseAliases` | Names in the Gear tab's "Base Weapons" table that differ from their evolution tree (e.g. `"fist": "cestus"`). |
+
+The file must stay valid JSON (double quotes, commas between entries, no trailing comma); if it isn't, the importer says so and imports nothing. A system update replaces this file, so keep a copy of your changes.
 
 **The sheet is never written to.** The only request the system makes to Google is an anonymous download of the "export as .xlsx" link (`module/importer/google-sheet.mjs`): a plain GET, no login, no cookies, no API key. Google only allows edits from a signed-in account with edit rights, so this request can't change the sheet even in principle.
 
@@ -126,7 +159,7 @@ Imported masteries use round purple medallions (a different glyph per compendium
 
 ## Gear and inventory
 
-The importer also reads the **Gear** tab (the same way the website did) and fills four more compendiums: **Weapons**, **Armour**, **Trinkets** (including the class trinkets, in a *Class Trinkets* folder by tier) and **Unique Gear**. Each evolution tree is a folder (Straight Sword, Light Armour, Metal Trinket …); every item keeps its tier, level, base attack and damage type, AAR and weight, affinity, equip load, breakpoint, effects, description, materials and tags, and says what it evolves from.
+The importer also reads the **Gear** tab and fills four more compendiums: **Weapons**, **Armour**, **Trinkets** (including the class trinkets, in a *Class Trinkets* folder by tier) and **Unique Gear**. Each evolution tree is a folder (Straight Sword, Light Armour, Metal Trinket …); every item keeps its tier, level, base attack and damage type, AAR and weight, affinity, equip load, breakpoint, effects, description, materials and tags, and says what it evolves from.
 
 Characters have an **Inventory** tab (Character Stats rows 106+):
 
@@ -149,8 +182,10 @@ Mastery sheets open as a read-only card (category, level, value, skill mod, dama
 ## Folder layout
 
 ```
-Foundry/
-  system.json                 manifest
+elaria/
+  system.json                 manifest (version and links filled in by the release workflow)
+  import-config.json          optional importer settings (see Import config)
+  .github/workflows/release.yml   builds elaria.zip and the manifest when you publish a GitHub release
   elaria.mjs                  entry point (registers everything in Hooks.once("init"))
   module/
     config.mjs                ELARIA constants and every dropdown list from the sheet

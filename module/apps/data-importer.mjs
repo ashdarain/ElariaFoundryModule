@@ -1,13 +1,14 @@
 import { downloadSheet, parseSheetLink, SheetError } from "../importer/google-sheet.mjs";
 import { readXlsx } from "../importer/xlsx.mjs";
-import { convertWorkbook } from "../importer/convert.mjs";
+import { convertWorkbook, DEFAULT_CONFIG } from "../importer/convert.mjs";
 import { buildCompendiumData, PACKS } from "../importer/build.mjs";
 import { packBanner } from "./compendium-banners.mjs";
 
 const { HandlebarsApplicationMixin, ApplicationV2 } = foundry.applications.api;
 
 const SETTING_LINK = "sheetLink";
-const DEFAULT_LINK = "https://docs.google.com/spreadsheets/d/1XaoJ9dQvdZCoZKLtum19R-zf8i50E0V_DdvV9Bn9TIo/edit?usp=sharing";
+/** The optional config file a GM can edit in the system folder (see README → Import config). */
+const CONFIG_FILE = "import-config.json";
 const CHUNK = 200;
 
 /**
@@ -38,7 +39,7 @@ export class ElariaDataImporter extends HandlebarsApplicationMixin(ApplicationV2
   static registerSettings() {
     game.settings.register("elaria", SETTING_LINK, {
       name: "ELARIA.Importer.linkSetting",
-      scope: "world", config: false, type: String, default: DEFAULT_LINK
+      scope: "world", config: false, type: String, default: ""
     });
     game.settings.registerMenu("elaria", "dataImporter", {
       name: "ELARIA.Importer.title",
@@ -77,20 +78,65 @@ export class ElariaDataImporter extends HandlebarsApplicationMixin(ApplicationV2
   #removeMissing = true;
   #summary = null;
 
+  /** The sheet link saved for this world; if none yet, the import config's defaultSheetLink (if any). */
   get sheetLink() {
-    return game.settings.get("elaria", SETTING_LINK);
+    return game.settings.get("elaria", SETTING_LINK) || this.#importConfig?.defaultSheetLink || "";
+  }
+
+  /** Contents of import-config.json (null until loaded; {} if there is none). */
+  #importConfig = null;
+  #configNote = "";
+
+  /**
+   * Read import-config.json from the system folder and merge it over the built-in defaults.
+   * Returns { converter: config for convertWorkbook, enabled: Set of compendium keys to import }.
+   */
+  async #loadImportConfig() {
+    let user = {};
+    this.#configNote = "";
+    try {
+      const res = await fetch(`systems/${game.system.id}/${CONFIG_FILE}`, { cache: "no-store" });
+      if (res.ok) {
+        const text = await res.text();
+        try {
+          user = JSON.parse(text);
+        } catch (err) {
+          throw new Error(game.i18n.format("ELARIA.Importer.configBroken", { file: CONFIG_FILE, detail: err.message }));
+        }
+      }
+    } catch (err) {
+      if (err.message?.includes(CONFIG_FILE)) throw err;   // broken JSON: stop and say so
+      user = {};                                           // no file: defaults
+    }
+    this.#importConfig = user;
+    const converter = foundry.utils.deepClone(DEFAULT_CONFIG);
+    if (user.tabs && typeof user.tabs === "object") Object.assign(converter.sheets, user.tabs);
+    if (Array.isArray(user.ignoredTabs)) converter.ignoredSheets = user.ignoredTabs;
+    if (typeof user.autoDetectDisciplines === "boolean") converter.autoDetectDisciplines = user.autoDetectDisciplines;
+    if (user.gearBaseAliases && typeof user.gearBaseAliases === "object") converter.gearBaseAliases = user.gearBaseAliases;
+    const enabled = new Set(Object.keys(PACKS).filter(k => user.compendiums?.[k] !== false));
+    const off = Object.keys(PACKS).filter(k => !enabled.has(k)).map(k => PACKS[k].label);
+    if (off.length) this.#configNote = game.i18n.format("ELARIA.Importer.configOff", { file: CONFIG_FILE, list: off.join(", ") });
+    return { converter, enabled };
   }
 
   async _prepareContext() {
     const busy = this.#state === "loading" || this.#state === "importing";
     const diffRows = this.#diff ? Object.values(this.#diff) : [];
     const sum = key => diffRows.reduce((n, r) => n + r[key], 0);
+    if (this.#importConfig === null) {
+      try { await this.#loadImportConfig(); } catch (err) { this.#configNote = err.message; }
+    }
     let linkValid = true;
-    try { parseSheetLink(this.sheetLink); } catch { linkValid = false; }
+    if (this.sheetLink) {
+      try { parseSheetLink(this.sheetLink); } catch { linkValid = false; }
+    }
     const conv = this.#conversion;
     return {
       link: this.sheetLink,
+      hasLink: !!this.sheetLink,
       linkValid,
+      configNote: this.#configNote,
       state: this.#state,
       busy,
       error: this.#error,
@@ -141,6 +187,8 @@ export class ElariaDataImporter extends HandlebarsApplicationMixin(ApplicationV2
     await this.render();
     const L = k => game.i18n.localize(`ELARIA.Importer.step.${k}`);
     try {
+      if (!this.sheetLink) throw new Error(game.i18n.localize("ELARIA.Importer.noLink"));
+      const { converter, enabled } = await this.#loadImportConfig();
       this.#setProgress(5, L("download"));
       const buffer = await downloadSheet(this.sheetLink);
       this.#downloadedAt = new Date();
@@ -152,13 +200,16 @@ export class ElariaDataImporter extends HandlebarsApplicationMixin(ApplicationV2
       this.#setProgress(55, L("convert"));
       await this.#yield();
       this.#conversion = convertWorkbook(workbook, {
-        source: { spreadsheetUrl: this.sheetLink, downloadedAt: this.#downloadedAt.toISOString() }
+        config: converter,
+        source: { downloadedAt: this.#downloadedAt.toISOString() }
       });
 
       this.#setProgress(75, L("build"));
       await this.#yield();
       const { index, docs } = this.#conversion;
       this.#build = await buildCompendiumData(index, async p => docs.get(p));
+      // Compendiums turned off in import-config.json are left alone (not created, updated or emptied).
+      for (const key of Object.keys(this.#build.packs)) if (!enabled.has(key)) delete this.#build.packs[key];
 
       this.#setProgress(90, L("compare"));
       this.#diff = await this.#computeDiff();

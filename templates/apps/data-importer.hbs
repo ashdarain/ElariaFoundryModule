@@ -11,6 +11,7 @@
       </button>
     </div>
     {{#unless linkValid}}<p class="error small">{{localize "ELARIA.Importer.badLinkInline"}}</p>{{/unless}}
+    {{#if configNote}}<p class="hint config-note"><i class="fa-solid fa-sliders"></i> {{configNote}}</p>{{/if}}
     <p class="hint"><i class="fa-solid fa-lock"></i> {{localize "ELARIA.Importer.linkHint"}}</p>
   </fieldset>
 

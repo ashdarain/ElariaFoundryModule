@@ -342,7 +342,10 @@
         "notShared": "Google wouldn't hand out a copy of the sheet ({detail}). Open the sheet → Share → General access → “Anyone with the link”, role Viewer, then press Check again.",
         "network": "Couldn't reach Google ({detail}). Check the internet connection of the computer running this browser.",
         "http": "Google answered with an error (HTTP {detail}). Try again in a minute."
-      }
+      },
+      "noLink": "Paste the link to your Google Sheet first.",
+      "configBroken": "{file} in the system folder isn't valid JSON, so nothing was imported: {detail}",
+      "configOff": "{file} turns off: {list}. Those compendiums are left as they are."
     },
     "Picker": {
       "title": "Add masteries · {name}",
