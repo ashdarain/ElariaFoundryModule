@@ -1,0 +1,48 @@
+# Builds the installable system when you publish a GitHub release.
+#
+# 1. Bump "version" in system.json (optional: the tag decides the version anyway).
+# 2. On GitHub: Releases → Draft a new release → tag it e.g. v0.11.0 → Publish.
+# 3. This workflow fills in the version and the manifest/download links in system.json, zips the system,
+#    and attaches system.json + elaria.zip to the release.
+#
+# Manifest link to give a GM (always the newest release):
+#   https://github.com/<you>/<repo>/releases/latest/download/system.json
+name: Release
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Put the version and links into system.json
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          VERSION="${TAG#v}"
+          REPO="https://github.com/${GITHUB_REPOSITORY}"
+          jq --arg v "$VERSION" --arg url "$REPO" \
+             --arg manifest "$REPO/releases/latest/download/system.json" \
+             --arg download "$REPO/releases/download/$TAG/elaria.zip" \
+             '.version = $v | .url = $url | .manifest = $manifest | .download = $download' \
+             system.json > system.tmp && mv system.tmp system.json
+          cat system.json
+
+      - name: Zip the system (system.json at the top of the zip)
+        run: |
+          FILES="system.json elaria.mjs import-config.json README.md assets lang module styles templates"
+          for f in LICENSE LICENSE.md LICENSE.txt; do [ -e "$f" ] && FILES="$FILES $f"; done
+          zip -r elaria.zip $FILES -x "*.DS_Store" "*Thumbs.db"
+
+      - name: Attach system.json and elaria.zip to the release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            system.json
+            elaria.zip
