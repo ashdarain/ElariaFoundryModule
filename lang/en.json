@@ -448,7 +448,9 @@
       "noReactionHint": "The target doesn't react, so the ability just hits. Skip the skill mod roll.",
       "thenDamage": "Roll damage",
       "hitN": "Hit {n}",
-      "eachRolled": "hits, each rolled"
+      "eachRolled": "hits, each rolled",
+      "monsterRoll": "Roll",
+      "withCritShort": "With crit"
     },
     "MonsterTab": {
       "stats": "Stat block",

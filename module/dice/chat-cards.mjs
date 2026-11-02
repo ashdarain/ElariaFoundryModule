@@ -14,6 +14,7 @@ import { resolveReaction } from "../apps/react-dialog.mjs";
 export function onRenderChatMessage(message, html) {
   html = html instanceof HTMLElement ? html : html?.[0];
   if (!game.user.isGM) html?.querySelectorAll(".gm-only").forEach(el => el.remove());
+  hideRollDetails(message, html);
   const buttons = html?.querySelectorAll("[data-elaria-action]");
   if (!buttons?.length) return;
   const mine = message.isAuthor || game.user.isGM;
@@ -28,6 +29,18 @@ export function onRenderChatMessage(message, html) {
       onCardButton(message, button.dataset.elariaAction);
     });
   }
+}
+
+/**
+ * Monsters' rolls: players who don't own the monster see only the results. Our cards mark the breakdown with
+ * .roll-detail; Foundry's own roll messages (initiative …) lose their formula and dice tooltip.
+ */
+function hideRollDetails(message, html) {
+  if (!html || game.user.isGM) return;
+  const actor = ChatMessage.getSpeakerActor(message.speaker);
+  if (actor?.type !== "monster" || actor.isOwner) return;
+  html.querySelectorAll(".roll-detail, .dice-formula, .dice-tooltip").forEach(el => el.remove());
+  html.querySelectorAll(".dice-total").forEach(el => el.removeAttribute("data-action"));
 }
 
 const actorFrom = uuid => (uuid ? fromUuidSync(uuid) : null);
@@ -70,12 +83,7 @@ async function onCardButton(message, action) {
       if (!item) return ui.notifications.warn(game.i18n.localize("ELARIA.Mastery.macroMissing"));
       const actor = actorFrom(r.actorUuid) ?? item.actor ?? defaultRollActor();
       if (action === "reactDamage" && item.hasDamage) return ElariaRollDialog.open(item.damageRollPreset(actor));
-      if (action === "reactSkill" && item.skillInfo) {
-        const preset = item.skillRollPreset(actor);
-        // The reaction already happened: the skill mod card leads on to the damage, no "No reaction" step.
-        return ElariaRollDialog.open(preset);
-      }
-      return item.toChat();
+      return item.toChat({ skillButton: false });
     }
     case "next": {
       // After a skill mod roll: open the mastery's damage roll.

@@ -1,6 +1,6 @@
 import { ELARIA } from "../config.mjs";
 import { statCode } from "../importer/convert.mjs";
-import { defaultRollActor, skillButton } from "../dice/check.mjs";
+import { defaultRollActor, hidesRollDetails, skillButton } from "../dice/check.mjs";
 import { readSkillMod, skillRollPreset } from "../dice/skill.mjs";
 
 /**
@@ -129,11 +129,16 @@ export class ElariaItem extends Item {
       });
     }
     if (this.hasDamage) return game.elaria.RollDialog.open(this.damageRollPreset(actor));
-    return this.toChat();
+    // Nothing (left) to roll: post the card. Coming from the skill mod step, it doesn't offer the skill mod again.
+    return this.toChat({ skillButton: !skipSkill && !this.skillInfo });
   }
 
-  /** Post a mastery card to chat. */
-  async toChat() {
+  /**
+   * Post a mastery card to chat.
+   * @param {object} [options]
+   * @param {boolean} [options.skillButton=true]  Add the "Roll skill mod" button (off once the skill mod is done).
+   */
+  async toChat({ skillButton: withSkill = true } = {}) {
     const s = this.system;
     const rows = [];
     if (this.type === "mastery") {
@@ -180,11 +185,11 @@ export class ElariaItem extends Item {
       buttons.push(`<button type="button" class="damage-roll" data-elaria-action="damage">`
         + `<i class="fa-solid fa-dice"></i> ${game.i18n.format("ELARIA.Dice.rollDamage", { dmg: esc(s.damage.raw) })}</button>`);
     }
-    if (skill) buttons.push(skillButton(skill));
+    if (skill && withSkill) buttons.push(skillButton(skill));
     const content = `
       <div class="elaria chat-card">
         <header><img src="${this.img}" alt=""><h3>${esc(this.name)}${s.isReaction ? " <em>(rxn)</em>" : ""}</h3></header>
-        <dl>${rows.map(([k, v]) => `<dt>${esc(String(k))}</dt><dd>${esc(String(v))}</dd>`).join("")}</dl>
+        <dl class="${hidesRollDetails(this.actor) ? "roll-detail" : ""}">${rows.map(([k, v]) => `<dt>${esc(String(k))}</dt><dd>${esc(String(v))}</dd>`).join("")}</dl>
         ${details ? `<div class="details">${details}</div>` : ""}
         ${s.tagList?.length ? `<p class="tags">${s.tagList.map(t => `<span>${esc(t)}</span>`).join("")}</p>` : ""}
         ${buttons.length ? `<div class="card-buttons">${buttons.join("")}</div>` : ""}

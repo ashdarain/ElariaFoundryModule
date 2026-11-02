@@ -175,7 +175,7 @@ export async function rollDice({ actor = null, stat = "", bonus = "", bonusPerHi
   const resultsHTML = r => r.crit?.hit
     ? `<div class="results two">
         <div class="result"><span class="label">${L("ELARIA.Dice.withoutCrit")}</span><span class="value">${r.total}</span></div>
-        <div class="result crit"><span class="label">${game.i18n.format("ELARIA.Dice.withCrit", { x: xLabel })}</span><span class="value">${r.critTotal}</span></div>
+        <div class="result crit"><span class="label">${L("ELARIA.Dice.withCritShort")}<span class="crit-x"> (×${xLabel})</span></span><span class="value">${r.critTotal}</span></div>
       </div>`
     : `<div class="results"><div class="result"><span class="label">${L("ELARIA.Dice.total")}</span><span class="value">${r.total}</span></div></div>`;
 
@@ -197,7 +197,7 @@ export async function rollDice({ actor = null, stat = "", bonus = "", bonusPerHi
 
   const modeLabel = mode === "normal" ? "" : L(`ELARIA.Dice.${mode}`);
   const heading = label || (stat ? game.i18n.format("ELARIA.Roll.check", { stat: statLabel })
-    : game.i18n.format("ELARIA.Dice.rollOf", { dice: diceSpec }));
+    : hidesRollDetails(actor) ? L("ELARIA.Dice.monsterRoll") : game.i18n.format("ELARIA.Dice.rollOf", { dice: diceSpec }));
   const tagsHTML = [
     hits > 1 ? `<span class="tag">${game.i18n.format("ELARIA.Dice.hits", { n: hits })}</span>` : "",
     targets > 1 ? `<span class="tag">${game.i18n.format("ELARIA.Dice.targetsTag", { n: targets })}</span>` : "",
@@ -260,7 +260,26 @@ export function skillButton(skill) {
  * Create the chat message. The rolls are attached so roll privacy (public / GM / blind / self) and dice
  * animations work; our own HTML replaces the default roll display.
  */
+/**
+ * What makes up a roll (dice faces, formula, modifiers, crit chance, the mastery's damage text) is a secret for
+ * monsters: players who don't own the monster only see the results. Those parts get the class "roll-detail",
+ * which onRenderChatMessage removes for them.
+ */
+export const ROLL_DETAIL = ".sets, .breakdown, .hit-math .part, .crit-check, .titles .note, .roll-tags, .crit-x";
+
+export function markRollDetails(content, selectors = ROLL_DETAIL) {
+  const doc = new DOMParser().parseFromString(`<div>${content}</div>`, "text/html");
+  doc.body.firstElementChild.querySelectorAll(selectors).forEach(el => el.classList.add("roll-detail"));
+  return doc.body.firstElementChild.innerHTML;
+}
+
+/** Does this actor's roll breakdown stay hidden from players? (Monsters.) */
+export function hidesRollDetails(actor) {
+  return actor?.type === "monster";
+}
+
 export async function postRolls(rolls, { actor, content, flags = {} }) {
+  if (hidesRollDetails(actor)) content = markRollDetails(content);
   const data = {
     author: game.user.id,
     speaker: ChatMessage.getSpeaker(actor ? { actor } : {}),

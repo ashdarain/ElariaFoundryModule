@@ -282,15 +282,14 @@ export async function resolveReaction(message, passed) {
   for (const b of card.querySelectorAll(".gm-verdict button")) b.classList.toggle("chosen", b.classList.contains(passed ? "pass" : "fail"));
   card.querySelector(".react-foot").textContent = (passed ? L("ELARIA.React.passNote") : L("ELARIA.React.failNote"))
     + (pipNote ? ` · ${pipNote}` : "");
-  // A passed reaction mastery carries on: its damage (the counter-attack), its skill mod, or just the card.
+  // A passed reaction mastery carries on: its damage, or (no damage) its card. The reaction roll stands in for
+  // the skill mod roll, so there's no skill mod button.
   card.querySelector(".react-next")?.remove();
   card.querySelector(".next-roll")?.remove();
   if (passed && item) {
     const buttons = [];
     if (item.hasDamage) buttons.push(`<button type="button" class="damage-roll" data-elaria-action="reactDamage">`
       + `<i class="fa-solid fa-dice"></i> ${esc(game.i18n.format("ELARIA.Dice.rollDamage", { dmg: item.system.damage.raw }))}</button>`);
-    if (item.skillInfo) buttons.push(`<button type="button" class="skill-roll" data-elaria-action="reactSkill">`
-      + `<i class="fa-solid fa-bullseye"></i> ${esc(game.i18n.format("ELARIA.Dice.rollSkill", { mod: item.skillInfo.raw }))}</button>`);
     if (!buttons.length) buttons.push(`<button type="button" class="next-roll" data-elaria-action="useAfterReact">`
       + `<i class="fa-solid fa-bolt"></i> ${esc(game.i18n.format("ELARIA.React.thenUse", { name: item.name }))}</button>`);
     card.insertAdjacentHTML("beforeend", `<div class="card-buttons react-next">${buttons.join("")}</div>`);
