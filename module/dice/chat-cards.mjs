@@ -61,12 +61,21 @@ async function onCardButton(message, action) {
     case "reactPass":
     case "reactFail":
       return resolveReaction(message, action === "reactPass");
-    case "useAfterReact": {
-      // A passed reaction with a reaction mastery: carry on with the mastery (skill mod → damage, or chat).
+    case "useAfterReact":
+    case "reactDamage":
+    case "reactSkill": {
+      // A passed reaction with a reaction mastery: its damage roll, its skill mod roll, or (neither) its card.
       const r = flags.react;
       const item = r?.itemUuid ? await fromUuid(r.itemUuid) : null;
       if (!item) return ui.notifications.warn(game.i18n.localize("ELARIA.Mastery.macroMissing"));
-      return item.use({ normal: true });
+      const actor = actorFrom(r.actorUuid) ?? item.actor ?? defaultRollActor();
+      if (action === "reactDamage" && item.hasDamage) return ElariaRollDialog.open(item.damageRollPreset(actor));
+      if (action === "reactSkill" && item.skillInfo) {
+        const preset = item.skillRollPreset(actor);
+        // The reaction already happened: the skill mod card leads on to the damage, no "No reaction" step.
+        return ElariaRollDialog.open(preset);
+      }
+      return item.toChat();
     }
     case "next": {
       // After a skill mod roll: open the mastery's damage roll.

@@ -50,6 +50,51 @@ export class ElariaActor extends Actor {
    * @param {"normal"|"advantage"|"disadvantage"} [options.mode]
    * @param {string|number} [options.bonus]   Extra situational bonus (number or dice formula).
    */
+  /**
+   * Roll initiative (3d6 + Fin). Core only finds an actor's *linked* tokens, so a monster opened from the Actors
+   * sidebar (unlinked tokens) rolled nothing. Here:
+   *  - combatants already in the combat for this actor (its token, or any token made from it) roll;
+   *  - otherwise its tokens on the scene (the selected ones first) are added to the combat (made if needed) and roll;
+   *  - with no token on the scene, the roll is just posted to chat.
+   */
+  async rollInitiative({ createCombatants = false, rerollInitiative = true, initiativeOptions = {} } = {}) {
+    const tokenId = this.isToken ? this.token?.id : null;
+    const mine = c => (tokenId ? c.tokenId === tokenId : c.actorId === this.id);
+    let combat = game.combat;
+    let ids = combat?.combatants.filter(mine).map(c => c.id) ?? [];
+
+    if (!ids.length && createCombatants && canvas?.scene) {
+      const placed = canvas.tokens.placeables.filter(t => (tokenId ? t.id === tokenId : t.document.actorId === this.id));
+      const selected = placed.filter(t => t.controlled);
+      const tokens = (selected.length ? selected : placed).map(t => t.document);
+      if (tokens.length) {
+        try {
+          combat ??= await getDocumentClass("Combat").create({ scene: canvas.scene.id, active: true });
+          await combat.createEmbeddedDocuments("Combatant", tokens.map(t => ({
+            tokenId: t.id, sceneId: t.parent.id, actorId: t.actorId, hidden: t.hidden
+          })));
+          ids = combat.combatants.filter(mine).map(c => c.id);
+        } catch (err) {
+          console.warn("Elaria | couldn't add to the combat", err);   // e.g. a player without permission
+        }
+      }
+    }
+
+    if (combat && ids.length) {
+      if (!rerollInitiative) ids = ids.filter(id => combat.combatants.get(id)?.initiative === null);
+      if (ids.length) await combat.rollInitiative(ids, initiativeOptions);
+      return combat;
+    }
+
+    // Not in a combat (or no token to add): post the roll so it isn't lost.
+    const roll = await new Roll(CONFIG.Combat.initiative.formula, this.getRollData()).evaluate();
+    await roll.toMessage({
+      speaker: ChatMessage.getSpeaker({ actor: this }),
+      flavor: game.i18n.format("COMBAT.RollsInitiative", { name: foundry.utils.escapeHTML(this.name) })
+    });
+    return null;
+  }
+
   async rollStat(key, { mode = "normal", bonus = "" } = {}) {
     if (!this.system.stats?.[key]) return null;
     return roll3d6({

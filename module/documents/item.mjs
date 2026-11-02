@@ -25,9 +25,16 @@ export class ElariaItem extends Item {
     return USABLE_TYPES.includes(this.type);
   }
 
-  /** Does this mastery deal damage (anything in its Damage field)? */
+  /**
+   * Does this mastery / ability deal damage? Only if its Damage field has dice to roll ("2d6+Str", "1d8 x3"):
+   * an empty field or text without dice ("—", "N/A", "None", "Heals an ally") means there's nothing to roll,
+   * so using it just posts its name and description to chat.
+   */
   get hasDamage() {
-    return this.isUsable && !!this.system.damage?.raw?.trim();
+    if (!this.isUsable) return false;
+    const d = this.system.damage ?? {};
+    if (d.count && d.sides) return true;
+    return /\d+\s*d\s*\d+/i.test(d.raw ?? "");
   }
 
   /** This mastery's skill mod as {stats, bonus, raw}, or null. */
@@ -61,14 +68,14 @@ export class ElariaItem extends Item {
   damageRollPreset(actor = this.actor, { targets = null } = {}) {
     const d = this.system.damage ?? {};
     let dice = d.count && d.sides ? `${d.count}d${d.sides}` : "";
-    let stat = d.stat || "";
-    if (!dice) {
-      const m = /(\d+)\s*d\s*(\d+)(?:\s*\+\s*([A-Za-z]+))?/i.exec(d.raw ?? "");
-      if (m) {
-        dice = `${m[1]}d${m[2]}`;
-        stat ||= (m[3] && statCode(m[3])) || "";
-      }
+    let stat = statCode(d.stat || "") || d.stat || "";
+    // Fill whatever the importer left blank from the text ("3d6+Str x2" → 3d6, Strength).
+    const m = /(\d+)\s*d\s*(\d+)(?:\s*\+\s*([A-Za-z]+))?/i.exec(d.raw ?? "");
+    if (m) {
+      dice ||= `${m[1]}d${m[2]}`;
+      stat ||= (m[3] && statCode(m[3])) || "";
     }
+    if (stat && !ELARIA.stats[stat]) stat = "";
     const note = [
       `${game.i18n.localize("ELARIA.Mastery.FIELDS.damage")}: ${d.raw}`,
       this.system.cost ? `${game.i18n.localize("ELARIA.Mastery.FIELDS.cost")}: ${this.system.cost}` : ""
