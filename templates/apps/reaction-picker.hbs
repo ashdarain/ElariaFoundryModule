@@ -1,0 +1,28 @@
+<section class="reaction-picker-body">
+  <label class="row unit"><span>{{localize "ELARIA.React.unit"}}</span>
+    <select name="actor">{{selectOptions actorChoices selected=actorUuid}}</select></label>
+  {{#if rapText}}
+  <div class="react-status {{#if outOfRap}}out{{/if}}">
+    <i class="fa-solid fa-shield-halved"></i> <span>{{rapText}}</span>
+    {{#if outOfRap}}<b>{{localize "ELARIA.React.outOfRap"}}</b>{{/if}}
+  </div>
+  {{/if}}
+  {{#if hasActor}}
+  <ol class="reaction-list">
+    <li><a class="reaction general" data-action="pick">
+      <i class="fa-solid fa-shield-halved"></i>
+      <div><span class="name">{{localize "ELARIA.React.general"}}</span>
+        <span class="text">{{localize "ELARIA.React.generalHint"}}</span></div></a></li>
+    {{#each reactions}}
+    <li><a class="reaction {{#if unequipped}}unequipped{{/if}}" data-action="pick" data-item-id="{{id}}">
+      <img src="{{img}}" alt="">
+      <div><span class="name">{{name}}{{#if unequipped}} <small>({{localize "ELARIA.React.notEquipped"}})</small>{{/if}}</span>
+        <span class="meta">{{meta}}</span>
+        {{#if text}}<span class="text">{{text}}</span>{{/if}}</div></a></li>
+    {{/each}}
+  </ol>
+  {{#unless reactions.length}}<p class="hint">{{localize "ELARIA.React.noReactions"}}</p>{{/unless}}
+  {{else}}
+  <p class="hint">{{localize "ELARIA.React.pickUnit"}}</p>
+  {{/if}}
+</section>

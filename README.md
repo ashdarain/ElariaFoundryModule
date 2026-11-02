@@ -121,7 +121,7 @@ Under the chat box are **Roll 3d6** and **Roll d20**.
 
 ## Character sheet: max resources and backgrounds
 
-**Max HP, Mana and Fatigue.** With the sheet unlocked (lock icon), the maximum next to each resource becomes editable. Type a number to override the formula; it shows in the accent colour and the tooltip gives the formula value. The ↺ button (or typing the formula value, or clearing it) goes back to the formula.
+**Max HP, Mana and Fatigue.** With the sheet unlocked (lock icon), a small bonus box appears next to each resource's maximum. The bonus (negative to lower it) is added to the formula, so the maximum still updates when Con / Wis / Res, level or exhaustion change. A max with a bonus shows in the accent colour; its tooltip gives the formula value and the bonus.
 
 **Background** (Bio tab, beside Burst). Choose the type (Nobility, Military, Civilian, Criminal), then press **d20** to roll social standing (posted to chat and filled in) or type the number yourself; you may move the roll by Demeanor or Speechcraft mod ×2 (minimum 1). The matching background's **Description**, **Perk** and **Starting inventory** are shown below it, and its name is stored on the character. The data comes from the sheet's Backgrounds tab, saved when the GM imports; until then there's a plain text box. **Biography** is the large box under both.
 
@@ -129,7 +129,7 @@ Under the chat box are **Roll 3d6** and **Roll d20**.
 
 A simple **Monster** actor following the *Monster stat block* tab. When a GM creates an actor, **Monster** is preselected; players can only create characters (a GM can make a monster and give a player ownership in the usual Foundry way).
 
-- **Header:** picture, name, type, power, size, elements, HP / FTG / MP (current / max, all typed in). GMs see the nature check DCs from the stat block (10 + Power for the overview, 8 + Power for HP/FTG/MP, 14 + Power for the stats, 12 + Power for loot, 16 + Power for abilities).
+- **Header:** picture, name, type, power, size, elements, HP / FTG / MP (current / max, all typed in), and an **Initiative** button (3d6 + Fin) that adds the monster to the combat if needed. GMs see the nature check DCs from the stat block (10 + Power for the overview, 8 + Power for HP/FTG/MP, 14 + Power for the stats, 12 + Power for loot, 16 + Power for abilities).
 - **Stat block tab:** the 13 stat modifiers, typed in directly (monsters have no stat points; click a name or the die to open the roll window), defence (AR, MAR, AAR, NAR, NMAR, elemental res) and combat (passive awareness, reactions per round, crit chance, crit damage, Mv). Crit and reactions feed the roll window and the combat tracker pips.
 - **Abilities tab:** monster *abilities* (name, skill mod, damage, cost, tags, description, all optional). Click one to use it exactly like a mastery: skill mod first (with "No reaction"), then damage, or post to chat. Masteries can be dragged onto monsters too, and abilities can go on the hotbar.
 - **Description & loot tab:** description, unique loot, loot tables.
@@ -149,13 +149,12 @@ Every combatant in the combat tracker (sidebar and popout) has a row of pips und
 
 ### Reacting
 
-Rolls are made from the player's side: when an enemy attacks a player, the player rolls to react (the enemy doesn't roll to hit). The **React** button at the bottom left of the hotbar opens the React window for the selected token, or the player's character if nothing is selected (or their only character).
+Rolls are made from the player's side: when an enemy attacks a player, the player rolls to react (the enemy doesn't roll to hit). The **React** button at the bottom left of the hotbar opens a list for the selected token, or the player's character if nothing is selected (or their only character): a **General Reaction** plus every reaction (rxn) mastery or ability the unit has (unequipped masteries are greyed and listed last). Picking one opens the React window.
 
-- **Reacting to** sets the DC (Mechanics, "Reaction time goal numbers"): an action done to you `n + 10 + skill mod`; not done to you `n + 14 + skill mod`; an enemy leaving melee `n + 12 + skill mod`; your own action `n + 16`. Type the attacker's skill mod.
-- **n** starts at 0 every round and rises by 2 for every *successful* reaction that round, so each pass makes the next reaction harder. It's filled in from the reaction pips. **Other DC change** covers the GM's call (head shot −2, back +1 …).
+- **Reacting to** says what kind of action it is; it doesn't change the roll, it tells the GM which DC applies (Mechanics, "Reaction time goal numbers"): an action done to you `n + 10 + attacker's skill mod`; not done to you `n + 14 + skill mod`; an enemy leaving melee `n + 12 + skill mod`; your own action `n + 16`. **n** starts at 0 every round and rises by 2 for every *successful* reaction that round.
 - Roll with Awareness by default (Overwatch can use Fin or Pre), plus any bonus and the injury/exhaustion penalty; advantage/disadvantage as usual.
-- The card shows PASS or FAIL, and in combat it fills the reactor's next pip green or red. The window warns when no reactions are left this round.
-- **Reaction masteries (rxn):** using one (sheet, hotbar, mastery card) first asks **Roll as a reaction** or **Use normally**. As a reaction, the React window opens for that character with the mastery shown at the top; a PASS card then has a **Use <mastery>** button that carries on with it (skill mod → damage, or chat). Masteries and abilities tagged *Reaction* (or *Rxn*) count as rxn even if the sheet didn't mark them; re-import to update the compendium copies (17 masteries on the current sheet).
+- Players never see the DC. The card shows the total and waits; the GM sees the DC formula (with this round's n) and **Pass** / **Fail** buttons, and pressing one updates the card for everyone and, in combat, fills the reactor's next pip green or red. Pressing the other button later changes the verdict and that same pip. The windows warn when no reactions are left this round.
+- **Reaction masteries (rxn):** using one (sheet, hotbar, mastery card) first asks **Roll as a reaction** or **Use normally**. As a reaction, the React window opens with the mastery shown at the top; once the GM marks it passed, the card gets a **Use <mastery>** button that carries on with it (skill mod → damage, or chat). Masteries and abilities tagged *Reaction* (or *Rxn*) count as rxn even if the sheet didn't mark them.
 
 ## Browsing the compendiums
 
@@ -172,7 +171,7 @@ The importer also reads the **Gear** tab and fills four more compendiums: **Weap
 Characters have an **Inventory** tab (Character Stats rows 106+):
 
 - **Coins:** platinum, gold, silver, copper, ironne.
-- **Belt** (weapons ready to use, 3 slots), **Armour** (worn, 2), **Trinkets** (worn, 5, at most 1 class trinket) and the **Bag** (max slots = (equip load + bag rank) × 4; each entry takes one slot and has a quantity). Over-full sections turn red.
+- **Belt** (weapons ready to use, 2 slots), **Armour** (worn, 1), **Trinkets** (worn, 5, at most 1 class trinket) and the **Bag** (max slots = (equip load + bag rank) × 4; each entry takes one slot and has a quantity). Over-full sections turn red. The coins show their total in silver beside them (copper and ironne as decimals); untick **Total** in edit mode to hide it.
 - The circle on each row moves gear between the bag and the belt (weapons) or worn (armour, trinkets). **Worn armour adds its AAR** to the character's AAR, and so to AR and MAR (broken armour doesn't count). A manually typed AAR from older versions moved into the AAR Bonus column.
 - Gear that needs a higher equip load than the character has is marked *Too heavy*; gear above the character's level shows its level in red.
 - Click a weapon's name to roll its base attack in the roll window (crit, hits, targets as usual); other gear is posted to chat. Gear can go on the hotbar too.

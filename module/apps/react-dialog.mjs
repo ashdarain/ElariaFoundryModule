@@ -1,6 +1,6 @@
 import { ELARIA } from "../config.mjs";
 import { postRolls } from "../dice/check.mjs";
-import { findCombatant, reactionSummary, recordReaction } from "../combat/reactions.mjs";
+import { findCombatant, reactionCount, reactionStates, reactionSummary, recordReaction } from "../combat/reactions.mjs";
 
 const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api;
 const esc = s => foundry.utils.escapeHTML(String(s));
@@ -8,8 +8,9 @@ const L = k => game.i18n.localize(k);
 
 /**
  * Reaction DCs (Mechanics, "Reaction time goal numbers"). n starts at 0 each round and rises by 2 for every
- * successful reaction that round (failed reactions don't raise it). Rolls are made from the player's side: the
- * reactor rolls 3d6 + Awareness against the DC.
+ * successful reaction that round (failed reactions don't raise it). The reactor rolls 3d6 + Awareness; the DC
+ * involves the attacker's skill mod, which players don't know, so the card waits for the GM to press Pass or Fail.
+ * The GM sees the DC formula on the card.
  */
 export const REACTION_TYPES = {
   towards: { base: 10, skill: true },     // an action done towards you: n + 10 + attacker's skill mod
@@ -17,6 +18,12 @@ export const REACTION_TYPES = {
   leavingMelee: { base: 12, skill: true },// an enemy leaving melee: n + 12 + skill mod (or Fin)
   own: { base: 16, skill: false }         // your own action (a trap you're about to trigger, tripping): n + 16
 };
+
+/** The GM's DC reminder for a reaction type, e.g. "n 2 + 10 + attacker's skill mod". */
+function dcFormula(type, n) {
+  const t = REACTION_TYPES[type] ?? REACTION_TYPES.towards;
+  return `n ${n} + ${t.base}${t.skill ? ` + ${L(`ELARIA.React.skillFor.${type}`)}` : ""}`;
+}
 
 /** Who is reacting: the selected token, else the user's character (or their only character). */
 export function reactingUnit() {
@@ -31,8 +38,8 @@ export function reactingUnit() {
 }
 
 /**
- * React window: pick the reaction type, type the attacker's skill mod, roll Awareness against
- * n + base + skill mod. The result fills the reactor's next reaction pip in the combat tracker (green / red).
+ * React window: pick what you're reacting to and roll (Awareness by default). The chat card shows the total;
+ * the GM presses Pass or Fail on it, which fills the reactor's next reaction pip (green / red).
  */
 export class ElariaReactDialog extends HandlebarsApplicationMixin(ApplicationV2) {
 
@@ -63,9 +70,8 @@ export class ElariaReactDialog extends HandlebarsApplicationMixin(ApplicationV2)
    * @param {Item} [options.item]    The reaction mastery / ability being used: shown at the top, and a passed
    *                                 reaction's card gets a button to carry on with it.
    */
-  static open({ actor = null, item = null } = {}) {
-    let token = null;
-    if (actor) token = canvas?.tokens?.controlled?.find(t => t.actor === actor) ?? null;
+  static open({ actor = null, item = null, token = null } = {}) {
+    if (actor) token ??= canvas?.tokens?.controlled?.find(t => t.actor === actor) ?? null;
     else ({ actor, token } = reactingUnit());
     const existing = foundry.applications.instances.get("elaria-react-dialog");
     if (existing) {
@@ -89,7 +95,7 @@ export class ElariaReactDialog extends HandlebarsApplicationMixin(ApplicationV2)
     const item = this.item;
     return item ? game.i18n.format("ELARIA.React.titleWith", { name: item.name }) : game.i18n.localize("ELARIA.React.title");
   }
-  #values = { type: "towards", skillMod: "", dcMod: 0, stat: "awa", bonus: "" };
+  #values = { type: "towards", stat: "awa", bonus: "" };
 
   get actor() {
     return this.#actorUuid ? fromUuidSync(this.#actorUuid) : null;
@@ -118,7 +124,6 @@ export class ElariaReactDialog extends HandlebarsApplicationMixin(ApplicationV2)
       typeChoices: Object.fromEntries(Object.keys(REACTION_TYPES).map(k => [k, L(`ELARIA.React.type.${k}`)])),
       statChoices,
       ...this.#values,
-      n: summary.n,
       inCombat: !!combatant,
       rapText: combatant ? game.i18n.format("ELARIA.React.rap", { used: summary.used, n: summary.count }) : L("ELARIA.React.noCombat"),
       outOfRap: combatant && summary.used >= summary.count,
@@ -139,24 +144,19 @@ export class ElariaReactDialog extends HandlebarsApplicationMixin(ApplicationV2)
     });
     for (const el of form.querySelectorAll("input, select")) el.addEventListener("input", () => this.#updatePreview());
     this.#updatePreview();
-    form.querySelector("[name=skillMod]")?.focus();
+    form.querySelector("[data-mode=normal]")?.focus();
   }
 
   #remember() {
     const v = this.#read();
-    this.#values = { type: v.type, skillMod: v.skillModText, dcMod: v.dcMod, stat: v.stat, bonus: v.bonus };
+    this.#values = { type: v.type, stat: v.stat, bonus: v.bonus };
   }
 
   #read() {
     const f = new foundry.applications.ux.FormDataExtended(this.element).object;
     const type = REACTION_TYPES[f.type] ? f.type : "towards";
-    const t = REACTION_TYPES[type];
-    const skillMod = t.skill ? Math.round(Number(f.skillMod) || 0) : 0;
-    const n = Math.max(0, Math.round(Number(f.n) || 0));
-    const dcMod = Math.round(Number(f.dcMod) || 0);
     return {
-      type, skillMod, skillModText: f.skillMod ?? "", n, dcMod,
-      dc: n + t.base + skillMod + dcMod,
+      type,
       stat: f.stat || "awa",
       bonus: String(f.bonus ?? "").trim(),
       penalty: Math.max(0, Math.round(Number(f.penalty) || 0))
@@ -165,13 +165,7 @@ export class ElariaReactDialog extends HandlebarsApplicationMixin(ApplicationV2)
 
   #updatePreview() {
     const v = this.#read();
-    const t = REACTION_TYPES[v.type];
     const el = this.element;
-    el.querySelector(".skill-row").classList.toggle("inactive", !t.skill);
-    const parts = [`n ${v.n}`, `${t.base}`];
-    if (t.skill) parts.push(`${v.skillMod} <small>${L("ELARIA.React.skillShort")}</small>`);
-    if (v.dcMod) parts.push(`${v.dcMod} <small>${L("ELARIA.React.dcModShort")}</small>`);
-    el.querySelector(".dc-preview").innerHTML = `${L("ELARIA.React.dc")} <b>${v.dc}</b> <small>= ${parts.join(" + ").replace(/\+ -/g, "− ")}</small>`;
     el.querySelector("[name=penalty]")?.classList.toggle("has-penalty", v.penalty !== 0);
     const bad = v.bonus && !Roll.validate(v.bonus);
     el.querySelector(".bonus-error").hidden = !bad;
@@ -184,8 +178,6 @@ export class ElariaReactDialog extends HandlebarsApplicationMixin(ApplicationV2)
     if (v.bonus && !Roll.validate(v.bonus)) return ui.notifications.warn(L("ELARIA.Dice.badBonus"));
     const combatant = this.combatant;
     await rollReaction({ actor, combatant, ...v, item: this.item, mode: target.dataset.mode ?? "normal" });
-    this.#values.skillMod = "";
-    this.#values.dcMod = 0;
     return this.close();
   }
 
@@ -195,17 +187,15 @@ export class ElariaReactDialog extends HandlebarsApplicationMixin(ApplicationV2)
   }
 }
 
-/** Roll the reaction, post the card, and fill the next reaction pip. */
-export async function rollReaction({ actor, combatant, type, skillMod, n, dcMod, dc, stat, bonus, penalty, item = null,
-  mode = "normal" }) {
-  const t = REACTION_TYPES[type];
+/** Roll the reaction and post the card. The GM decides pass / fail on the card (see resolveReaction). */
+export async function rollReaction({ actor, combatant = null, type = "towards", stat = "awa", bonus = "", penalty = 0,
+  item = null, mode = "normal" }) {
   const mod = actor.system.stats?.[stat]?.mod ?? 0;
   const dice = mode === "advantage" ? "{3d6, 3d6}kh" : mode === "disadvantage" ? "{3d6, 3d6}kl" : "3d6";
   let formula = `${dice} + ${mod}`;
   if (bonus) formula += ` + (${bonus})`;
   if (penalty) formula += ` - ${penalty}`;
   const roll = await new Roll(formula).evaluate();
-  const passed = roll.total >= dc;
 
   const sets = roll.dice.slice(0, mode === "normal" ? 1 : 2).map(d => {
     const faces = d.results.map(x => x.result);
@@ -218,21 +208,11 @@ export async function rollReaction({ actor, combatant, type, skillMod, n, dcMod,
   const kept = sets.find(s => s.kept)?.total ?? 0;
   const bonusValue = roll.total - kept - mod + penalty;
   const sign = x => (x < 0 ? `− ${Math.abs(x)}` : `+ ${x}`);
+  const n = reactionSummary(combatant, actor).n;
 
-  // Fill the pip (only in combat, and only if there's one left).
-  let pipNote = "";
-  if (combatant) {
-    const recorded = await recordReaction(combatant, passed ? "pass" : "fail");
-    const s = reactionSummary(combatant, actor);
-    pipNote = recorded ? game.i18n.format("ELARIA.React.rap", { used: s.used, n: s.count }) : L("ELARIA.React.noRapLeft");
-  }
-
-  const dcParts = [`n ${n}`, `${t.base}`];
-  if (t.skill) dcParts.push(`${skillMod} ${L("ELARIA.React.skillShort")}`);
-  if (dcMod) dcParts.push(`${dcMod} ${L("ELARIA.React.dcModShort")}`);
   const modeLabel = mode === "normal" ? "" : L(`ELARIA.Dice.${mode}`);
   const content = `
-    <div class="elaria roll-card react-card ${passed ? "passed" : "failed"}">
+    <div class="elaria roll-card react-card pending">
       <header>
         ${item ? `<img src="${esc(item.img)}" alt="">` : ""}
         <div class="titles"><h3>${esc(item
@@ -246,17 +226,65 @@ export async function rollReaction({ actor, combatant, type, skillMod, n, dcMod,
           <span class="eq">= ${s.total}</span></div>`).join("")}</div>
       <div class="breakdown">3d6 <b>${kept}</b> ${sign(mod)} <small>${esc(L(ELARIA.stats[stat]?.label ?? stat))}</small>
         ${bonus ? ` ${sign(bonusValue)}` : ""}${penalty ? ` − ${penalty} <small>${L("ELARIA.Dice.penaltyShort")}</small>` : ""}</div>
-      <div class="dc-line">${L("ELARIA.React.vs")} <b>${L("ELARIA.React.dc")} ${dc}</b> <small>(${esc(dcParts.join(" + ").replace(/\+ -/g, "− "))})</small></div>
+      <div class="dc-line gm-only">${L("ELARIA.React.dc")}: ${esc(dcFormula(type, n))}</div>
       <div class="results two">
         <div class="result"><span class="label">${L("ELARIA.Dice.total")}</span><span class="value">${roll.total}</span></div>
-        <div class="result verdict ${passed ? "pass" : "fail"}"><span class="label">${L("ELARIA.React.result")}</span>
-          <span class="value">${passed ? L("ELARIA.React.pass") : L("ELARIA.React.fail")}</span></div>
+        <div class="result verdict pending"><span class="label">${L("ELARIA.React.result")}</span>
+          <span class="value">${L("ELARIA.React.pending")}</span></div>
       </div>
-      <p class="react-foot">${passed ? L("ELARIA.React.passNote") : L("ELARIA.React.failNote")}${pipNote ? ` · ${esc(pipNote)}` : ""}</p>
-      ${passed && item ? `<button type="button" class="next-roll" data-elaria-action="useAfterReact">`
-        + `<i class="fa-solid fa-bolt"></i> ${esc(game.i18n.format("ELARIA.React.thenUse", { name: item.name }))}</button>` : ""}
+      <div class="gm-verdict gm-only">
+        <button type="button" class="pass" data-elaria-action="reactPass"><i class="fa-solid fa-check"></i> ${L("ELARIA.React.markPass")}</button>
+        <button type="button" class="fail" data-elaria-action="reactFail"><i class="fa-solid fa-xmark"></i> ${L("ELARIA.React.markFail")}</button>
+      </div>
+      <p class="react-foot">${L("ELARIA.React.pendingNote")}</p>
     </div>`;
   return postRolls([roll], { actor, content, flags: { react: {
-    type, dc, passed, itemUuid: item?.uuid ?? "", actorUuid: actor.uuid
+    type, passed: null, itemUuid: item?.uuid ?? "", actorUuid: actor.uuid,
+    combatId: combatant?.parent?.id ?? null, combatantId: combatant?.id ?? null
   } } });
+}
+
+/**
+ * GM only: mark a reaction card passed or failed. Updates the card, and fills the reactor's next reaction pip.
+ * Pressing the other button later changes the verdict (and that pip) instead of using another one.
+ */
+export async function resolveReaction(message, passed) {
+  if (!game.user.isGM) return;
+  const r = message.flags?.elaria?.react;
+  if (!r) return;
+  const actor = r.actorUuid ? fromUuidSync(r.actorUuid) : null;
+  const item = r.itemUuid ? fromUuidSync(r.itemUuid) : null;
+  const combatant = r.combatId ? game.combats.get(r.combatId)?.combatants.get(r.combatantId) ?? null : null;
+
+  // The pip: change the one this card filled, or fill the next free one.
+  let pipNote = "", pipIndex = r.pipIndex ?? null;
+  if (combatant) {
+    if (pipIndex !== null) {
+      const states = Array.from({ length: reactionCount(combatant) }, (_, i) => reactionStates(combatant)[i] ?? "");
+      states[pipIndex] = passed ? "pass" : "fail";
+      await combatant.setFlag("elaria", "reactions", states);
+    } else {
+      const free = Array.from({ length: reactionCount(combatant) }, (_, i) => reactionStates(combatant)[i] ?? "").indexOf("");
+      if (await recordReaction(combatant, passed ? "pass" : "fail")) pipIndex = free;
+    }
+    const s = reactionSummary(combatant, actor);
+    pipNote = pipIndex !== null ? game.i18n.format("ELARIA.React.rap", { used: s.used, n: s.count }) : L("ELARIA.React.noRapLeft");
+  }
+
+  const doc = new DOMParser().parseFromString(`<div>${message.content}</div>`, "text/html");
+  const card = doc.querySelector(".react-card");
+  if (!card) return;
+  card.classList.remove("pending", "passed", "failed");
+  card.classList.add(passed ? "passed" : "failed");
+  const verdict = card.querySelector(".result.verdict");
+  verdict.className = `result verdict ${passed ? "pass" : "fail"}`;
+  verdict.querySelector(".value").textContent = passed ? L("ELARIA.React.pass") : L("ELARIA.React.fail");
+  for (const b of card.querySelectorAll(".gm-verdict button")) b.classList.toggle("chosen", b.classList.contains(passed ? "pass" : "fail"));
+  card.querySelector(".react-foot").textContent = (passed ? L("ELARIA.React.passNote") : L("ELARIA.React.failNote"))
+    + (pipNote ? ` · ${pipNote}` : "");
+  card.querySelector(".next-roll")?.remove();
+  if (passed && item) card.insertAdjacentHTML("beforeend", `<button type="button" class="next-roll" data-elaria-action="useAfterReact">`
+    + `<i class="fa-solid fa-bolt"></i> ${esc(game.i18n.format("ELARIA.React.thenUse", { name: item.name }))}</button>`);
+  return message.update({ content: doc.body.firstElementChild.innerHTML,
+    "flags.elaria.react.passed": passed, "flags.elaria.react.pipIndex": pipIndex });
 }

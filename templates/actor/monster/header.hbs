@@ -7,6 +7,8 @@
       <span class="dc" data-tooltip="ELARIA.Monster.dcHint">{{localize "ELARIA.Monster.dc"}} {{system.natureDC.overview}}</span>
       <span class="dc" data-tooltip="ELARIA.Monster.dcVitalsHint">{{localize "ELARIA.Monster.dcVitals"}} {{system.natureDC.vitals}}</span>
       {{/if}}
+      <a class="initiative" data-action="rollInitiative" data-tooltip="ELARIA.Monster.initiativeHint">
+        <i class="fa-solid fa-dice"></i> {{localize "ELARIA.Combat.initiative"}} <b>{{initiativeLabel}}</b></a>
     </div>
     <div class="id-grid">
       <label><span>{{localize "ELARIA.Monster.type"}}</span>

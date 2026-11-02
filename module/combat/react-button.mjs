@@ -1,8 +1,8 @@
-import { ElariaReactDialog } from "../apps/react-dialog.mjs";
+import { ElariaReactionPicker } from "../apps/reaction-picker.mjs";
 
 /**
- * "React" button at the bottom left of the hotbar. Opens the React window for the selected token
- * (or the player's character). Kept attached across hotbar re-renders.
+ * "React" button at the bottom left of the hotbar. Lists the selected token's (or the player's character's)
+ * reactions plus a General Reaction; picking one opens the React window. Kept attached across hotbar re-renders.
  */
 let button = null;
 let observer = null;
@@ -16,7 +16,7 @@ function build() {
   el.addEventListener("click", ev => {
     ev.preventDefault();
     ev.stopPropagation();
-    ElariaReactDialog.open();
+    ElariaReactionPicker.open();
   });
   return el;
 }

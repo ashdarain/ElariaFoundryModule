@@ -26,13 +26,14 @@ import { onRenderChatMessage } from "./module/dice/chat-cards.mjs";
 import { onRenderCombatTracker, onUpdateCombat } from "./module/combat/reactions.mjs";
 import { initReactButton } from "./module/combat/react-button.mjs";
 import { ElariaReactDialog, rollReaction } from "./module/apps/react-dialog.mjs";
+import { ElariaReactionPicker } from "./module/apps/reaction-picker.mjs";
 import { initChatDiceButtons, placeChatDiceButtons } from "./module/dice/chat-buttons.mjs";
 
 Hooks.once("init", () => {
   console.log("Elaria | Initializing system");
 
   CONFIG.ELARIA = ELARIA;
-  game.elaria = { config: ELARIA, rules, DataImporter: ElariaDataImporter, RollDialog: ElariaRollDialog, ReactDialog: ElariaReactDialog, rollReaction, roll3d6, rollDice, rollD20, useMastery };
+  game.elaria = { config: ELARIA, rules, DataImporter: ElariaDataImporter, RollDialog: ElariaRollDialog, ReactDialog: ElariaReactDialog, ReactionPicker: ElariaReactionPicker, rollReaction, roll3d6, rollDice, rollD20, useMastery };
 
   // GM importer: Google Sheet → world compendiums
   ElariaDataImporter.registerSettings();

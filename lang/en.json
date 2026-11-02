@@ -95,9 +95,8 @@
       "temp": "temp",
       "lifePointsShort": "LP",
       "lifePointsUnit": "life points",
-      "maxEdit": "Maximum (formula gives {n}). Type a number to override it.",
-      "maxOverridden": "Overridden — the formula gives {n}.",
-      "resetMax": "Use the formula maximum"
+      "maxBonusTip": "Formula {n}, bonus {b}.",
+      "maxBonusHint": "Bonus to the maximum (negative to lower it). The maximum still follows the formula."
     },
     "Defence": {
       "title": "Defence",
@@ -132,7 +131,7 @@
       "armour": "Armour",
       "trinkets": "Trinkets",
       "bag": "Bag",
-      "beltHint": "Weapons ready to use (3 belt slots on the character sheet).",
+      "beltHint": "Weapons ready to use (2 belt slots).",
       "armourHint": "Worn armour. Its AAR is added to this character's AAR (and so to AR and MAR).",
       "trinketsHint": "5 trinkets can be worn at a time, only 1 of them a class trinket. Duplicate effects from the same evolution line don't stack.",
       "bagHint": "Everything else. Each entry takes one bag slot; max bag slots = (equip load + bag rank) × 4.",
@@ -499,7 +498,8 @@
       "fullTokenSettings": "All token settings…",
       "dcVitals": "HP/FTG/MP DC",
       "dcVitalsHint": "Nature check DC (8 + Power) to learn its HP, FTG and MP. Only the GM sees this.",
-      "modHint": "Modifier, added to rolls with this stat"
+      "modHint": "Modifier, added to rolls with this stat",
+      "initiativeHint": "Roll initiative (3d6 + Fin); adds the monster to the combat"
     },
     "Ability": {
       "new": "New Ability",
@@ -507,25 +507,17 @@
     },
     "React": {
       "button": "React",
-      "buttonHint": "Roll a reaction for your selected token (or your character)",
+      "buttonHint": "Pick a reaction for your selected token (or your character)",
       "title": "React",
       "unit": "Reacting",
       "pickUnit": "Select the token that is reacting, or pick it here.",
       "reactingTo": "Reacting to",
       "type": {
-        "towards": "An action done to you (n + 10 + skill mod)",
-        "notTowards": "An action not done to you (n + 14 + skill mod)",
-        "leavingMelee": "An enemy leaving melee (n + 12 + skill mod)",
-        "own": "Your own action, e.g. a trap (n + 16)"
+        "towards": "An action done to you",
+        "notTowards": "An action not done to you",
+        "leavingMelee": "An enemy leaving melee",
+        "own": "Your own action, e.g. a trap"
       },
-      "attackerSkill": "Attacker's skill mod",
-      "attackerSkillHint": "e.g. 3",
-      "n": "n (+2 per pass)",
-      "nHint": "n starts at 0 every round and goes up by 2 for every successful reaction this round (failed ones don't count). Filled in from the reaction pips.",
-      "dcMod": "Other DC change",
-      "dcModHint": "GM's call or circumstances, e.g. −2 for a head shot, +1 for the back",
-      "dcModShort": "other",
-      "skillShort": "skill mod",
       "dc": "DC",
       "rollWith": "Roll with",
       "roll": "Roll reaction",
@@ -546,14 +538,34 @@
       "titleWith": "React: {name}",
       "usingRxn": "Reacting with this mastery",
       "cardTitleWith": "{name} reacts: {item}",
-      "thenUse": "Use {name}"
+      "thenUse": "Use {name}",
+      "skillFor": {
+        "towards": "attacker's skill mod",
+        "notTowards": "skill mod (or relevant stat)",
+        "leavingMelee": "skill mod (or Fin)"
+      },
+      "gmDecides": "Roll and the GM decides on the chat card whether the reaction passes.",
+      "pending": "GM?",
+      "pendingNote": "Waiting for the GM to decide.",
+      "markPass": "Pass",
+      "markFail": "Fail",
+      "pickerTitle": "Reactions",
+      "general": "General Reaction",
+      "generalHint": "Any reaction not tied to a mastery or ability.",
+      "notEquipped": "not equipped",
+      "noReactions": "No reaction (rxn) masteries or abilities. Masteries tagged Reaction count.",
+      "skillBit": "skill {s}"
     },
     "Coins": {
       "pp": "Platinum",
       "gp": "Gold",
       "sp": "Silver",
       "cp": "Copper",
-      "ironne": "Ironne"
+      "ironne": "Ironne",
+      "total": "{n} sp",
+      "totalHint": "All your coins added up, in silver (1 cp = 0.1 sp, 1 ironne = 0.01 sp).",
+      "showTotal": "Total",
+      "showTotalHint": "Show the total value in silver"
     },
     "Gear": {
       "kind": {

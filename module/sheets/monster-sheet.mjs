@@ -18,6 +18,7 @@ export class ElariaMonsterSheet extends HandlebarsApplicationMixin(ActorSheetV2)
     form: { submitOnChange: true },
     actions: {
       rollStat: ElariaMonsterSheet.#onRollStat,
+      rollInitiative: ElariaMonsterSheet.#onRollInitiative,
       createAbility: ElariaMonsterSheet.#onCreateAbility,
       useItem: ElariaMonsterSheet.#onUseItem,
       postItem: ElariaMonsterSheet.#onPostItem,
@@ -52,6 +53,7 @@ export class ElariaMonsterSheet extends HandlebarsApplicationMixin(ActorSheetV2)
     Object.assign(context, {
       actor, system,
       isGM: game.user.isGM,
+      initiativeLabel: (() => { const fin = system.stats?.fin?.mod ?? 0; return `3d6 ${fin < 0 ? "−" : "+"} ${Math.abs(fin)}`; })(),
       tabs: this._prepareTabs("primary"),
       resourceList: ["hp", "ftg", "mp"].map(key => {
         const r = system.resources[key];
@@ -134,6 +136,11 @@ export class ElariaMonsterSheet extends HandlebarsApplicationMixin(ActorSheetV2)
   /* -------------------------------------------- */
   /*  Actions                                     */
   /* -------------------------------------------- */
+
+  /** Roll initiative (3d6 + Fin), adding the monster to the combat if it isn't in it yet. */
+  static #onRollInitiative() {
+    return this.document.rollInitiative({ createCombatants: true });
+  }
 
   static #onRollStat(event, target) {
     const stat = target.dataset.stat;

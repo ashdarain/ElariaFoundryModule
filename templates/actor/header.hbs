@@ -42,11 +42,11 @@
         <input type="number" name="system.resources.{{key}}.value" value="{{value}}" min="0" max="{{max}}" step="1">
         <a class="step" data-action="adjustResource" data-resource="{{key}}" data-delta="1" data-tooltip="ELARIA.Resource.plus"><i class="fa-solid fa-plus"></i></a>
         {{#if ../editMode}}
-        <span class="max editing">/ <input type="number" name="system.resources.{{key}}.maxOverride" value="{{max}}" min="0" step="1"
-          class="max-input {{#if overridden}}overridden{{/if}}" data-tooltip="{{maxTip}}">
-          {{#if overridden}}<a class="reset-max" data-action="resetMax" data-resource="{{key}}" data-tooltip="ELARIA.Resource.resetMax"><i class="fa-solid fa-rotate-left"></i></a>{{/if}}</span>
+        <span class="max editing {{#if hasBonus}}bonused{{/if}}" data-tooltip="{{maxTip}}">/ {{max}}
+          <input type="number" name="system.resources.{{key}}.maxBonus" value="{{maxBonus}}" step="1"
+            class="max-bonus {{#if hasBonus}}bonused{{/if}}" data-tooltip="ELARIA.Resource.maxBonusHint"></span>
         {{else}}
-        <span class="max {{#if overridden}}overridden{{/if}}" {{#if overridden}}data-tooltip="{{maxTip}}"{{/if}}>/ {{max}}</span>
+        <span class="max {{#if hasBonus}}bonused{{/if}}" {{#if hasBonus}}data-tooltip="{{maxTip}}"{{/if}}>/ {{max}}</span>
         {{/if}}
         <div class="bar"><div class="fill" style="width: {{pct}}%"></div></div>
         <label class="temp" data-tooltip="ELARIA.Resource.tempHint">

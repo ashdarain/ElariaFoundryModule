@@ -15,14 +15,8 @@
     {{#if noActor}}<p class="bonus-error">{{localize "ELARIA.React.pickUnit"}}</p>{{/if}}
     <label class="row"><span>{{localize "ELARIA.React.reactingTo"}}</span>
       <select name="type">{{selectOptions typeChoices selected=type}}</select></label>
-    <label class="row skill-row"><span>{{localize "ELARIA.React.attackerSkill"}}</span>
-      <input type="number" name="skillMod" value="{{skillMod}}" step="1" placeholder="{{localize 'ELARIA.React.attackerSkillHint'}}"></label>
-    <label class="row"><span data-tooltip="ELARIA.React.nHint">{{localize "ELARIA.React.n"}}</span>
-      <input type="number" name="n" value="{{n}}" min="0" step="2" class="small-num"></label>
-    <label class="row"><span>{{localize "ELARIA.React.dcMod"}}</span>
-      <input type="number" name="dcMod" value="{{dcMod}}" step="1" class="small-num" placeholder="0" data-tooltip="ELARIA.React.dcModHint"></label>
   </div>
-  <div class="preview-row"><span class="dc-preview"></span></div>
+  <p class="hint react-gm-note">{{localize "ELARIA.React.gmDecides"}}</p>
   <div class="rows">
     <label class="row"><span>{{localize "ELARIA.React.rollWith"}}</span>
       <select name="stat">{{selectOptions statChoices selected=stat}}</select></label>

@@ -1,16 +1,19 @@
 import { ElariaRollDialog } from "../apps/roll-dialog.mjs";
 import { rollD20, defaultRollActor } from "./check.mjs";
 import { skillRollPreset } from "./skill.mjs";
+import { resolveReaction } from "../apps/react-dialog.mjs";
 
 /**
  * Buttons on Elaria chat cards:
  *  - reroll (top right of roll cards): opens the roll window with the same settings (d20: rolls again)
  *  - "Roll skill mod": opens the roll window for the mastery's skill mod roll
  *  - "Roll damage" (mastery cards): opens the roll window for the mastery's damage
- * Only the person who made the message (and GMs) see them.
+ *  - "Pass" / "Fail" (reaction cards, GM only): the GM's verdict on the reaction
+ * Only the person who made the message (and GMs) see them. Anything marked .gm-only is shown to GMs only.
  */
 export function onRenderChatMessage(message, html) {
   html = html instanceof HTMLElement ? html : html?.[0];
+  if (!game.user.isGM) html?.querySelectorAll(".gm-only").forEach(el => el.remove());
   const buttons = html?.querySelectorAll("[data-elaria-action]");
   if (!buttons?.length) return;
   const mine = message.isAuthor || game.user.isGM;
@@ -55,6 +58,9 @@ async function onCardButton(message, action) {
         actor: actorFrom(s.actorUuid), skill: s, name: s.name, img: s.img, targets: s.targets, aoe: !!s.aoe
       }));
     }
+    case "reactPass":
+    case "reactFail":
+      return resolveReaction(message, action === "reactPass");
     case "useAfterReact": {
       // A passed reaction with a reaction mastery: carry on with the mastery (skill mod → damage, or chat).
       const r = flags.react;

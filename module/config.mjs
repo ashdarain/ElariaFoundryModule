@@ -229,9 +229,11 @@ ELARIA.gearLocations = {
 };
 
 /** Slots on the character sheet's Inventory section (Character Stats rows 113–125). */
-ELARIA.inventory = { beltSlots: 3, armourSlots: 2, trinketSlots: 5, classTrinketSlots: 1 };
+ELARIA.inventory = { beltSlots: 2, armourSlots: 1, trinketSlots: 5, classTrinketSlots: 1 };
 
 /** Coins (Shops and Inventory): 1 pp = 10 gp = 100 sp = 1 000 cp = 10 000 ironne. */
+/** Each coin's worth in silver (1 pp = 10 gp = 100 sp = 1 000 cp = 10 000 ironne). */
+ELARIA.coinValueSp = { pp: 100, gp: 10, sp: 1, cp: 0.1, ironne: 0.01 };
 ELARIA.coins = {
   pp: "ELARIA.Coins.pp", gp: "ELARIA.Coins.gp", sp: "ELARIA.Coins.sp", cp: "ELARIA.Coins.cp", ironne: "ELARIA.Coins.ironne"
 };

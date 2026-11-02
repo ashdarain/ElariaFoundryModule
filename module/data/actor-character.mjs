@@ -9,8 +9,8 @@ const int = (initial = 0, opts = {}) => new f.NumberField({ required: true, null
 const resourceField = () => new f.SchemaField({
   value: new f.NumberField({ required: true, nullable: true, integer: true, initial: null, min: 0 }),
   temp: int(0, { min: 0 }),
-  // Set in full editing mode (the lock): replaces the formula maximum. null = use the formula.
-  maxOverride: new f.NumberField({ required: true, nullable: true, integer: true, initial: null, min: 0 })
+  // Set in full editing mode (the lock): added to the formula maximum (negative lowers it).
+  maxBonus: int(0)
 });
 
 const statField = () => new f.SchemaField({
@@ -82,7 +82,9 @@ export class CharacterData extends foundry.abstract.TypeDataModel {
       resistances: new f.SchemaField(Object.fromEntries(RESISTANCE_KEYS.map(k => [k, int(0)]))),
       bagRank: int(1, { min: 1 }),
       // Coins (Shops and Inventory): 1 pp = 10 gp = 100 sp = 1 000 cp = 10 000 ironne
-      coins: new f.SchemaField(Object.fromEntries(Object.keys(ELARIA.coins).map(k => [k, int(0, { min: 0 })])))
+      coins: new f.SchemaField(Object.fromEntries(Object.keys(ELARIA.coins).map(k => [k, int(0, { min: 0 })]))),
+      // Inventory: show the total of all coins in silver beside them (toggle in edit mode).
+      showCoinTotal: new f.BooleanField({ initial: true })
     };
   }
 
@@ -93,6 +95,11 @@ export class CharacterData extends foundry.abstract.TypeDataModel {
       source.bonuses ??= {};
       source.bonuses.aar = (source.bonuses.aar ?? 0) + old;
       source.armour.aar = 0;
+    }
+    // v0.12 dev builds stored a max override; it became a bonus on top of the formula.
+    for (const key of ["hp", "mp", "ftg"]) {
+      const r = source.resources?.[key];
+      if (r && "maxOverride" in r) delete r.maxOverride;
     }
     return super.migrateData(source);
   }
@@ -153,10 +160,12 @@ export class CharacterData extends foundry.abstract.TypeDataModel {
     for (const key of ["hp", "mp", "ftg"]) {
       const r = this.resources[key];
       r.formulaMax = formulaMax[key];
-      r.max = r.maxOverride ?? formulaMax[key];
-      r.overridden = r.maxOverride !== null && r.maxOverride !== undefined;
+      r.max = Math.max(0, formulaMax[key] + (r.maxBonus ?? 0));
     }
     this.resources.lifePoints.max = Math.max(0, sub.lifePointsMax.total);
+    // Total coin value in silver, rounded to the smallest coin (ironne = 0.01 sp).
+    this.coinTotalSp = Math.round(Object.entries(ELARIA.coinValueSp)
+      .reduce((n, [k, v]) => n + (this.coins[k] ?? 0) * v, 0) * 100) / 100;
     for (const res of Object.values(this.resources)) {
       // A fresh character (value null) starts full. Current never shows above max (A12).
       res.value = Math.min(res.value ?? res.max, res.max);

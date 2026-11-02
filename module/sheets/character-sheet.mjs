@@ -24,7 +24,6 @@ export class ElariaCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV
       adjustResource: ElariaCharacterSheet.#onAdjustResource,
       restoreResources: ElariaCharacterSheet.#onRestoreResources,
       toggleEditMode: ElariaCharacterSheet.#onToggleEditMode,
-      resetMax: ElariaCharacterSheet.#onResetMax,
       rollBackground: ElariaCharacterSheet.#onRollBackground,
       setLifePoints: ElariaCharacterSheet.#onSetLifePoints,
       createMastery: ElariaCharacterSheet.#onCreateMastery,
@@ -89,8 +88,8 @@ export class ElariaCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV
       resourceList: ["hp", "mp", "ftg"].map(key => {
         const r = system.resources[key];
         return { key, label: `ELARIA.Resource.${key}`, value: r.value, max: r.max, temp: r.temp,
-          overridden: r.overridden,
-          maxTip: game.i18n.format(r.overridden ? "ELARIA.Resource.maxOverridden" : "ELARIA.Resource.maxEdit", { n: r.formulaMax }),
+          formulaMax: r.formulaMax, maxBonus: r.maxBonus, hasBonus: !!r.maxBonus,
+          maxTip: game.i18n.format("ELARIA.Resource.maxBonusTip", { n: r.formulaMax, b: r.maxBonus >= 0 ? `+${r.maxBonus}` : r.maxBonus }),
           pct: r.max ? Math.clamp(Math.round(r.value / r.max * 100), 0, 100) : 0 };
       }),
       exhaustionTooltip: system.conditions.exhaustion
@@ -234,6 +233,8 @@ export class ElariaCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV
       over: max !== null && list.length > max, ...extra });
     context.inventory = {
       coins: Object.entries(ELARIA.coins).map(([k, label]) => ({ key: k, label, value: system.coins[k] })),
+      coinTotal: system.coinTotalSp.toLocaleString(game.i18n.lang, { minimumFractionDigits: 0, maximumFractionDigits: 2 }),
+      showCoinTotal: system.showCoinTotal,
       equipLoad: load,
       aar: system.wornArmourAAR,
       sections: [
@@ -336,14 +337,6 @@ export class ElariaCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV
       const roll = foundry.utils.getProperty(data, rollPath) ?? id.backgroundRoll;
       const bg = findBackground(scale, roll === "" ? null : roll);
       if (bg) foundry.utils.setProperty(data, "system.identity.background", bg.name);
-    }
-    for (const key of ["hp", "mp", "ftg"]) {
-      const path = `system.resources.${key}.maxOverride`;
-      const raw = foundry.utils.getProperty(data, path);
-      if (raw === undefined) continue;
-      const r = this.document.system.resources[key];
-      const n = raw === "" || raw === null ? null : Number(raw);
-      foundry.utils.setProperty(data, path, n === null || !Number.isFinite(n) || n === r.formulaMax ? null : Math.max(0, Math.round(n)));
     }
     return data;
   }
@@ -461,11 +454,6 @@ export class ElariaCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV
     else ChatMessage.applyRollMode(msg, game.settings.get("core", "rollMode"));
     await ChatMessage.implementation.create(msg);
     return actor.update({ "system.identity.backgroundRoll": roll.total, ...(bg ? { "system.identity.background": bg.name } : {}) });
-  }
-
-  /** Edit mode: go back to the formula maximum. */
-  static #onResetMax(event, target) {
-    return this.document.update({ [`system.resources.${target.dataset.resource}.maxOverride`]: null });
   }
 
   static #onToggleEditMode() {

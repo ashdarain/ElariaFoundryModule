@@ -5,6 +5,13 @@
       <label class="coin {{key}}"><span>{{localize label}}</span>
         <input type="number" name="system.coins.{{key}}" value="{{value}}" min="0" step="1"></label>
       {{/each}}
+      {{#if inventory.showCoinTotal}}
+      <span class="coin-total" data-tooltip="ELARIA.Coins.totalHint">= {{localize "ELARIA.Coins.total" n=inventory.coinTotal}}</span>
+      {{/if}}
+      {{#if editMode}}
+      <label class="coin-total-toggle" data-tooltip="ELARIA.Coins.showTotalHint">
+        <input type="checkbox" name="system.showCoinTotal" {{checked inventory.showCoinTotal}}> {{localize "ELARIA.Coins.showTotal"}}</label>
+      {{/if}}
     </div>
     <div class="carry">
       <span data-tooltip="ELARIA.Inventory.equipLoadHint"><b>{{localize "ELARIA.Inventory.equipLoad"}}</b> {{inventory.equipLoad}}</span>
