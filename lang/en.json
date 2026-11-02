@@ -301,7 +301,7 @@
       "title": "Import from Google Sheet",
       "open": "Import from Google Sheet",
       "menuHint": "Download the Elaria Google Sheet and create or update the mastery and gear compendiums from it.",
-      "intro": "Paste the link to the Elaria Google Sheet and press Check. The sheet is downloaded as a read-only copy, every mastery tab and the Gear tab are converted, and you see what will change before anything is imported. Run it again whenever the sheet changes: changed entries are updated in place, new ones are added, and nothing is duplicated.",
+      "intro": "Paste the link to the Elaria Google Sheet (or choose a downloaded .xlsx copy) and press Check. Every mastery tab and the Gear tab are converted, and you see what will change before anything is imported. Run it again whenever the sheet changes: changed entries are updated in place, new ones are added, and nothing is duplicated.",
       "check": "Check",
       "preview": "What will change",
       "compendium": "Compendium",
@@ -335,7 +335,8 @@
         "convert": "Converting mastery tabs…",
         "build": "Building compendium entries…",
         "compare": "Comparing with existing compendiums…",
-        "save": "Saving the converted data…"
+        "save": "Saving the converted data…",
+        "readFile": "Reading the file…"
       },
       "error": {
         "badLink": "That doesn't look like a Google Sheets link. Copy the address from the sheet's browser tab (https://docs.google.com/spreadsheets/d/…).",
@@ -343,9 +344,19 @@
         "network": "Couldn't reach Google ({detail}). Check the internet connection of the computer running this browser.",
         "http": "Google answered with an error (HTTP {detail}). Try again in a minute."
       },
-      "noLink": "Paste the link to your Google Sheet first.",
+      "noLink": "Paste the link to your Google Sheet, or choose a downloaded .xlsx file, first.",
       "configBroken": "{file} in the system folder isn't valid JSON, so nothing was imported: {detail}",
-      "configOff": "{file} turns off: {list}. Those compendiums are left as they are."
+      "configOff": "{file} turns off: {list}. Those compendiums are left as they are.",
+      "orFile": "No link? Use a downloaded copy (File → Download → Microsoft Excel .xlsx):",
+      "pickLocal": "Choose .xlsx on this computer",
+      "pickFoundry": "Browse Foundry files",
+      "fileFromComputer": "from this computer: Check reads this file instead of the link",
+      "fileFromFoundry": "from Foundry's files: Check reads this file instead of the link",
+      "clearFile": "Stop using this file and go back to the link",
+      "pickXlsx": "Pick an .xlsx file (Google Sheets: File → Download → Microsoft Excel).",
+      "notXlsx": "{name} isn't an .xlsx file. In Google Sheets use File → Download → Microsoft Excel (.xlsx).",
+      "fileMissing": "Couldn't read {name} from Foundry's files ({status}).",
+      "readFrom": "Read from {name}"
     },
     "Picker": {
       "title": "Add masteries · {name}",
@@ -456,7 +467,7 @@
       "dc": "Nature DC",
       "dcHint": "Nature check DC (10/8/14/12/16 + Power) to learn this section. Only the GM sees this.",
       "stats": "Stats",
-      "statsHint": "Type the stat; the modifier is stat ÷ 4. Click a name or modifier to roll.",
+      "statsHint": "Type each stat's modifier (monsters have no stat points). Click a name or the die to roll.",
       "defence": "Defence",
       "combat": "Combat",
       "elementalRes": "Elemental Res",
@@ -482,7 +493,8 @@
       "actorLinkHint": "Off (the default for monsters): every token is its own copy with its own HP. On: all tokens share this sheet.",
       "fullTokenSettings": "All token settings…",
       "dcVitals": "HP/FTG/MP DC",
-      "dcVitalsHint": "Nature check DC (8 + Power) to learn its HP, FTG and MP. Only the GM sees this."
+      "dcVitalsHint": "Nature check DC (8 + Power) to learn its HP, FTG and MP. Only the GM sees this.",
+      "modHint": "Modifier, added to rolls with this stat"
     },
     "Ability": {
       "new": "New Ability",

@@ -13,6 +13,21 @@
     {{#unless linkValid}}<p class="error small">{{localize "ELARIA.Importer.badLinkInline"}}</p>{{/unless}}
     {{#if configNote}}<p class="hint config-note"><i class="fa-solid fa-sliders"></i> {{configNote}}</p>{{/if}}
     <p class="hint"><i class="fa-solid fa-lock"></i> {{localize "ELARIA.Importer.linkHint"}}</p>
+    <div class="or-file">
+      <span class="or">{{localize "ELARIA.Importer.orFile"}}</span>
+      <button type="button" data-action="pickLocalFile" {{#if busy}}disabled{{/if}}>
+        <i class="fa-solid fa-file-arrow-up"></i> {{localize "ELARIA.Importer.pickLocal"}}</button>
+      <button type="button" data-action="pickFoundryFile" {{#if busy}}disabled{{/if}}>
+        <i class="fa-solid fa-folder-open"></i> {{localize "ELARIA.Importer.pickFoundry"}}</button>
+      <input type="file" class="xlsx-input" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" hidden>
+    </div>
+    {{#if file}}
+    <p class="chosen-file">
+      <i class="fa-solid fa-file-excel"></i> <b>{{file.name}}</b>
+      <span>{{#if (eq file.where "foundry")}}{{localize "ELARIA.Importer.fileFromFoundry"}}{{else}}{{localize "ELARIA.Importer.fileFromComputer"}}{{/if}}</span>
+      <a data-action="clearFile" data-tooltip="ELARIA.Importer.clearFile"><i class="fa-solid fa-xmark"></i></a>
+    </p>
+    {{/if}}
   </fieldset>
 
   {{#if busy}}
@@ -29,7 +44,7 @@
   {{#if report}}
   <fieldset>
     <legend>{{localize "ELARIA.Importer.preview"}}</legend>
-    <p class="meta">{{localize "ELARIA.Importer.downloaded"}} <b>{{downloadedAt}}</b></p>
+    <p class="meta">{{sourceLabel}} <b>{{downloadedAt}}</b></p>
     <table class="diff">
       <thead>
         <tr>

@@ -57,6 +57,8 @@ Everything happens inside Foundry; there's nothing to install. No sheet link shi
 3. Paste the sheet's link and press **Check**. Foundry downloads a read-only copy of the sheet, converts every mastery tab, and shows what would be added, changed or removed, plus anything in the sheet worth a look (typos, unknown tags, links it couldn't make).
 4. Press **Import**.
 
+**No link, or the sheet isn't shared?** Download it from Google Sheets with **File → Download → Microsoft Excel (.xlsx)**, then, under the link box, either **Choose .xlsx on this computer** (read straight from your computer, nothing is uploaded) or **Browse Foundry files** (an .xlsx you've put in Foundry's Data folder, e.g. with the file browser's Upload button). While a file is chosen, Check reads it instead of the link; the × next to it goes back to the link.
+
 It creates up to eleven world compendiums: seven for masteries ("Elaria: Discipline Masteries", "… Elemental", "… Deity", "… Ancestry", "… Profession", "… Set", "… Bond"), each with a folder per discipline / element / god / race, and four for gear (see *Gear and inventory*). Run it again whenever the sheet changes: entries are updated in place (stable ids, nothing duplicated), and masteries already on characters are untouched because they're copies. Hand-made entries in those compendiums are never removed. The converted data is also saved as `worlds/<world>/elaria/elaria-data.json` so you can see exactly what was imported.
 
 ### Import config
@@ -122,7 +124,7 @@ Under the chat box are **Roll 3d6** and **Roll d20**.
 A simple **Monster** actor following the *Monster stat block* tab. When a GM creates an actor, **Monster** is preselected; players can only create characters (a GM can make a monster and give a player ownership in the usual Foundry way).
 
 - **Header:** picture, name, type, power, size, elements, HP / FTG / MP (current / max, all typed in). GMs see the nature check DCs from the stat block (10 + Power for the overview, 8 + Power for HP/FTG/MP, 14 + Power for the stats, 12 + Power for loot, 16 + Power for abilities).
-- **Stat block tab:** the 13 stats (modifier = stat ÷ 4; click a name or modifier to open the roll window), defence (AR, MAR, AAR, NAR, NMAR, elemental res) and combat (passive awareness, reactions per round, crit chance, crit damage, Mv). Crit and reactions feed the roll window and the combat tracker pips.
+- **Stat block tab:** the 13 stat modifiers, typed in directly (monsters have no stat points; click a name or the die to open the roll window), defence (AR, MAR, AAR, NAR, NMAR, elemental res) and combat (passive awareness, reactions per round, crit chance, crit damage, Mv). Crit and reactions feed the roll window and the combat tracker pips.
 - **Abilities tab:** monster *abilities* (name, skill mod, damage, cost, tags, description, all optional). Click one to use it exactly like a mastery: skill mod first (with "No reaction"), then damage, or post to chat. Masteries can be dragged onto monsters too, and abilities can go on the hotbar.
 - **Description & loot tab:** description, unique loot, loot tables.
 - **Token tab:** token name, image, disposition, size and linking, plus a button for every other token setting. New monsters' tokens default to hostile and unlinked (each token has its own HP), with HP and FTG bars.

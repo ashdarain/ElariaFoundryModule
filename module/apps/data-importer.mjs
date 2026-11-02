@@ -27,6 +27,9 @@ export class ElariaDataImporter extends HandlebarsApplicationMixin(ApplicationV2
     form: { handler: ElariaDataImporter.#onSubmit, submitOnChange: true, closeOnSubmit: false },
     actions: {
       check: ElariaDataImporter.#onCheck,
+      pickLocalFile: ElariaDataImporter.#onPickLocalFile,
+      pickFoundryFile: ElariaDataImporter.#onPickFoundryFile,
+      clearFile: ElariaDataImporter.#onClearFile,
       runImport: ElariaDataImporter.#onImport
     }
   };
@@ -83,6 +86,12 @@ export class ElariaDataImporter extends HandlebarsApplicationMixin(ApplicationV2
     return game.settings.get("elaria", SETTING_LINK) || this.#importConfig?.defaultSheetLink || "";
   }
 
+  /**
+   * A downloaded .xlsx used instead of the link: { name, buffer } from this computer, or { name, path } from
+   * Foundry's own files. null = use the link.
+   */
+  #file = null;
+
   /** Contents of import-config.json (null until loaded; {} if there is none). */
   #importConfig = null;
   #configNote = "";
@@ -135,6 +144,8 @@ export class ElariaDataImporter extends HandlebarsApplicationMixin(ApplicationV2
     return {
       link: this.sheetLink,
       hasLink: !!this.sheetLink,
+      file: this.#file ? { name: this.#file.name, where: this.#file.path ? "foundry" : "computer" } : null,
+      sourceLabel: this.#sourceLabel ?? "",
       linkValid,
       configNote: this.#configNote,
       state: this.#state,
@@ -187,10 +198,13 @@ export class ElariaDataImporter extends HandlebarsApplicationMixin(ApplicationV2
     await this.render();
     const L = k => game.i18n.localize(`ELARIA.Importer.step.${k}`);
     try {
-      if (!this.sheetLink) throw new Error(game.i18n.localize("ELARIA.Importer.noLink"));
+      if (!this.#file && !this.sheetLink) throw new Error(game.i18n.localize("ELARIA.Importer.noLink"));
       const { converter, enabled } = await this.#loadImportConfig();
-      this.#setProgress(5, L("download"));
-      const buffer = await downloadSheet(this.sheetLink);
+      this.#setProgress(5, L(this.#file ? "readFile" : "download"));
+      const buffer = this.#file ? await this.#readChosenFile() : await downloadSheet(this.sheetLink);
+      this.#sourceLabel = this.#file
+        ? game.i18n.format("ELARIA.Importer.readFrom", { name: this.#file.name })
+        : game.i18n.localize("ELARIA.Importer.downloaded");
       this.#downloadedAt = new Date();
 
       this.#setProgress(35, L("read"));
@@ -383,6 +397,73 @@ export class ElariaDataImporter extends HandlebarsApplicationMixin(ApplicationV2
     this.#conversion = null;
     this.#build = null;
     this.#diff = null;
+  }
+
+  /** The chosen .xlsx as an ArrayBuffer (fetched from Foundry's files if it was picked there). */
+  async #readChosenFile() {
+    let buffer = this.#file.buffer;
+    if (!buffer) {
+      const url = foundry.utils.getRoute ? foundry.utils.getRoute(this.#file.path) : this.#file.path;
+      const res = await fetch(url, { cache: "no-store" });
+      if (!res.ok) throw new Error(game.i18n.format("ELARIA.Importer.fileMissing", { name: this.#file.path, status: res.status }));
+      buffer = await res.arrayBuffer();
+    }
+    const head = new Uint8Array(buffer.slice(0, 2));
+    if (head[0] !== 0x50 || head[1] !== 0x4b) throw new Error(game.i18n.format("ELARIA.Importer.notXlsx", { name: this.#file.name }));
+    return buffer;
+  }
+
+  #sourceLabel = null;
+
+  /** "Choose .xlsx from this computer": opens the browser's file dialog (the file is read here, never uploaded). */
+  static #onPickLocalFile() {
+    this.element.querySelector("input.xlsx-input")?.click();
+  }
+
+  /** "Browse Foundry files": pick an .xlsx already in Foundry's Data folder (e.g. one uploaded with the file browser). */
+  static #onPickFoundryFile() {
+    const FP = foundry.applications?.apps?.FilePicker?.implementation ?? globalThis.FilePicker;
+    const picker = new FP({
+      type: "any",
+      current: this.#file?.path ?? "",
+      callback: path => {
+        if (!/\.xlsx$/i.test(path)) return ui.notifications.warn(game.i18n.localize("ELARIA.Importer.pickXlsx"));
+        this.#file = { name: decodeURIComponent(path.split("/").pop()), path };
+        this.#resetResults();
+        this.render();
+      }
+    });
+    picker.render(true);
+  }
+
+  static #onClearFile() {
+    this.#file = null;
+    this.#resetResults();
+    return this.render();
+  }
+
+  /** A new source makes the last check out of date. */
+  #resetResults() {
+    if (this.#state === "importing" || this.#state === "loading") return;
+    this.#state = "idle";
+    this.#build = null;
+    this.#diff = null;
+    this.#conversion = null;
+    this.#summary = null;
+    this.#error = "";
+  }
+
+  _onRender(context, options) {
+    super._onRender?.(context, options);
+    const input = this.element.querySelector("input.xlsx-input");
+    input?.addEventListener("change", async ev => {
+      ev.stopPropagation();
+      const f = input.files?.[0];
+      if (!f) return;
+      this.#file = { name: f.name, buffer: await f.arrayBuffer() };
+      this.#resetResults();
+      this.render();
+    });
   }
 
   static async #onCheck() {

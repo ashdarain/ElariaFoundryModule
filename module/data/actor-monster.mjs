@@ -14,7 +14,7 @@ const resourceField = (max = 10) => new f.SchemaField({
 
 /**
  * Monster, following the "Monster stat block" tab: name, type, power, elements, size, description;
- * HP / FTG / MP; the 13 stats (the modifier is stat ÷ 4, rounded down); defences and combat numbers typed in
+ * HP / FTG / MP; the 13 stat modifiers (typed in directly; monsters have no stat points); defences and combat numbers typed in
  * directly; loot; abilities are embedded "ability" items (masteries can be dropped on too).
  *
  * Nature check DCs from the stat block (10 + Power for the overview, 8 + Power for HP/FTG/MP, 14 + Power for stats
@@ -36,8 +36,9 @@ export class MonsterData extends foundry.abstract.TypeDataModel {
         ftg: resourceField(10),
         mp: resourceField(10)
       }),
+      // Monsters have no stat points: the GM types each stat's modifier directly.
       stats: new f.SchemaField(Object.fromEntries(Object.keys(ELARIA.stats).map(k => [k, new f.SchemaField({
-        value: int(0)
+        mod: int(0)
       })]))),
       defence: new f.SchemaField({
         ar: int(0), mar: int(0), aar: int(0), nar: int(0), nmar: int(0),
@@ -57,8 +58,15 @@ export class MonsterData extends foundry.abstract.TypeDataModel {
     };
   }
 
+  /** v0.11.2: stats used to be typed as stat values (mod = value ÷ 4); keep the same modifiers. */
+  static migrateData(source) {
+    for (const s of Object.values(source.stats ?? {})) {
+      if (s && s.mod === undefined && Number.isFinite(s.value)) s.mod = Math.floor(s.value / 4);
+    }
+    return super.migrateData(source);
+  }
+
   prepareDerivedData() {
-    for (const s of Object.values(this.stats)) s.mod = Math.floor(s.value / 4);
     for (const r of Object.values(this.resources)) r.value = Math.min(r.value, r.max);
     const p = this.details.power;
     this.natureDC = { overview: 10 + p, vitals: 8 + p, stats: 14 + p, loot: 12 + p, abilities: 16 + p };

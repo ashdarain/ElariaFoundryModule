@@ -73,7 +73,7 @@ export class ElariaMonsterSheet extends HandlebarsApplicationMixin(ActorSheetV2)
         context.statGroups = Object.entries(ELARIA.statGroups).map(([group, label]) => ({
           label,
           stats: Object.entries(ELARIA.stats).filter(([, s]) => s.group === group)
-            .map(([key, s]) => ({ key, label: s.label, value: system.stats[key].value, mod: system.stats[key].mod }))
+            .map(([key, s]) => ({ key, label: s.label, mod: system.stats[key].mod }))
         }));
         context.defenceRows = [["ar", "AR"], ["mar", "MAR"], ["aar", "AAR"], ["nar", "NAR"], ["nmar", "NMAR"]]
           .map(([key, label]) => ({ key, label, value: system.defence[key] }));

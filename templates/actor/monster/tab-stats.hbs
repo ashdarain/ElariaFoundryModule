@@ -11,8 +11,8 @@
       {{#each stats}}
       <div class="m-stat-row">
         <a class="stat-roll" data-action="rollStat" data-stat="{{key}}" data-tooltip="ELARIA.Stats.rollName">{{localize label}}</a>
-        <input type="number" name="system.stats.{{key}}.value" value="{{value}}" step="1">
-        <a class="mod" data-action="rollStat" data-stat="{{key}}" data-tooltip="ELARIA.Stats.rollName">{{numberFormat mod sign=true}}</a>
+        <input type="number" name="system.stats.{{key}}.mod" value="{{mod}}" step="1" data-tooltip="ELARIA.Monster.modHint">
+        <a class="roll-mod" data-action="rollStat" data-stat="{{key}}" data-tooltip="ELARIA.Stats.rollName"><i class="fa-solid fa-dice"></i></a>
       </div>
       {{/each}}
     </div>

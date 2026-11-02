@@ -846,3 +846,20 @@
 /* Compendium sidebar: Browse masteries / gear */
 .elaria-browse-buttons { display: flex; gap: 4px; width: 100%; margin-bottom: 4px; flex: 0 0 100%; }
 .elaria-browse-buttons button { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 5px; white-space: nowrap; }
+
+/* Importer: a downloaded .xlsx instead of the link */
+.elaria.data-importer .or-file { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--el-line); }
+.elaria.data-importer .or-file .or { flex: 0 0 100%; font-size: 12px; color: var(--el-muted); }
+.elaria.data-importer .or-file button { flex: 0 0 auto; width: auto; height: 28px; padding: 0 10px; white-space: nowrap; }
+.elaria.data-importer .chosen-file {
+  display: flex; align-items: center; gap: 6px; margin: 6px 0 0; padding: 4px 8px; font-size: 13px;
+  border: 1px solid var(--el-good); border-radius: var(--el-radius); background: rgba(63, 107, 58, 0.08);
+}
+.elaria.data-importer .chosen-file .fa-file-excel { color: var(--el-good); }
+.elaria.data-importer .chosen-file span { color: var(--el-muted); font-size: 12px; flex: 1; }
+
+/* Monster stats: modifier input + roll die */
+.elaria.monster .m-stat-row { grid-template-columns: 1fr 52px 26px; }
+.elaria.monster .m-stat-row input { font-weight: bold; }
+.elaria.monster .m-stat-row .roll-mod { text-align: center; color: var(--el-accent); }
+.elaria.monster .m-stat-row .roll-mod:hover { color: var(--el-accent-soft); text-shadow: none; }
