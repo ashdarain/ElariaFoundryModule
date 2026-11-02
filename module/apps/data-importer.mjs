@@ -44,6 +44,11 @@ export class ElariaDataImporter extends HandlebarsApplicationMixin(ApplicationV2
       name: "ELARIA.Importer.linkSetting",
       scope: "world", config: false, type: String, default: ""
     });
+    // Backgrounds tab, converted by the importer (see convert.mjs → convertBackgrounds); read by character sheets.
+    game.settings.register("elaria", "backgrounds", {
+      scope: "world", config: false, type: Object, default: null,
+      onChange: () => { for (const app of foundry.applications.instances.values()) if (app.document?.type === "character") app.render(); }
+    });
     game.settings.registerMenu("elaria", "dataImporter", {
       name: "ELARIA.Importer.title",
       label: "ELARIA.Importer.open",
@@ -163,7 +168,11 @@ export class ElariaDataImporter extends HandlebarsApplicationMixin(ApplicationV2
       } : null,
       canImport: this.#state === "ready" || this.#state === "done",
       removeMissing: this.#removeMissing,
-      summary: this.#summary
+      summary: this.#summary,
+      backgroundsFound: (() => {
+        const bg = this.#conversion?.docs.get("backgrounds.json");
+        return bg ? bg.scales.reduce((n, sc) => n + sc.tiers.length, 0) : 0;
+      })()
     };
   }
 
@@ -340,6 +349,13 @@ export class ElariaDataImporter extends HandlebarsApplicationMixin(ApplicationV2
         summary.created += toCreate.length;
         summary.updated += toUpdate.length;
         summary.removed += toDelete.length;
+      }
+
+      // Backgrounds (not compendium items): stored as a world setting so every character sheet can read them.
+      const backgrounds = this.#conversion?.docs.get("backgrounds.json");
+      if (backgrounds && this.#importConfig?.compendiums?.backgrounds !== false) {
+        await game.settings.set("elaria", "backgrounds", backgrounds);
+        summary.backgrounds = backgrounds.scales.reduce((n, sc) => n + sc.tiers.length, 0);
       }
 
       this.#setProgress(97, game.i18n.localize("ELARIA.Importer.step.save"));

@@ -12,7 +12,8 @@
     "weapons": true,
     "armour": true,
     "trinkets": true,
-    "uniques": true
+    "uniques": true,
+    "backgrounds": true
   },
   "tabs": {
     "general": "General Masteries",
@@ -68,7 +69,8 @@
       }
     ],
     "tags": "Tags",
-    "gear": "Gear"
+    "gear": "Gear",
+    "backgrounds": "Backgrounds"
   },
   "ignoredTabs": [
     "Set Masteries (Discontinued)",

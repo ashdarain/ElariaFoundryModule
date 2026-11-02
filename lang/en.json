@@ -94,7 +94,10 @@
       "restoreConfirm": "Refill {name}'s HP, MP and FTG to max and clear temp values?",
       "temp": "temp",
       "lifePointsShort": "LP",
-      "lifePointsUnit": "life points"
+      "lifePointsUnit": "life points",
+      "maxEdit": "Maximum (formula gives {n}). Type a number to override it.",
+      "maxOverridden": "Overridden — the formula gives {n}.",
+      "resetMax": "Use the formula maximum"
     },
     "Defence": {
       "title": "Defence",
@@ -356,7 +359,9 @@
       "pickXlsx": "Pick an .xlsx file (Google Sheets: File → Download → Microsoft Excel).",
       "notXlsx": "{name} isn't an .xlsx file. In Google Sheets use File → Download → Microsoft Excel (.xlsx).",
       "fileMissing": "Couldn't read {name} from Foundry's files ({status}).",
-      "readFrom": "Read from {name}"
+      "readFrom": "Read from {name}",
+      "backgroundsFound": "Backgrounds found: {n} scales. They'll be saved for the Background section of character sheets.",
+      "backgroundsSaved": "Backgrounds saved: {n} scales."
     },
     "Picker": {
       "title": "Add masteries · {name}",
@@ -594,6 +599,21 @@
       "new": "New Item",
       "addedMany": "Added {n} items to {name}.",
       "addFolder": "Add all {n} items from “{folder}” to {name}'s bag?"
+    },
+    "Background": {
+      "scale": "Type",
+      "standing": "Social standing",
+      "pickScale": "— choose —",
+      "pickScaleFirst": "Choose a background type, then roll or enter your social standing.",
+      "pickStanding": "Roll the d20 or enter your social standing.",
+      "standingHint": "Your d20 social standing roll. You can change it by hand.",
+      "rollHint": "Roll 1d20 for social standing and fill it in",
+      "rollTitle": "{scale} social standing",
+      "adjustNote": "You may move the roll by up to {n} (Demeanor or Speechcraft mod ×2, minimum 1).",
+      "description": "Description",
+      "perk": "Perk",
+      "inventory": "Starting inventory",
+      "noData": "The GM hasn't imported backgrounds yet (Data importer → Backgrounds tab)."
     }
   }
 }

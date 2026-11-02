@@ -284,7 +284,6 @@
 .elaria .bio-split { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 10px; align-items: stretch; }
 .elaria .bio-split fieldset { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
 .elaria .bio-split prose-mirror { flex: 1; min-height: 160px; }
-.elaria .bio-split .biography prose-mirror { min-height: 300px; }
 .elaria .bio-split .label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--el-muted); }
 .elaria .burst-stats { display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: center; }
 .elaria .burst-stats label { display: flex; align-items: center; gap: 4px; }
@@ -863,3 +862,33 @@
 .elaria.monster .m-stat-row input { font-weight: bold; }
 .elaria.monster .m-stat-row .roll-mod { text-align: center; color: var(--el-accent); }
 .elaria.monster .m-stat-row .roll-mod:hover { color: var(--el-accent-soft); text-shadow: none; }
+
+/* Max HP / MP / FTG override (edit mode) */
+.elaria .resource .max-input { width: 42px; text-align: center; }
+.elaria .resource .max-input.overridden, .elaria .resource .max.overridden { color: var(--el-accent); font-weight: bold; }
+.elaria .resource .reset-max { font-size: 10px; color: var(--el-muted); margin-left: 2px; }
+.elaria .resource .reset-max:hover { color: var(--el-accent); }
+
+/* Background section (Bio tab) */
+.elaria .background .bg-pick { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center; }
+.elaria .background .bg-pick label { display: flex; align-items: center; gap: 6px; }
+.elaria .background .bg-pick label > span { font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--el-muted); }
+.elaria .background .bg-pick select { height: 24px; }
+.elaria .background .bg-pick input[type="number"] { width: 48px; height: 24px; text-align: center; }
+.elaria .background .bg-roll { padding: 1px 8px; border: 1px solid var(--el-line); border-radius: 4px; white-space: nowrap; }
+.elaria .background .bg-roll:hover { border-color: var(--el-accent); color: var(--el-accent); }
+.elaria .background .bg-roll.disabled { opacity: 0.4; pointer-events: none; }
+.elaria .background .bg-adjust { margin: 0; font-size: 11px; }
+.elaria .background .bg-ranges { display: flex; flex-wrap: wrap; gap: 3px; font-size: 11px; }
+.elaria .background .bg-ranges span { padding: 0 5px; border: 1px solid var(--el-line); border-radius: 3px; color: var(--el-muted); }
+.elaria .background .bg-ranges span.current { border-color: var(--el-accent); color: inherit; }
+.elaria .background .bg-name { margin: 2px 0 0; border: none; font-size: 15px; }
+.elaria .background .bg-name small { font-weight: normal; color: var(--el-muted); font-size: 11px; }
+.elaria .background .bg-sections { display: flex; flex-direction: column; gap: 6px; }
+.elaria .background .bg-sections section { border-left: 2px solid var(--el-line); padding-left: 8px; }
+.elaria .background .bg-sections p { margin: 2px 0 0; font-size: 12px; line-height: 1.4; white-space: pre-line; }
+.elaria .background .bg-free input { flex: 1; }
+.elaria .background .bg-free { display: flex; gap: 6px; align-items: center; }
+.elaria .tab.bio > fieldset.biography, .elaria fieldset.biography { margin-top: 10px; display: flex; flex-direction: column; }
+.elaria fieldset.biography prose-mirror { min-height: 380px; }
+.elaria .roll-card.background-roll .bg-name { font-size: 15px; }

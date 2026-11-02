@@ -2,7 +2,7 @@
   "id": "elaria",
   "title": "Elaria",
   "description": "Game system for the Elaria TTRPG (rules 2.2, work in progress).",
-  "version": "0.11.0",
+  "version": "0.12.0",
   "compatibility": {
     "minimum": "13",
     "verified": "14"

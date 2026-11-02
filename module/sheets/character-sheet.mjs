@@ -1,6 +1,7 @@
 import { ELARIA } from "../config.mjs";
 import { ElariaMasteryPicker } from "../apps/mastery-picker.mjs";
 import { addMasteriesToActor, addGearToActor } from "../helpers/masteries.mjs";
+import { backgroundData, findBackground, standingAdjustment } from "../helpers/backgrounds.mjs";
 
 const { HandlebarsApplicationMixin } = foundry.applications.api;
 const { ActorSheetV2 } = foundry.applications.sheets;
@@ -23,6 +24,8 @@ export class ElariaCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV
       adjustResource: ElariaCharacterSheet.#onAdjustResource,
       restoreResources: ElariaCharacterSheet.#onRestoreResources,
       toggleEditMode: ElariaCharacterSheet.#onToggleEditMode,
+      resetMax: ElariaCharacterSheet.#onResetMax,
+      rollBackground: ElariaCharacterSheet.#onRollBackground,
       setLifePoints: ElariaCharacterSheet.#onSetLifePoints,
       createMastery: ElariaCharacterSheet.#onCreateMastery,
       editItem: ElariaCharacterSheet.#onEditItem,
@@ -86,6 +89,8 @@ export class ElariaCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV
       resourceList: ["hp", "mp", "ftg"].map(key => {
         const r = system.resources[key];
         return { key, label: `ELARIA.Resource.${key}`, value: r.value, max: r.max, temp: r.temp,
+          overridden: r.overridden,
+          maxTip: game.i18n.format(r.overridden ? "ELARIA.Resource.maxOverridden" : "ELARIA.Resource.maxEdit", { n: r.formulaMax }),
           pct: r.max ? Math.clamp(Math.round(r.value / r.max * 100), 0, 100) : 0 };
       }),
       exhaustionTooltip: system.conditions.exhaustion
@@ -275,7 +280,20 @@ export class ElariaCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV
     context.burstEffectHTML = await foundry.applications.ux.TextEditor.implementation.enrichHTML(id.burstEffect, {
       secrets: this.document.isOwner, relativeTo: this.document
     });
-    context.biographyHTML = await foundry.applications.ux.TextEditor.implementation.enrichHTML(id.biography, {
+    // Background: scale, social standing, and the matching background's description / perk / inventory.
+    const bgData = backgroundData();
+    const bg = findBackground(id.backgroundScale, id.backgroundRoll, bgData);
+    context.background = {
+      hasData: !!bgData,
+      scaleChoices: { "": game.i18n.localize("ELARIA.Background.pickScale"),
+        ...Object.fromEntries((bgData?.scales ?? []).map(sc => [sc.id, sc.name])) },
+      ranges: bgData?.scales.find(sc => sc.id === id.backgroundScale)?.tiers.map(t => ({ range: t.range, name: t.name,
+        current: t === bg })) ?? [],
+      current: bg,
+      adjust: standingAdjustment(this.document),
+      canRoll: !!id.backgroundScale && this.isEditable
+    };
+        context.biographyHTML = await foundry.applications.ux.TextEditor.implementation.enrichHTML(id.biography, {
       secrets: this.document.isOwner, relativeTo: this.document
     });
   }
@@ -302,6 +320,32 @@ export class ElariaCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV
         item?.update({ [el.dataset.itemField]: el.type === "checkbox" ? el.checked : el.value });
       });
     }
+  }
+
+  /**
+   * The edit-mode max boxes show the current max. Only a changed number becomes an override; typing the
+   * formula's own value (or clearing the box) goes back to the formula.
+   */
+  _processFormData(event, form, formData) {
+    const data = super._processFormData(event, form, formData);
+    // Choosing a scale or standing also stores the background's name (shown elsewhere and kept if data changes).
+    const scalePath = "system.identity.backgroundScale", rollPath = "system.identity.backgroundRoll";
+    if (foundry.utils.hasProperty(data, scalePath) || foundry.utils.hasProperty(data, rollPath)) {
+      const id = this.document.system.identity;
+      const scale = foundry.utils.getProperty(data, scalePath) ?? id.backgroundScale;
+      const roll = foundry.utils.getProperty(data, rollPath) ?? id.backgroundRoll;
+      const bg = findBackground(scale, roll === "" ? null : roll);
+      if (bg) foundry.utils.setProperty(data, "system.identity.background", bg.name);
+    }
+    for (const key of ["hp", "mp", "ftg"]) {
+      const path = `system.resources.${key}.maxOverride`;
+      const raw = foundry.utils.getProperty(data, path);
+      if (raw === undefined) continue;
+      const r = this.document.system.resources[key];
+      const n = raw === "" || raw === null ? null : Number(raw);
+      foundry.utils.setProperty(data, path, n === null || !Number.isFinite(n) || n === r.formulaMax ? null : Math.max(0, Math.round(n)));
+    }
+    return data;
   }
 
   /* -------------------------------------------- */
@@ -390,6 +434,38 @@ export class ElariaCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV
       content: `<p>${game.i18n.format("ELARIA.Resource.restoreConfirm", { name: this.document.name })}</p>`
     });
     if (confirmed) return this.document.restoreResources();
+  }
+
+  /** Roll the d20 social standing for the chosen scale, post it, and fill in the standing. */
+  static async #onRollBackground() {
+    const actor = this.document;
+    const id = actor.system.identity;
+    const data = backgroundData();
+    const scale = data?.scales.find(sc => sc.id === id.backgroundScale);
+    if (!scale) return ui.notifications.warn(game.i18n.localize("ELARIA.Background.pickScaleFirst"));
+    const roll = await new Roll("1d20").evaluate();
+    const bg = findBackground(scale.id, roll.total, data);
+    const esc = foundry.utils.escapeHTML;
+    const adjust = standingAdjustment(actor);
+    const content = `
+      <div class="elaria roll-card background-roll">
+        <header><div class="titles"><h3>${esc(game.i18n.format("ELARIA.Background.rollTitle", { scale: scale.name }))}</h3>
+          <span class="note">${esc(game.i18n.format("ELARIA.Background.adjustNote", { n: adjust }))}</span></div></header>
+        <div class="results two">
+          <div class="result ${roll.total === 20 ? "nat20" : roll.total === 1 ? "nat1" : ""}"><span class="label">d20</span><span class="value">${roll.total}</span></div>
+          <div class="result"><span class="label">${esc(bg?.range ?? "")}</span><span class="value bg-name">${esc(bg?.name ?? "—")}</span></div>
+        </div>
+      </div>`;
+    const msg = { author: game.user.id, speaker: ChatMessage.getSpeaker({ actor }), content, rolls: [roll], sound: CONFIG.sounds.dice };
+    if (typeof ChatMessage.applyMode === "function") ChatMessage.applyMode(msg, game.settings.get("core", "messageMode"));
+    else ChatMessage.applyRollMode(msg, game.settings.get("core", "rollMode"));
+    await ChatMessage.implementation.create(msg);
+    return actor.update({ "system.identity.backgroundRoll": roll.total, ...(bg ? { "system.identity.background": bg.name } : {}) });
+  }
+
+  /** Edit mode: go back to the formula maximum. */
+  static #onResetMax(event, target) {
+    return this.document.update({ [`system.resources.${target.dataset.resource}.maxOverride`]: null });
   }
 
   static #onToggleEditMode() {

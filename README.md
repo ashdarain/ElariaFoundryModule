@@ -59,7 +59,7 @@ Everything happens inside Foundry; there's nothing to install. No sheet link shi
 
 **No link, or the sheet isn't shared?** Download it from Google Sheets with **File → Download → Microsoft Excel (.xlsx)**, then, under the link box, either **Choose .xlsx on this computer** (read straight from your computer, nothing is uploaded) or **Browse Foundry files** (an .xlsx you've put in Foundry's Data folder, e.g. with the file browser's Upload button). While a file is chosen, Check reads it instead of the link; the × next to it goes back to the link.
 
-It creates up to eleven world compendiums: seven for masteries ("Elaria: Discipline Masteries", "… Elemental", "… Deity", "… Ancestry", "… Profession", "… Set", "… Bond"), each with a folder per discipline / element / god / race, and four for gear (see *Gear and inventory*). Run it again whenever the sheet changes: entries are updated in place (stable ids, nothing duplicated), and masteries already on characters are untouched because they're copies. Hand-made entries in those compendiums are never removed. The converted data is also saved as `worlds/<world>/elaria/elaria-data.json` so you can see exactly what was imported.
+It creates up to eleven world compendiums: seven for masteries ("Elaria: Discipline Masteries", "… Elemental", "… Deity", "… Ancestry", "… Profession", "… Set", "… Bond"), each with a folder per discipline / element / god / race, and four for gear (see *Gear and inventory*). Run it again whenever the sheet changes: entries are updated in place (stable ids, nothing duplicated), and masteries already on characters are untouched because they're copies. Hand-made entries in those compendiums are never removed. The Backgrounds tab isn't a compendium: it's saved in the world for the Background section of character sheets (see *Character sheet: max resources and backgrounds*). The converted data is also saved as `worlds/<world>/elaria/elaria-data.json` so you can see exactly what was imported.
 
 ### Import config
 
@@ -68,8 +68,8 @@ It creates up to eleven world compendiums: seven for masteries ("Elaria: Discipl
 | Setting | What it does |
 |---|---|
 | `defaultSheetLink` | A link to prefill the importer with in new worlds. Leave `""` to paste it in Foundry instead (the link is then saved in the world only). |
-| `compendiums` | Set any of `discipline`, `elemental`, `deity`, `ancestry`, `profession`, `set`, `bond`, `weapons`, `armour`, `trinkets`, `uniques` to `false` to skip it. Skipped compendiums are left exactly as they are. |
-| `tabs` | The tab names the importer reads: `general`, `disciplines` (list), `disciplineIndex`, `elemental`, `set`, `bond`, `deity`, `ancestry`, `professions` (list), `tags`, `gear`. Rename here if a tab is renamed in the sheet; set one to `""` to skip that tab. |
+| `compendiums` | Set any of `discipline`, `elemental`, `deity`, `ancestry`, `profession`, `set`, `bond`, `weapons`, `armour`, `trinkets`, `uniques`, `backgrounds` to `false` to skip it. Skipped compendiums are left exactly as they are. |
+| `tabs` | The tab names the importer reads: `general`, `disciplines` (list), `disciplineIndex`, `elemental`, `set`, `bond`, `deity`, `ancestry`, `professions` (list), `tags`, `gear`, `backgrounds`. Rename here if a tab is renamed in the sheet; set one to `""` to skip that tab. |
 | `ignoredTabs` | Tabs that look like mastery tabs but should be skipped (old copies, helper tables). |
 | `autoDetectDisciplines` | `true`: any new "… Masteries" tab not listed is converted as a discipline. |
 | `gearBaseAliases` | Names in the Gear tab's "Base Weapons" table that differ from their evolution tree (e.g. `"fist": "cestus"`). |
@@ -118,6 +118,12 @@ Under the chat box are **Roll 3d6** and **Roll d20**.
 - **Skill mod rolls.** A mastery's skill mod is its "hit chance" when the target reacts: roll 3d6 + skill mod against DC 10 + the skill mod of the target's reaction. Meet the DC and the ability hits and the reaction doesn't happen (the target still spends RAP and energy); miss and the reaction happens first. Posted mastery cards have **Roll skill mod** and **Roll damage** buttons. It opens the roll window with 3d6, the bonus and the stat filled in (for "Fin or Pre" the character's better stat), crit off, and the injury/exhaustion penalty on.
 - Posting a damage mastery to chat also gives a **Roll damage** button.
 - Macros can call `game.elaria.useMastery(uuid)` or `game.elaria.RollDialog.open({ dice, stat, bonus, label })`.
+
+## Character sheet: max resources and backgrounds
+
+**Max HP, Mana and Fatigue.** With the sheet unlocked (lock icon), the maximum next to each resource becomes editable. Type a number to override the formula; it shows in the accent colour and the tooltip gives the formula value. The ↺ button (or typing the formula value, or clearing it) goes back to the formula.
+
+**Background** (Bio tab, beside Burst). Choose the type (Nobility, Military, Civilian, Criminal), then press **d20** to roll social standing (posted to chat and filled in) or type the number yourself; you may move the roll by Demeanor or Speechcraft mod ×2 (minimum 1). The matching background's **Description**, **Perk** and **Starting inventory** are shown below it, and its name is stored on the character. The data comes from the sheet's Backgrounds tab, saved when the GM imports; until then there's a plain text box. **Biography** is the large box under both.
 
 ## Monsters
 

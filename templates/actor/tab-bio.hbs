@@ -42,8 +42,6 @@
       <label><span>{{localize "ELARIA.Bio.alignment2"}}</span>
         <select name="system.identity.alignment2">{{selectOptions choices.alignments2 selected=system.identity.alignment2}}</select></label>
       {{#if alignmentConflict}}<p class="warning"><i class="fa-solid fa-triangle-exclamation"></i> {{alignmentConflict}}</p>{{/if}}
-      <label><span>{{localize "ELARIA.Bio.background"}}</span>
-        <input type="text" name="system.identity.background" value="{{system.identity.background}}"></label>
     </fieldset>
   </div>
 
@@ -82,10 +80,42 @@
         {{#unless editable}}disabled{{/unless}}>{{{burstEffectHTML}}}</prose-mirror>
     </fieldset>
 
-    <fieldset class="biography">
-      <legend>{{localize "ELARIA.Bio.biography"}}</legend>
-      <prose-mirror name="system.identity.biography" value="{{system.identity.biography}}" toggled
-        {{#unless editable}}disabled{{/unless}}>{{{biographyHTML}}}</prose-mirror>
+    <fieldset class="background">
+      <legend>{{localize "ELARIA.Bio.background"}}</legend>
+      {{#if background.hasData}}
+      <div class="bg-pick">
+        <label><span>{{localize "ELARIA.Background.scale"}}</span>
+          <select name="system.identity.backgroundScale">{{selectOptions background.scaleChoices selected=system.identity.backgroundScale}}</select></label>
+        <label data-tooltip="ELARIA.Background.standingHint"><span>{{localize "ELARIA.Background.standing"}}</span>
+          <input type="number" name="system.identity.backgroundRoll" value="{{system.identity.backgroundRoll}}" step="1" placeholder="—">
+          <a class="bg-roll {{#unless background.canRoll}}disabled{{/unless}}" data-action="rollBackground" data-tooltip="ELARIA.Background.rollHint">
+            <i class="fa-solid fa-dice-d20"></i> d20</a></label>
+      </div>
+      <p class="hint bg-adjust">{{localize "ELARIA.Background.adjustNote" n=background.adjust}}</p>
+      {{#if background.ranges.length}}
+      <div class="bg-ranges">{{#each background.ranges}}<span class="{{#if current}}current{{/if}}"><b>{{range}}</b> {{name}}</span>{{/each}}</div>
+      {{/if}}
+      {{#if background.current}}
+      <h3 class="bg-name">{{background.current.name}} <small>{{background.current.range}}</small></h3>
+      <div class="bg-sections">
+        <section><span class="label">{{localize "ELARIA.Background.description"}}</span><p>{{background.current.description}}</p></section>
+        <section><span class="label">{{localize "ELARIA.Background.perk"}}</span><p>{{background.current.perk}}</p></section>
+        <section><span class="label">{{localize "ELARIA.Background.inventory"}}</span><p>{{background.current.inventory}}</p></section>
+      </div>
+      {{else}}
+      <p class="hint">{{#if system.identity.backgroundScale}}{{localize "ELARIA.Background.pickStanding"}}{{else}}{{localize "ELARIA.Background.pickScaleFirst"}}{{/if}}</p>
+      {{/if}}
+      {{else}}
+      <label class="bg-free"><span>{{localize "ELARIA.Bio.background"}}</span>
+        <input type="text" name="system.identity.background" value="{{system.identity.background}}"></label>
+      <p class="hint">{{localize "ELARIA.Background.noData"}}</p>
+      {{/if}}
     </fieldset>
   </div>
+
+  <fieldset class="biography">
+    <legend>{{localize "ELARIA.Bio.biography"}}</legend>
+    <prose-mirror name="system.identity.biography" value="{{system.identity.biography}}" toggled
+      {{#unless editable}}disabled{{/unless}}>{{{biographyHTML}}}</prose-mirror>
+  </fieldset>
 </section>

@@ -80,6 +80,7 @@
     </table>
 
     <p class="hint">{{localize "ELARIA.Importer.mergedNote" n=report.merged}}</p>
+    {{#if backgroundsFound}}<p class="hint"><i class="fa-solid fa-scroll"></i> {{localize "ELARIA.Importer.backgroundsFound" n=backgroundsFound}}</p>{{/if}}
     {{#if report.keptSeparate.length}}
     <details>
       <summary>{{localize "ELARIA.Importer.keptSeparate" n=report.keptSeparate.length}}</summary>
@@ -116,6 +117,7 @@
   {{#if summary}}
   <p class="done"><i class="fa-solid fa-circle-check"></i>
     {{localize "ELARIA.Importer.summary" created=summary.created updated=summary.updated removed=summary.removed}}
+    {{#if summary.backgrounds}}<br>{{localize "ELARIA.Importer.backgroundsSaved" n=summary.backgrounds}}{{/if}}
     {{#if summary.savedTo}}<br><span class="hint">{{localize "ELARIA.Importer.savedTo" path=summary.savedTo}}</span>{{/if}}</p>
   {{/if}}
 

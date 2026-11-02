@@ -41,7 +41,9 @@ identity: {
   form: "mortal",                   // mortal | divine | demonic, PCs default mortal (A15)
   deity: "", deityRole: "only",     // only | primary | secondary  (Piety)
   alignment: "", alignment2: "",    // wheel traits; the second is optional
-  background: { scale: "", name: "" },
+  background: "",        // name of the chosen background (or free text before backgrounds are imported)
+  backgroundScale: "",   // nobility | military | civilian | criminal
+  backgroundRoll: null,  // d20 social standing
   biography: ""
 }
 armour: { aar: 0 }                  // until armour items exist (see below)

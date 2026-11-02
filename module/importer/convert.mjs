@@ -36,7 +36,8 @@ export const DEFAULT_CONFIG = {
       { sheet: "Technomancy and Gnomish Engineering", requirement: "Must be a Gnome" }
     ],
     tags: "Tags",
-    gear: "Gear"
+    gear: "Gear",
+    backgrounds: "Backgrounds"
   },
   // Tabs that look like mastery tabs but are old copies or helper tables.
   ignoredSheets: [
@@ -1959,6 +1960,77 @@ function readGearOverview(ctx, grid, uniquesRow) {
   return doc;
 }
 
+
+/* ================================================================== */
+/*  Backgrounds tab                                                    */
+/* ================================================================== */
+
+const BG_SCALES = ["nobility", "military", "civilian", "criminal"];
+const BG_LABELS = { name: "name", description: "description", perk: "perk", "starting inventory": "inventory", inventory: "inventory" };
+
+/** "1" → {min:1,max:1}; "2 to 7" / "2-7" → {min:2,max:7}; "20+" → {min:20,max:null} */
+function parseStandingRange(text) {
+  const t = text.trim();
+  let m = /^(\d+)\s*\+$/.exec(t);
+  if (m) return { min: parseInt(m[1], 10), max: null };
+  m = /^(\d+)\s*(?:to|-|–)\s*(\d+)$/i.exec(t);
+  if (m) return { min: parseInt(m[1], 10), max: parseInt(m[2], 10) };
+  m = /^(\d+)$/.exec(t);
+  if (m) return { min: parseInt(m[1], 10), max: parseInt(m[1], 10) };
+  return null;
+}
+
+/**
+ * Backgrounds tab → one document: the rules text at the top, then one scale per table (Nobility, Military,
+ * Civilian, Criminal), each with its social-standing ranges and a background per range (name, description,
+ * perk, starting inventory).
+ */
+function convertBackgrounds(ctx, sheetName) {
+  const grid = ctx.sheet(sheetName);
+  if (!grid) return null;
+  const doc = fileHeader("backgrounds", "backgrounds", "Backgrounds", grid);
+  doc.rules = [];
+  doc.scales = [];
+  const titleRows = grid.find(v => BG_SCALES.includes(v.toLowerCase()))
+    .filter(([r]) => grid.nonempty(r).length === 1)
+    .map(([r, c, v]) => ({ r, c, v }));
+  const firstTable = titleRows.length ? titleRows[0].r : grid.length;
+  for (let r = 0; r < firstTable; r++) {
+    for (const [c] of grid.nonempty(r)) doc.rules.push(grid.takeRaw(r, c));
+  }
+  titleRows.forEach(({ r, c, v }, i) => {
+    grid.take(r, c);
+    const end = i + 1 < titleRows.length ? titleRows[i + 1].r : grid.length;
+    const scale = { id: slugify(v), name: v.trim(), tiers: [] };
+    const cols = [];
+    for (const [cc, text] of grid.nonempty(r + 1)) {
+      const range = parseStandingRange(text);
+      if (!range) continue;
+      grid.take(r + 1, cc);
+      cols.push(cc);
+      scale.tiers.push({ ...range, range: text.trim(), name: "", description: "", perk: "", inventory: "" });
+    }
+    for (let rr = r + 2; rr < end; rr++) {
+      const cells = grid.nonempty(rr);
+      if (!cells.length) continue;
+      const [lc, label] = cells[0];
+      const key = BG_LABELS[label.toLowerCase().replace(/:$/, "")];
+      if (!key || lc >= (cols[0] ?? Infinity)) continue;
+      grid.take(rr, lc);
+      cols.forEach((cc, t) => {
+        const text = grid.takeRaw(rr, cc);
+        if (text) scale.tiers[t][key] = text.replace(/[ \t]+\n/g, "\n").trim();
+      });
+    }
+    for (const t of scale.tiers) {
+      if (!t.name) ctx.warn(`${sheetName}!${Grid.a1(r + 1, 0)}`, `${scale.name}: a background for ${t.range} has no name`);
+    }
+    doc.scales.push(scale);
+  });
+  if (!doc.scales.length) ctx.warn(sheetName, "no background tables found (Nobility / Military / Civilian / Criminal)");
+  return doc;
+}
+
 function dedupeFileIds(ctx, out) {
   for (const key of ["disciplines", "elements", "deities", "ancestries", "professions", "gear"]) {
     const seen = new Map();
@@ -1975,12 +2047,13 @@ function dedupeFileIds(ctx, out) {
 
 const SUBDIRS = { discipline: "disciplines", elemental: "elements", deity: "deities", ancestry: "ancestries", profession: "professions", gear: "gear" };
 const SINGLE = { "set-masteries": "set-masteries.json", "bond-masteries": "bond-masteries.json",
-  "class-trinkets": "class-trinkets.json", "gear-overview": "gear-overview.json" };
+  "class-trinkets": "class-trinkets.json", "gear-overview": "gear-overview.json", backgrounds: "backgrounds.json" };
 
 /** Masteries in the file, or items for gear files. */
 const masteryCount = doc => {
   if (doc.type === "gear") return doc.items.length;
   if (doc.type === "class-trinkets") return doc.groups.reduce((n, g) => n + g.items.length, 0);
+  if (doc.type === "backgrounds") return doc.scales.reduce((n, sc) => n + sc.tiers.length, 0);
   return (doc.masteries?.length ?? 0) + (doc.heritages ?? []).reduce((n, h) => n + h.abilities.length, 0);
 };
 
@@ -2018,7 +2091,7 @@ export function convertWorkbook(workbook, { config = DEFAULT_CONFIG, source = {}
 
   const index = readDisciplineIndex(ctx);
   const out = { disciplines: [], elements: [], set: null, bond: null, deities: [], ancestries: [], professions: [],
-    gear: [], classTrinkets: null, gearOverview: null };
+    gear: [], classTrinkets: null, gearOverview: null, backgrounds: null };
   if (sc.general) { const d = convertDiscipline(ctx, sc.general, index, true); if (d) out.disciplines.push(d); }
   for (const name of disciplineSheets) { const d = convertDiscipline(ctx, name, index); if (d) out.disciplines.push(d); }
   if (sc.elemental) out.elements = convertElemental(ctx, sc.elemental);
@@ -2031,12 +2104,13 @@ export function convertWorkbook(workbook, { config = DEFAULT_CONFIG, source = {}
     out.professions.push(...convertProfessions(ctx, p.sheet, p.requirement ?? null));
   }
   if (sc.gear) [out.gear, out.classTrinkets, out.gearOverview] = convertGear(ctx, sc.gear);
+  if (sc.backgrounds) out.backgrounds = convertBackgrounds(ctx, sc.backgrounds);
 
   dedupeFileIds(ctx, out);
   linkAll(ctx, out);
 
   const all = [...out.disciplines, ...out.elements, ...out.deities, ...out.ancestries, ...out.professions,
-    ...out.gear, ...[out.set, out.bond, out.classTrinkets, out.gearOverview].filter(d => d)];
+    ...out.gear, ...[out.set, out.bond, out.classTrinkets, out.gearOverview, out.backgrounds].filter(d => d)];
   const docs = new Map();
   const files = [];
   const totals = {};

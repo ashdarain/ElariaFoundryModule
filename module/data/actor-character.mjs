@@ -8,7 +8,9 @@ const int = (initial = 0, opts = {}) => new f.NumberField({ required: true, null
 /** A resource with a stored current value and temp (overflow, spent first: A11). Max is derived. */
 const resourceField = () => new f.SchemaField({
   value: new f.NumberField({ required: true, nullable: true, integer: true, initial: null, min: 0 }),
-  temp: int(0, { min: 0 })
+  temp: int(0, { min: 0 }),
+  // Set in full editing mode (the lock): replaces the formula maximum. null = use the formula.
+  maxOverride: new f.NumberField({ required: true, nullable: true, integer: true, initial: null, min: 0 })
 });
 
 const statField = () => new f.SchemaField({
@@ -65,7 +67,9 @@ export class CharacterData extends foundry.abstract.TypeDataModel {
         deityRole: new f.StringField({ required: true, initial: "only", choices: () => ELARIA.deityRoles }),
         alignment: new f.StringField({ required: true, blank: true, initial: "" }),
         alignment2: new f.StringField({ required: true, blank: true, initial: "" }),   // optional second alignment
-        background: new f.StringField({ required: true, blank: true, initial: "" }),
+        background: new f.StringField({ required: true, blank: true, initial: "" }),   // name (or free text if no background data)
+        backgroundScale: new f.StringField({ required: true, blank: true, initial: "" }),  // nobility / military / civilian / criminal
+        backgroundRoll: new f.NumberField({ required: true, nullable: true, integer: true, initial: null }),  // social standing
         burstEffect: new f.HTMLField({ required: true, blank: true, initial: "" }),   // the ability a burst grants
         biography: new f.HTMLField({ required: true, blank: true, initial: "" })
       }),
@@ -145,9 +149,13 @@ export class CharacterData extends foundry.abstract.TypeDataModel {
 
     // Resources (CS L46–L48, L62)
     const exh = this.conditions.exhaustion;
-    this.resources.hp.max = R.hpMax(m.con, lvl);
-    this.resources.mp.max = R.mpMax(m.wis, lvl);
-    this.resources.ftg.max = R.ftgMax(m.res, lvl, exh);
+    const formulaMax = { hp: R.hpMax(m.con, lvl), mp: R.mpMax(m.wis, lvl), ftg: R.ftgMax(m.res, lvl, exh) };
+    for (const key of ["hp", "mp", "ftg"]) {
+      const r = this.resources[key];
+      r.formulaMax = formulaMax[key];
+      r.max = r.maxOverride ?? formulaMax[key];
+      r.overridden = r.maxOverride !== null && r.maxOverride !== undefined;
+    }
     this.resources.lifePoints.max = Math.max(0, sub.lifePointsMax.total);
     for (const res of Object.values(this.resources)) {
       // A fresh character (value null) starts full. Current never shows above max (A12).

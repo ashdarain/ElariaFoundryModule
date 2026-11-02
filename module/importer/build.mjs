@@ -394,6 +394,7 @@ export async function buildCompendiumData(index, load, progress = () => {}) {
         break;
       }
       case "gear-overview": break;   // rules text only
+      case "backgrounds": break;     // not items: saved as a world setting by the importer
       case "discipline": break;   // done above
       default: report.warnings.push(`Skipped unknown file type "${entry.type}" (${entry.path})`);
     }
