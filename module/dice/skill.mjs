@@ -44,6 +44,9 @@ export function skillRollPreset({ actor = null, skill, name = "", img = "", targ
     targets: aoe ? 1 : targets,   // one to-hit roll per target; an AoE uses one roll for all of them
     // A skill mod is part of every to-hit roll, so its bonus goes on each target (damage rolls: once, by default).
     bonusPerHit: true,
+    // The card gets a Pass / Fail per target (an AoE's one roll is judged against each target).
+    isSkill: true,
+    verdictCount: aoe ? Math.max(1, Number(targets) || 1) : null,
     aoe: false
   };
 }

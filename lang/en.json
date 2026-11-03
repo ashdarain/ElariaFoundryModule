@@ -505,7 +505,13 @@
       "monsterRoll": "Roll",
       "withCritShort": "With crit",
       "bonusTarget": "Bonus goes to",
-      "bonusTargetHint": "The bonus is added once: pick which target gets it. Tick \"each hit\" to give it to every target."
+      "bonusTargetHint": "The bonus is added once: pick which target gets it. Tick \"each hit\" to give it to every target.",
+      "hit": "HIT",
+      "miss": "MISS",
+      "target": "Target",
+      "waitForHit": "Waiting for the GM to mark at least one target hit.",
+      "allMissed": "Every target was missed: no damage.",
+      "hitTargets": "{n} hit"
     },
     "MonsterTab": {
       "stats": "Stat block",

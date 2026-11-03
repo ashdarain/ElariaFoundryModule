@@ -70,7 +70,8 @@ export class ElariaRollDialog extends HandlebarsApplicationMixin(ApplicationV2) 
 
   #setPreset({ actor = null, stat = "", dice = "3d6", bonus = "", label = "", note = "", img = "", penalty = null,
     critChanceBonus = 0, critDamageBonus = 0, fixedCrit = false, skill = null,
-    hits = 1, targets = null, aoe = false, bonusPerHit = false, next = null, skip = null, damage = null } = {}) {
+    hits = 1, targets = null, aoe = false, bonusPerHit = false, next = null, skip = null, damage = null,
+    isSkill = false, verdictCount = null, targetList = null } = {}) {
     this.#actorUuid = actor?.uuid ?? "";
     this.#preset = {
       stat, dice: dice || "3d6", bonus: String(bonus ?? ""), label, note, img, skill, fixedCrit, next, skip,
@@ -80,7 +81,10 @@ export class ElariaRollDialog extends HandlebarsApplicationMixin(ApplicationV2) 
       targets: Math.max(1, Number(targets) || game.user.targets?.size || 1),
       aoe: !!aoe, bonusPerHit: !!bonusPerHit,
       // A damage roll (mastery / ability / weapon): its damage type, so the card can apply the damage.
-      damage: damage ? { ...damage } : null
+      damage: damage ? { ...damage } : null,
+      // Skill mod rolls get Pass / Fail per target. targetList: the targets carried over from a skill roll
+      // (the ones that were hit), used instead of the current targets.
+      isSkill: !!isSkill, verdictCount, targetList: targetList?.length ? targetList : null
     };
   }
 
@@ -254,13 +258,23 @@ export class ElariaRollDialog extends HandlebarsApplicationMixin(ApplicationV2) 
     const v = this.#values();
     const problem = this.#problem(v);
     if (problem) return ui.notifications.warn(problem);
-    const { label, note, img, skill, fixedCrit, next } = this.#preset;
-    // Name the targets after the tokens you have targeted, when the counts match.
-    const targetedTokens = [...(game.user.targets ?? [])];
-    const match = targetedTokens.length === v.targets;
-    const targetNames = match ? targetedTokens.map(t => t.name) : [];
-    const targetTokens = match ? targetedTokens.map(t => t.document.uuid) : [];
-    await rollDice({ actor: this.actor, ...v, targetNames, targetTokens, mode: target.dataset.mode ?? "normal", label, note, img, skill, fixedCrit, next });
+    const { label, note, img, skill, fixedCrit, next, isSkill, verdictCount, targetList } = this.#preset;
+    // Name the targets: the ones carried over from the skill roll, else the tokens you have targeted, when the
+    // counts match.
+    const targeted = targetList ?? [...(game.user.targets ?? [])].map(t => ({ uuid: t.document.uuid, name: t.name }));
+    const match = targeted.length === v.targets;
+    const targetNames = match ? targeted.map(t => t.name) : [];
+    const targetTokens = match ? targeted.map(t => t.uuid) : [];
+    // Skill rolls: who gets a Pass / Fail. An AoE skill roll is one roll judged against every target.
+    let verdictTargets = null;
+    if (isSkill) {
+      const n = verdictCount ?? (next?.aoe ? next.targets : v.targets);
+      const named = targeted.length === n ? targeted : [];
+      verdictTargets = Array.from({ length: n }, (_, i) => ({ uuid: named[i]?.uuid ?? "",
+        name: named[i]?.name ?? (n > 1 ? game.i18n.format("ELARIA.Dice.targetN", { n: i + 1 }) : "") }));
+    }
+    await rollDice({ actor: this.actor, ...v, targetNames, targetTokens, mode: target.dataset.mode ?? "normal", label, note, img, skill,
+      fixedCrit, next, verdictTargets });
     this.#setPreset({});
     return this.close();
   }

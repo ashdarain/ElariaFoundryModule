@@ -3,6 +3,7 @@ import { rollD20, defaultRollActor } from "./check.mjs";
 import { skillRollPreset } from "./skill.mjs";
 import { resolveReaction } from "../apps/react-dialog.mjs";
 import { renderDamageApply } from "./damage-card.mjs";
+import { hitTargets, renderVerdicts } from "./verdict-card.mjs";
 
 /**
  * Buttons on Elaria chat cards:
@@ -17,6 +18,7 @@ export function onRenderChatMessage(message, html) {
   if (!game.user.isGM) html?.querySelectorAll(".gm-only").forEach(el => el.remove());
   hideRollDetails(message, html);
   renderDamageApply(message, html);
+  renderVerdicts(message, html);
   const buttons = html?.querySelectorAll("[data-elaria-action]");
   if (!buttons?.length) return;
   const mine = message.isAuthor || game.user.isGM;
@@ -61,7 +63,9 @@ async function onCardButton(message, action) {
         label: r.label, note: r.note, img: r.img,
         skill: flags.skill ? { raw: flags.skill.raw, stats: flags.skill.stats, bonus: flags.skill.bonus } : null,
         next: flags.next ?? null,
-        damage: flags.damage?.profile ?? null
+        damage: flags.damage?.profile ?? null,
+        isSkill: !!flags.verdict,
+        verdictCount: flags.verdict && flags.roll?.targets === 1 && flags.verdict.targets.length > 1 ? flags.verdict.targets.length : null
       });
     }
     case "skill": {
@@ -93,7 +97,13 @@ async function onCardButton(message, action) {
       const n = flags.next;
       const item = n?.itemUuid ? await fromUuid(n.itemUuid) : null;
       if (!item) return ui.notifications.warn(game.i18n.localize("ELARIA.Mastery.macroMissing"));
-      return ElariaRollDialog.open(item.damageRollPreset(actorFrom(n.actorUuid) ?? item.actor ?? defaultRollActor(), { targets: n.targets }));
+      // With Pass / Fail on the card: damage only for the targets that were hit.
+      const hit = hitTargets(message);
+      if (hit && !hit.length) return ui.notifications.warn(game.i18n.localize("ELARIA.Dice.waitForHit"));
+      const preset = item.damageRollPreset(actorFrom(n.actorUuid) ?? item.actor ?? defaultRollActor(),
+        { targets: hit ? hit.length : n.targets });
+      if (hit) preset.targetList = hit;
+      return ElariaRollDialog.open(preset);
     }
     case "damage": {
       const item = flags.mastery?.itemUuid ? await fromUuid(flags.mastery.itemUuid) : null;

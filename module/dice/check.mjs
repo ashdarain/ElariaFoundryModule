@@ -60,7 +60,8 @@ export function roll3d6(options = {}) {
 export async function rollDice({ actor = null, stat = "", bonus = "", bonusPerHit = false, penalty = 0,
   critChance = 0, critDamage = 0, mode = "normal", dice: diceSpec = "3d6", hits = 1, targets = 1, targetNames = [],
   aoe = false, label = "", note = "", img = "", skill = null, next = null,
-  critChanceBonus = 0, critDamageBonus = 0, fixedCrit = false, damage = null, targetTokens = [], bonusTarget = 0 } = {}) {
+  critChanceBonus = 0, critDamageBonus = 0, fixedCrit = false, damage = null, targetTokens = [], bonusTarget = 0,
+  verdictTargets = null } = {}) {
   diceSpec = DICE_RE.test(String(diceSpec).trim().toLowerCase()) ? String(diceSpec).trim().toLowerCase() : "3d6";
   const mod = stat && actor ? actor.system.stats?.[stat]?.mod ?? 0 : 0;
   const statLabel = stat ? L(ELARIA.stats[stat]?.label ?? stat) : "";
@@ -262,6 +263,7 @@ export async function rollDice({ actor = null, stat = "", bonus = "", bonusPerHi
       </header>
       ${tagsHTML ? `<div class="roll-tags">${tagsHTML}</div>` : ""}
       ${body}
+      ${verdictTargets?.length ? `<div class="skill-verdicts"></div>` : ""}
       ${damage ? `<div class="damage-apply"></div>` : ""}
       ${skill ? skillButton(skill) : ""}
       ${next ? `<button type="button" class="next-roll" data-elaria-action="next"><i class="fa-solid fa-burst"></i> ${L("ELARIA.Dice.thenDamage")}</button>` : ""}
@@ -274,6 +276,8 @@ export async function rollDice({ actor = null, stat = "", bonus = "", bonusPerHi
       critChanceBonus, critDamageBonus, fixedCrit, hits, targets, aoe, label, note, img
     },
     ...(next ? { next } : {}),
+    // Skill rolls: the GM marks each target hit (pass) or missed (fail); damage then goes to the hit ones only.
+    ...(verdictTargets?.length ? { verdict: { targets: verdictTargets, results: verdictTargets.map(() => null) } } : {}),
     // What applying the damage needs: each target's hits (stat and per-hit bonus included), the once-only flat
     // mods (bonus − penalty), whether it crit, and the damage profile.
     ...(damage ? { damage: {
