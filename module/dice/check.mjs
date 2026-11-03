@@ -69,8 +69,8 @@ export async function rollDice({ actor = null, stat = "", bonus = "", bonusPerHi
   penalty = Math.max(0, Math.round(Number(penalty) || 0));
   hits = Math.clamp(Math.round(Number(hits) || 1), 1, 50);
   targets = Math.clamp(Math.round(Number(targets) || 1), 1, 50);
-  // The damage roll after this skill roll gets the number of targets actually rolled for (AoE: as opened).
-  if (next && !next.aoe) next = { ...next, targets };
+  // The damage roll after this skill roll gets the number of targets rolled for.
+  if (next) next = { ...next, targets };
   aoe = !!aoe && targets > 1;
   critChance = pct(critChance);
   critDamage = Math.round(Number(critDamage) || 0);
@@ -142,10 +142,12 @@ export async function rollDice({ actor = null, stat = "", bonus = "", bonusPerHi
   // A once-only bonus with several separate targets goes to one of them (picked in the roll window), not to each.
   const onceToOne = !!bonus && !bonusPerHit && !aoe && targets > 1;
   bonusTarget = Math.clamp(Math.round(Number(bonusTarget) || 0), 0, targets - 1);
+  // AoE: one damage roll and one crit roll for everyone (each target's armour and resistance still differ).
+  const sharedCrit = aoe ? await rollCrit() : undefined;
   const results = [];
   for (let i = 0; i < targets; i++) {
     const dmg = shared ?? await rollDamage(onceToOne && i !== bonusTarget);
-    const crit = await rollCrit();
+    const crit = sharedCrit !== undefined ? sharedCrit : await rollCrit();
     results.push({
       tokenUuid: targetTokens[i] ?? "",
       name: targetNames[i] || (targets > 1 ? game.i18n.format("ELARIA.Dice.targetN", { n: i + 1 }) : ""),
@@ -227,19 +229,21 @@ export async function rollDice({ actor = null, stat = "", bonus = "", bonusPerHi
     : `<div class="results"><div class="result"><span class="label">${L("ELARIA.Dice.total")}</span><span class="value">${r.total}</span></div></div>`;
 
   let body;
-  if (targets === 1) {
+  if (targets === 1 || aoe) {
+    // One target, or an AoE (one roll, one crit, the same total for all): a single result, plus who it hits.
     const r = results[0];
-    body = (hits > 1 ? "" : setsHTML(r.dmg)) + breakdownHTML(r.dmg) + critHTML(r.crit) + resultsHTML(r);
+    const who = aoe ? `<div class="aoe-targets"><i class="fa-solid fa-crosshairs"></i> `
+      + `${esc(game.i18n.format("ELARIA.Dice.aoeAll", { n: targets }))}${results.some(x => x.tokenUuid) ? `: ${esc(results.map(x => x.name).join(", "))}` : ""}</div>` : "";
+    body = who + (hits > 1 ? "" : setsHTML(r.dmg)) + breakdownHTML(r.dmg) + critHTML(r.crit) + resultsHTML(r);
   } else {
     const blocks = results.map(r => `
       <div class="target ${r.crit?.hit ? "is-crit" : ""}">
         <div class="target-name"><i class="fa-solid fa-crosshairs"></i> ${esc(r.name)}</div>
-        ${aoe ? "" : (hits > 1 ? "" : setsHTML(r.dmg)) + breakdownHTML(r.dmg)}
+        ${(hits > 1 ? "" : setsHTML(r.dmg)) + breakdownHTML(r.dmg)}
         ${critHTML(r.crit)}
         ${resultsHTML(r)}
       </div>`).join("");
-    body = (aoe ? `<div class="aoe-shared"><span class="aoe-label">${L("ELARIA.Dice.aoeShared")}</span>${hits > 1 ? "" : setsHTML(shared)}${breakdownHTML(shared)}</div>` : "")
-      + `<div class="targets">${blocks}</div>`;
+    body = `<div class="targets">${blocks}</div>`;
   }
 
   const modeLabel = mode === "normal" ? "" : L(`ELARIA.Dice.${mode}`);

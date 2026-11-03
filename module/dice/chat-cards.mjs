@@ -64,8 +64,7 @@ async function onCardButton(message, action) {
         skill: flags.skill ? { raw: flags.skill.raw, stats: flags.skill.stats, bonus: flags.skill.bonus } : null,
         next: flags.next ?? null,
         damage: flags.damage?.profile ?? null,
-        isSkill: !!flags.verdict,
-        verdictCount: flags.verdict && flags.roll?.targets === 1 && flags.verdict.targets.length > 1 ? flags.verdict.targets.length : null
+        isSkill: !!flags.verdict
       });
     }
     case "skill": {

@@ -268,7 +268,7 @@ export class ElariaRollDialog extends HandlebarsApplicationMixin(ApplicationV2) 
     // Skill rolls: who gets a Pass / Fail. An AoE skill roll is one roll judged against every target.
     let verdictTargets = null;
     if (isSkill) {
-      const n = verdictCount ?? (next?.aoe ? next.targets : v.targets);
+      const n = verdictCount ?? v.targets;
       const named = targeted.length === n ? targeted : [];
       verdictTargets = Array.from({ length: n }, (_, i) => ({ uuid: named[i]?.uuid ?? "",
         name: named[i]?.name ?? (n > 1 ? game.i18n.format("ELARIA.Dice.targetN", { n: i + 1 }) : "") }));
@@ -283,8 +283,7 @@ export class ElariaRollDialog extends HandlebarsApplicationMixin(ApplicationV2) 
   static async #onSkip() {
     const action = this.#preset.skip?.action;
     const { targets } = this.#values();
-    // An AoE skill roll is one roll for every target: its damage keeps the targets it was opened with.
-    const carry = this.#preset.next?.aoe ? this.#preset.next.targets : targets;
+    const carry = targets;
     await this.close();
     return action?.({ targets: carry });
   }

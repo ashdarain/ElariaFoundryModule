@@ -1016,3 +1016,4 @@
 .elaria.roll-card .verdict-row button.chosen.pass { background: #2f6b2a; color: #fff; }
 .elaria.roll-card .verdict-row button.chosen.fail { background: #b3261e; color: #fff; }
 .elaria.roll-card .next-roll.waiting { opacity: 0.5; cursor: not-allowed; }
+.elaria.roll-card .aoe-targets { font-size: 11px; color: var(--el-muted); margin-bottom: 2px; }

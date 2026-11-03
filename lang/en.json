@@ -511,7 +511,9 @@
       "target": "Target",
       "waitForHit": "Waiting for the GM to mark at least one target hit.",
       "allMissed": "Every target was missed: no damage.",
-      "hitTargets": "{n} hit"
+      "hitTargets": "{n} hit",
+      "skillAoeOnce": "AoE: one roll, judged against each target",
+      "aoeAll": "AoE · {n} targets"
     },
     "MonsterTab": {
       "stats": "Stat block",

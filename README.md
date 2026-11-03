@@ -108,9 +108,9 @@ Under the chat box are **Roll 3d6** and **Roll d20**.
 - **Several hits and targets.** The roll window has *Dice × hits per target*, *Targets* and *AoE*:
   - Every hit rolls its own dice: `2d6+Str x2` rolls 2d6 + Str twice for each target and adds them, so hits do different damage. The card lists each hit. "Add to roll" counts once unless **each hit** is ticked (stats always count per hit).
   - Crit is rolled once per target; a crit target takes every hit as a crit.
-  - **AoE**: one damage roll shared by every target, each target with its own crit roll.
+  - **AoE**: one damage roll and **one crit roll** shared by every target; the card shows a single result and who it hits. Applying it still uses each target's own armour and resistance.
   - Targets default to the number of tokens you have targeted (and use their names on the card), else 1. Masteries fill in hits from `x3` and tick AoE when they have the AOE tag.
-  - The skill mod roll from a multi-target card rolls one to-hit per target. For an AoE it rolls once, and that one roll is used against every target.
+  - The skill mod roll from a multi-target card rolls one to-hit per target. For an AoE it rolls once (the skill window opens with AoE ticked and the number of targets), and that one roll is judged against every target: each still gets its own Pass / Fail.
 - Damage the importer couldn't fully read (`3d6+Wis/5d6+Wis`, `6d6+Sword Stacks Consumed`) still gets its first dice and stat; adjust the rest by hand.
 - The window has a **Dice** field (3d6 unless a mastery sets it). Advantage rolls those dice twice and keeps the higher.
 - Drag a mastery (from a sheet, the compendium or the Items sidebar) onto the hotbar to make a macro that uses it. Dropping a compendium mastery uses the selected token's character, else your assigned one.

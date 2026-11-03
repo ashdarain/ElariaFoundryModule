@@ -37,16 +37,16 @@ export function skillRollPreset({ actor = null, skill, name = "", img = "", targ
     bonus: skill.bonus ? String(skill.bonus) : "",
     label: name ? game.i18n.format("ELARIA.Dice.skillLabel", { name }) : game.i18n.localize("ELARIA.Dice.skillCheck"),
     note: game.i18n.format("ELARIA.Dice.skillNote", { mod: skill.raw })
-      + (aoe && targets > 1 ? ` · ${game.i18n.format("ELARIA.Dice.skillAoe", { n: targets })}` : ""),
+      + (aoe ? ` · ${game.i18n.localize("ELARIA.Dice.skillAoeOnce")}` : ""),
     img,
     fixedCrit: true,
     hits: 1,
-    targets: aoe ? 1 : targets,   // one to-hit roll per target; an AoE uses one roll for all of them
+    // One to-hit roll per target; an AoE rolls once (AoE ticked) for all of them, each still judged on its own.
+    targets: Math.max(1, Number(targets) || 1),
     // A skill mod is part of every to-hit roll, so its bonus goes on each target (damage rolls: once, by default).
     bonusPerHit: true,
     // The card gets a Pass / Fail per target (an AoE's one roll is judged against each target).
     isSkill: true,
-    verdictCount: aoe ? Math.max(1, Number(targets) || 1) : null,
-    aoe: false
+    aoe: !!aoe
   };
 }
