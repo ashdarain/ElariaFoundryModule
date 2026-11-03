@@ -22,8 +22,10 @@
         <label><span>{{localize "ELARIA.Picker.tier"}}</span>
           <span class="range"><input type="number" data-filter="tierMin" value="{{filters.tierMin}}" placeholder="{{localize 'ELARIA.Picker.min'}}" min="0" step="1">
           – <input type="number" data-filter="tierMax" value="{{filters.tierMax}}" placeholder="{{localize 'ELARIA.Picker.max'}}" min="0" step="1"></span></label>
-        <label><span>{{localize "ELARIA.Gear.weight"}}</span>
+        <label><span>{{localize "ELARIA.Picker.armourWeight"}}</span>
           <select data-filter="weight">{{selectOptions weightChoices selected=filters.weight}}</select></label>
+        <label><span>{{localize "ELARIA.Gear.affinity"}}</span>
+          <select data-filter="affinity">{{selectOptions affinityChoices selected=filters.affinity}}</select></label>
         <label><span>{{localize "ELARIA.Gear.classTrinket"}}</span>
           <select data-filter="classTrinket">{{selectOptions trinketChoices selected=filters.classTrinket}}</select></label>
         <label><span>{{localize "ELARIA.Picker.maxLoad"}}</span>

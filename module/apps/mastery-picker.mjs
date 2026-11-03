@@ -5,8 +5,8 @@ import { DAMAGE_TYPES, profileFromText } from "../combat/damage.mjs";
 
 const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api;
 
-/** How many results are drawn at once. The search narrows the rest. */
-const MAX_ROWS = 150;
+/** How many results are drawn at first; "Show more" adds this many again. */
+const PAGE_ROWS = 150;
 
 const INDEX_FIELDS = {
   mastery: [
@@ -33,7 +33,7 @@ const BLANK_FILTERS = {
   sourceType: "", sourceName: "", value: "", rxn: "", damage: "", dmgType: "", cost: "", aoe: false, multi: false,
   mine: false, hideOwned: false,
   // gear
-  family: "", tierMin: "", tierMax: "", weight: "", classTrinket: "", loadMax: "", fitsLoad: false
+  family: "", tierMin: "", tierMax: "", weight: "", affinity: "", classTrinket: "", loadMax: "", fitsLoad: false
 };
 
 /**
@@ -86,6 +86,9 @@ export class ElariaMasteryPicker extends HandlebarsApplicationMixin(ApplicationV
   /** All mastery entries, loaded once per window: {uuid, name, img, pack, packLabel, system, search}. */
   #entries = null;
 
+  /** How many rows are drawn (grows with "Show more"; back to one page when a filter changes). */
+  #limit = PAGE_ROWS;
+
   /** Current filter values (kept across re-renders). */
   #filters = foundry.utils.deepClone(BLANK_FILTERS);
 
@@ -120,8 +123,14 @@ export class ElariaMasteryPicker extends HandlebarsApplicationMixin(ApplicationV
     const profile = hasDamage ? profileFromText([...tags, system.damageType ?? ""]) : null;
     const cost = String(system.cost ?? "").toLowerCase();
     const text = strip(this.isGear ? `${system.effects ?? ""} ${system.description ?? ""}` : system.details);
+    // Source types this entry counts under. Set masteries list the disciplines they need as sources, so they
+    // also count as "set" (and bond masteries as "bond") by their ref.
+    const ref = String(system.ref ?? "");
+    const sourceTypes = new Set(sources.map(src => src.type || "general"));
+    if (ref.startsWith("set:")) sourceTypes.add("set");
+    if (ref.startsWith("bond:")) sourceTypes.add("bond");
     return {
-      uuid: e.uuid, name: e.name, img: e.img, pack, packLabel, system, sources, sourceLabel, tags, lowTags,
+      uuid: e.uuid, name: e.name, img: e.img, pack, packLabel, system, sources, sourceTypes, sourceLabel, tags, lowTags,
       hasDamage, profile,
       isReaction: !!system.isReaction || lowTags.some(t => /^(reactions?|rxn)$/.test(t)),
       isAoe: lowTags.some(t => t.startsWith("aoe") || t.includes("area of effect")),
@@ -190,18 +199,26 @@ export class ElariaMasteryPicker extends HandlebarsApplicationMixin(ApplicationV
     if (this.isGear) {
       const families = [...new Set(entries.map(e => e.system.family).filter(Boolean))].sort((a, b) => a.localeCompare(b));
       const weights = [...new Set(entries.map(e => String(e.system.weight ?? "").trim()).filter(Boolean))].sort();
+      const affinities = [...new Set(entries.flatMap(e => String(e.system.affinity ?? "").split(/[,/]/).map(a => a.trim()))
+        .filter(Boolean))].sort((a, b) => a.localeCompare(b));
       return {
         tagChoices, dmgTypeChoices, sortChoices,
         familyChoices: { "": L("ELARIA.Picker.allFamilies"), ...Object.fromEntries(families.map(f => [f, f])) },
         weightChoices: { "": L("ELARIA.Picker.anyWeight"), ...Object.fromEntries(weights.map(w => [w, w])) },
+        affinityChoices: { "": L("ELARIA.Picker.anyAffinity"), ...Object.fromEntries(affinities.map(a => [a, a])) },
         trinketChoices: { "": L("ELARIA.Picker.anyTrinket"), only: L("ELARIA.Picker.classOnly"), exclude: L("ELARIA.Picker.classExclude") }
       };
     }
     // Source names for the chosen source type (e.g. every discipline), with counts.
     const names = new Map();
-    for (const e of entries) for (const src of e.sources) {
-      if (this.#filters.sourceType && src.type !== this.#filters.sourceType) continue;
-      if (src.name) names.set(src.name, (names.get(src.name) ?? 0) + 1);
+    const type = this.#filters.sourceType;
+    for (const e of entries) {
+      if (type && !e.sourceTypes.has(type)) continue;
+      // For a type the entry has directly, only its sources of that type; set / bond (by ref) list all of them.
+      const own = e.sources.filter(src => (src.type || "general") === type);
+      for (const src of (type && own.length ? own : e.sources)) {
+        if (src.name) names.set(src.name, (names.get(src.name) ?? 0) + 1);
+      }
     }
     const values = [...new Set(entries.map(e => e.system.value).filter(v => v != null))].sort((a, b) => a - b);
     return {
@@ -243,6 +260,7 @@ export class ElariaMasteryPicker extends HandlebarsApplicationMixin(ApplicationV
         this.#filters.sourceName = "";
         return this.render();
       }
+      this.#limit = PAGE_ROWS;
       this.#renderResults();
       this.#updateBadge();
     };
@@ -259,6 +277,13 @@ export class ElariaMasteryPicker extends HandlebarsApplicationMixin(ApplicationV
 
     // Rows can be dragged onto any actor sheet; the sheet's drop handler does the rest.
     const list = el.querySelector(".results");
+    list.addEventListener("click", ev => {
+      const more = ev.target.closest("[data-more]");
+      if (!more) return;
+      ev.preventDefault();
+      this.#limit = more.dataset.more === "all" ? Infinity : this.#limit + PAGE_ROWS;
+      this.#renderResults();
+    });
     list.addEventListener("dragstart", ev => {
       const row = ev.target.closest("[data-uuid]");
       if (!row) return;
@@ -311,11 +336,12 @@ export class ElariaMasteryPicker extends HandlebarsApplicationMixin(ApplicationV
         if (tMin !== null && (s.tier == null || s.tier < tMin)) return false;
         if (tMax !== null && s.tier != null && s.tier > tMax) return false;
         if (f.weight && String(s.weight ?? "").trim() !== f.weight) return false;
+        if (f.affinity && !String(s.affinity ?? "").split(/[,/]/).map(a => a.trim()).includes(f.affinity)) return false;
         if (f.classTrinket === "only" && !s.classTrinket) return false;
         if (f.classTrinket === "exclude" && s.classTrinket) return false;
         if (loadMax !== null && s.equipLoad != null && s.equipLoad > loadMax) return false;
       } else {
-        if (f.sourceType && !e.sources.some(src => src.type === f.sourceType)) return false;
+        if (f.sourceType && !e.sourceTypes.has(f.sourceType)) return false;
         if (f.sourceName && !e.sources.some(src => src.name === f.sourceName)) return false;
         if (f.value !== "" && String(s.value) !== String(f.value)) return false;
         if (f.rxn === "only" && !e.isReaction) return false;
@@ -373,7 +399,7 @@ export class ElariaMasteryPicker extends HandlebarsApplicationMixin(ApplicationV
     const esc = foundry.utils.escapeHTML;
     const L = k => game.i18n.localize(k);
     const catLabel = c => c === "any" ? L("ELARIA.Category.any") : c === "none" ? "" : L(ELARIA.masteryCategories[c] ?? c);
-    list.innerHTML = matches.slice(0, MAX_ROWS).map(e => {
+    list.innerHTML = matches.slice(0, this.#limit).map(e => {
       const s = e.system;
       // Gear can be owned several times, so it never shows as "already known".
       const owned = !this.isGear && !!this.actor && actorHasMastery(this.actor, e);
@@ -405,11 +431,15 @@ export class ElariaMasteryPicker extends HandlebarsApplicationMixin(ApplicationV
               ? `<span class="pick-owned" data-tooltip="${L("ELARIA.Picker.owned")}"><i class="fa-solid fa-check"></i></span>`
               : `<a class="pick-add" data-action="add" data-tooltip="${L("ELARIA.Picker.add")}"><i class="fa-solid fa-plus"></i></a>`}
         </li>`;
-    }).join("") || `<li class="empty">${L("ELARIA.Picker.noResults")}</li>`;
+    }).join("") + (matches.length > this.#limit ? `<li class="show-more">
+        <a data-more="page"><i class="fa-solid fa-angles-down"></i> ${game.i18n.format("ELARIA.Picker.showMore",
+          { n: Math.min(PAGE_ROWS, matches.length - this.#limit), left: matches.length - this.#limit })}</a>
+        <a data-more="all">${game.i18n.format("ELARIA.Picker.showAll", { n: matches.length })}</a></li>` : "")
+      || `<li class="empty">${L("ELARIA.Picker.noResults")}</li>`;
     list.scrollTop = scroll;
     const count = el.querySelector(".count");
-    count.textContent = matches.length > MAX_ROWS
-      ? game.i18n.format("ELARIA.Picker.countLimited", { shown: MAX_ROWS, n: matches.length })
+    count.textContent = matches.length > this.#limit
+      ? game.i18n.format("ELARIA.Picker.countLimited", { shown: this.#limit, n: matches.length })
       : game.i18n.format("ELARIA.Picker.count", { n: matches.length });
   }
 
@@ -430,6 +460,7 @@ export class ElariaMasteryPicker extends HandlebarsApplicationMixin(ApplicationV
 
   static #onClear() {
     this.#filters = foundry.utils.deepClone(BLANK_FILTERS);
+    this.#limit = PAGE_ROWS;
     return this.render();
   }
 

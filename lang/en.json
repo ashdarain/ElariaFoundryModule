@@ -374,7 +374,7 @@
       "mine": "Only this character's sources",
       "upToLevel": "Up to level {level}",
       "count": "{n} masteries",
-      "countLimited": "Showing {shown} of {n}. Narrow the search to see more.",
+      "countLimited": "Showing {shown} of {n}.",
       "noResults": "No masteries match.",
       "owned": "Already known",
       "add": "Add to character",
@@ -433,7 +433,11 @@
       "hideOwned": "Hide already known",
       "addTag": "+ Must have tag…",
       "tagsHint": "Pick tags; results must have all of them",
-      "removeTag": "Remove this tag"
+      "removeTag": "Remove this tag",
+      "armourWeight": "Armour weight",
+      "anyAffinity": "Any affinity",
+      "showMore": "Show {n} more ({left} left)",
+      "showAll": "Show all {n}"
     },
     "Dice": {
       "roll3d6": "Roll 3d6",

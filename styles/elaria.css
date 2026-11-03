@@ -998,3 +998,5 @@
 .elaria.mastery-picker .tag-chip { font-size: 11px; padding: 1px 6px; border-radius: 10px; background: rgba(0, 0, 0, 0.08); border: 1px solid var(--el-line); }
 .elaria.mastery-picker .tag-chip:hover { border-color: var(--el-bad); color: var(--el-bad); text-shadow: none; }
 .elaria.mastery-picker .pick-meta .tag-hit { border-color: var(--el-accent); color: var(--el-accent); }
+.elaria.mastery-picker .results .show-more { display: flex; justify-content: center; gap: 16px; padding: 8px; font-size: 12px; }
+.elaria.mastery-picker .results .show-more a { color: var(--el-accent); }

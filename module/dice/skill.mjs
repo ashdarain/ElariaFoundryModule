@@ -42,6 +42,8 @@ export function skillRollPreset({ actor = null, skill, name = "", img = "", targ
     fixedCrit: true,
     hits: 1,
     targets: aoe ? 1 : targets,   // one to-hit roll per target; an AoE uses one roll for all of them
+    // A skill mod is part of every to-hit roll, so its bonus goes on each target (damage rolls: once, by default).
+    bonusPerHit: true,
     aoe: false
   };
 }
