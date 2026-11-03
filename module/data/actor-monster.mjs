@@ -1,4 +1,5 @@
 import { ELARIA } from "../config.mjs";
+import * as R from "../rules.mjs";
 
 const f = foundry.data.fields;
 const int = (initial = 0, opts = {}) => new f.NumberField({ required: true, nullable: false, integer: true, initial, ...opts });
@@ -29,6 +30,8 @@ export class MonsterData extends foundry.abstract.TypeDataModel {
         power: int(0),
         elements: text(),
         size: text(),
+        // Damage form (Mechanics): Mortal by default. Sets the built-in Mortal / Divine / Demonic resistances.
+        form: new f.StringField({ required: true, initial: "mortal", choices: () => ELARIA.forms }),
         description: html()
       }),
       resources: new f.SchemaField({
@@ -40,6 +43,9 @@ export class MonsterData extends foundry.abstract.TypeDataModel {
       stats: new f.SchemaField(Object.fromEntries(Object.keys(ELARIA.stats).map(k => [k, new f.SchemaField({
         mod: int(0)
       })]))),
+      // Resistance % per element and damage form on top of the built-in values (positive = takes less).
+      resistances: new f.SchemaField(Object.fromEntries(
+        [...Object.keys(ELARIA.resistanceElements), ...Object.keys(ELARIA.forms)].map(k => [k, int(0)]))),
       defence: new f.SchemaField({
         ar: int(0), mar: int(0), aar: int(0), nar: int(0), nmar: int(0),
         elementalRes: text()
@@ -69,6 +75,14 @@ export class MonsterData extends foundry.abstract.TypeDataModel {
   prepareDerivedData() {
     for (const r of Object.values(this.resources)) r.value = Math.min(r.value, r.max);
     const p = this.details.power;
+    // Resistances: built in from the monster's form and its elements (the Elements field), plus the bonus typed in.
+    const elementKeys = Object.keys(ELARIA.resistanceElements);
+    this.elementList = R.elementsInText(this.details.elements, elementKeys);
+    const base = { ...R.elementResistances(this.elementList, ELARIA.elementAffinity), ...R.formResistances(this.details.form) };
+    this.resistanceTotals = Object.fromEntries(Object.entries(this.resistances).map(([k, bonus]) => {
+      const b = base[k] ?? 0;
+      return [k, { base: b, bonus, total: b + bonus }];
+    }));
     this.natureDC = { overview: 10 + p, vitals: 8 + p, stats: 14 + p, loot: 12 + p, abilities: 16 + p };
     // Same shape as characters where the dice code looks (crit, initiative, check penalty).
     this.penalties = { check: 0, initiative: 0 };

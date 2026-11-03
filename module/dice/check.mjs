@@ -1,4 +1,6 @@
 import { ELARIA } from "../config.mjs";
+import { labelDamageProfile, profileLabel } from "../combat/damage.mjs";
+import { parseBonus } from "./bonus.mjs";
 
 /**
  * Elaria rolls.
@@ -51,11 +53,13 @@ export function roll3d6(options = {}) {
  * @param {string} [options.note]          Small line under the heading (e.g. the mastery's damage as written)
  * @param {string} [options.img]           Icon for the heading
  * @param {object} [options.skill]         A mastery's skill mod ({stats, bonus, raw}): adds a "Roll skill mod" button
+ * @param {object} [options.damage]        Damage profile (type, element, form, pierce): the card can apply the damage
+ * @param {string[]} [options.targetTokens] Token UUIDs of the targets (same order as targetNames)
  */
 export async function rollDice({ actor = null, stat = "", bonus = "", bonusPerHit = false, penalty = 0,
   critChance = 0, critDamage = 0, mode = "normal", dice: diceSpec = "3d6", hits = 1, targets = 1, targetNames = [],
   aoe = false, label = "", note = "", img = "", skill = null, next = null,
-  critChanceBonus = 0, critDamageBonus = 0, fixedCrit = false } = {}) {
+  critChanceBonus = 0, critDamageBonus = 0, fixedCrit = false, damage = null, targetTokens = [] } = {}) {
   diceSpec = DICE_RE.test(String(diceSpec).trim().toLowerCase()) ? String(diceSpec).trim().toLowerCase() : "3d6";
   const mod = stat && actor ? actor.system.stats?.[stat]?.mod ?? 0 : 0;
   const statLabel = stat ? L(ELARIA.stats[stat]?.label ?? stat) : "";
@@ -86,12 +90,23 @@ export async function rollDice({ actor = null, stat = "", bonus = "", bonusPerHi
     return { sets, diceTotal: sets.find(x => x.kept)?.total ?? 0 };
   };
 
+  // The bonus field's parts ("2d6 Fire 4 Wind"): each rolled on its own and shown on its own. On a damage roll,
+  // a part named after a damage type / element / form is its own damage (an "extra"); the rest adds to the hit.
+  const bonusTerms = parseBonus(bonus).terms.map(t => ({ ...t,
+    profile: damage && t.label ? labelDamageProfile(t.label, damage) : null }));
+  const rollData = actor?.getRollData?.() ?? {};
   const rollBonus = async () => {
-    if (!bonus) return 0;
-    const b = await new Roll(bonus).evaluate();
-    if (b.dice.length) allRolls.push(b);
-    return b.total;
+    const parts = [];
+    for (const t of bonusTerms) {
+      const r = await new Roll(t.formula, rollData).evaluate();
+      if (r.dice.length) allRolls.push(r);
+      parts.push({ value: t.sign * r.total, formula: t.formula, label: t.label, profile: t.profile,
+        dice: r.dice.length > 0 });
+    }
+    const plain = parts.filter(p => !p.profile).reduce((n, p) => n + p.value, 0);
+    return { parts, plain, total: parts.reduce((n, p) => n + p.value, 0) };
   };
+  const noBonus = { parts: [], plain: 0, total: 0 };
 
   /**
    * One target's damage: the dice are rolled separately for every hit (so hits differ); each hit adds the stat
@@ -101,12 +116,13 @@ export async function rollDice({ actor = null, stat = "", bonus = "", bonusPerHi
     const hitList = [];
     for (let h = 0; h < hits; h++) {
       const pool = await rollPool();
-      const hitBonus = bonusPerHit ? await rollBonus() : 0;
-      hitList.push({ ...pool, bonusValue: hitBonus, value: pool.diceTotal + mod + hitBonus });
+      const hitBonus = bonusPerHit ? await rollBonus() : noBonus;
+      hitList.push({ ...pool, bonus: hitBonus, main: pool.diceTotal + mod + hitBonus.plain,
+        value: pool.diceTotal + mod + hitBonus.total });
     }
-    const onceBonus = bonusPerHit ? 0 : await rollBonus();
-    const raw = hitList.reduce((n, x) => n + x.value, 0) + onceBonus - penalty;
-    return { hitList, onceBonus, raw, sets: hitList[0].sets, diceTotal: hitList[0].diceTotal, bonusValue: bonusPerHit ? hitList[0].bonusValue : onceBonus };
+    const once = bonusPerHit ? noBonus : await rollBonus();
+    const raw = hitList.reduce((n, x) => n + x.value, 0) + once.total - penalty;
+    return { hitList, once, raw, sets: hitList[0].sets, diceTotal: hitList[0].diceTotal };
   };
 
 
@@ -124,6 +140,7 @@ export async function rollDice({ actor = null, stat = "", bonus = "", bonusPerHi
     const dmg = shared ?? await rollDamage();
     const crit = await rollCrit();
     results.push({
+      tokenUuid: targetTokens[i] ?? "",
       name: targetNames[i] || (targets > 1 ? game.i18n.format("ELARIA.Dice.targetN", { n: i + 1 }) : ""),
       dmg, crit,
       total: Math.max(0, dmg.raw),
@@ -133,22 +150,45 @@ export async function rollDice({ actor = null, stat = "", bonus = "", bonusPerHi
 
   // ---- Card ----
   const sign = n => (n < 0 ? `− ${Math.abs(n)}` : `+ ${n}`);
-  const plainBonus = /^[+-]?\s*\d+$/.test(bonus);
   const setsHTML = d => `<div class="sets">${d.sets.map(x => `
       <div class="set ${x.kept ? "kept" : "dropped"}">
         ${x.faces.map(f => `<span class="die d6">${f}</span>`).join("")}
         <span class="eq">= ${x.total}</span>
       </div>`).join("")}</div>`;
-  const bonusPart = v => `<span class="part">${sign(v)}${plainBonus ? "" : ` <small>${esc(bonus)}</small>`}</span>`;
-  const tailHTML = d => (bonus && !bonusPerHit ? ` ${bonusPart(d.onceBonus)}` : "")
+  // Every bonus part on its own: "+ 7 (2d6 Fire)", "+ 4 Wind", "+ 2".
+  const bonusPart = b => b.parts.map(p => {
+    const name = [p.dice ? p.formula : "", p.label].filter(Boolean).join(" ");
+    return `<span class="part bonus-part ${p.profile ? "typed" : ""}">${sign(p.value)}${name ? ` <small>${esc(name)}</small>` : ""}</span>`;
+  }).join(" ");
+  const tailHTML = d => (bonus && !bonusPerHit ? ` ${bonusPart(d.once)}` : "")
     + (penalty ? ` <span class="part">− ${penalty} <small>${L("ELARIA.Dice.penaltyShort")}</small></span>` : "");
+  // Damage rolls with typed parts: the total split by type ("11 Physical · 7 Fire · 4 Wind").
+  const extrasOf = d => {
+    const map = new Map();
+    const add = (p, v) => {
+      const key = JSON.stringify(p.profile);
+      if (!map.has(key)) map.set(key, { profile: p.profile, label: p.label, values: [] });
+      map.get(key).values.push(v);
+    };
+    for (const h of d.hitList) for (const p of h.bonus.parts) if (p.profile) add(p, p.value);
+    for (const p of d.once.parts) if (p.profile) add(p, p.value);
+    return [...map.values()];
+  };
+  const byTypeHTML = d => {
+    const extras = damage ? extrasOf(d) : [];
+    if (!extras.length) return "";
+    const main = d.hitList.reduce((n, h) => n + h.main, 0) + d.once.plain - penalty;
+    const bits = [`${main} <small>${esc(profileLabel(damage))}</small>`,
+      ...extras.map(x => `${x.values.reduce((a, b) => a + b, 0)} <small>${esc(x.label)}</small>`)];
+    return `<div class="by-type">${bits.join(" · ")}</div>`;
+  };
   const breakdownHTML = d => {
     if (hits > 1) {
       // Hit 1 [4][3] = 7 + 3 Strength = 10 …, then the sum.
       const rows = d.hitList.map((h, i) => {
         const parts = [`<span class="part">${h.diceTotal}</span>`];
         if (stat) parts.push(`<span class="part">${sign(mod)}</span>`);
-        if (bonus && bonusPerHit) parts.push(bonusPart(h.bonusValue));
+        if (bonus && bonusPerHit) parts.push(bonusPart(h.bonus));
         return `<div class="hit-row">
             <span class="hit-label">${game.i18n.format("ELARIA.Dice.hitN", { n: i + 1 })}</span>
             ${setsHTML(h)}
@@ -158,12 +198,12 @@ export async function rollDice({ actor = null, stat = "", bonus = "", bonusPerHi
       const sum = d.hitList.map(h => h.value).join(" + ");
       return `<div class="hit-list">${rows}</div>
         <div class="breakdown">${diceSpec}${stat ? ` ${sign(mod)} <small>${esc(statLabel)}</small>` : ""} ${L("ELARIA.Dice.perHit")} · `
-        + `<span class="part">${sum}</span>${tailHTML(d)}</div>`;
+        + `<span class="part">${sum}</span>${tailHTML(d)}</div>${byTypeHTML(d)}`;
     }
     const parts = [`<span class="part">${diceSpec} <b>${d.diceTotal}</b></span>`];
     if (stat) parts.push(`<span class="part">${sign(mod)} <small>${esc(statLabel)}</small></span>`);
-    if (bonus && bonusPerHit) parts.push(bonusPart(d.bonusValue));
-    return `<div class="breakdown">${parts.join(" ")}${tailHTML(d)}</div>`;
+    if (bonus && bonusPerHit) parts.push(bonusPart(d.hitList[0].bonus));
+    return `<div class="breakdown">${parts.join(" ")}${tailHTML(d)}</div>${byTypeHTML(d)}`;
   };
   const critHTML = c => !c ? "" : `<div class="crit-check ${c.hit ? "hit" : "miss"}">
       <span class="die d100">${c.value}</span>
@@ -201,7 +241,8 @@ export async function rollDice({ actor = null, stat = "", bonus = "", bonusPerHi
   const tagsHTML = [
     hits > 1 ? `<span class="tag">${game.i18n.format("ELARIA.Dice.hits", { n: hits })}</span>` : "",
     targets > 1 ? `<span class="tag">${game.i18n.format("ELARIA.Dice.targetsTag", { n: targets })}</span>` : "",
-    aoe ? `<span class="tag">${L("ELARIA.Dice.aoe")}</span>` : ""
+    aoe ? `<span class="tag">${L("ELARIA.Dice.aoe")}</span>` : "",
+    damage ? `<span class="tag damage-type">${esc(profileLabel(damage))}</span>` : ""
   ].join("");
 
   const anyCrit = results.some(r => r.crit?.hit);
@@ -215,6 +256,7 @@ export async function rollDice({ actor = null, stat = "", bonus = "", bonusPerHi
       </header>
       ${tagsHTML ? `<div class="roll-tags">${tagsHTML}</div>` : ""}
       ${body}
+      ${damage ? `<div class="damage-apply"></div>` : ""}
       ${skill ? skillButton(skill) : ""}
       ${next ? `<button type="button" class="next-roll" data-elaria-action="next"><i class="fa-solid fa-burst"></i> ${L("ELARIA.Dice.thenDamage")}</button>` : ""}
     </div>`;
@@ -226,6 +268,18 @@ export async function rollDice({ actor = null, stat = "", bonus = "", bonusPerHi
       critChanceBonus, critDamageBonus, fixedCrit, hits, targets, aoe, label, note, img
     },
     ...(next ? { next } : {}),
+    // What applying the damage needs: each target's hits (stat and per-hit bonus included), the once-only flat
+    // mods (bonus − penalty), whether it crit, and the damage profile.
+    ...(damage ? { damage: {
+      profile: damage, critDamage,
+      targets: results.map(r => ({
+        tokenUuid: r.tokenUuid, name: r.name,
+        hits: r.dmg.hitList.map(h => h.main),
+        flat: r.dmg.once.plain - penalty,
+        crit: !!r.crit?.hit,
+        extras: extrasOf(r.dmg)
+      }))
+    } } : {}),
     ...(skill ? { skill: { ...skill, name: label, img, actorUuid: actor?.uuid ?? "", targets, aoe } } : {})
   };
   return postRolls(allRolls, { actor, content, flags });
@@ -265,7 +319,7 @@ export function skillButton(skill) {
  * monsters: players who don't own the monster only see the results. Those parts get the class "roll-detail",
  * which onRenderChatMessage removes for them.
  */
-export const ROLL_DETAIL = ".sets, .breakdown, .hit-math .part, .crit-check, .titles .note, .roll-tags, .crit-x";
+export const ROLL_DETAIL = ".sets, .breakdown, .hit-math .part, .crit-check, .titles .note, .roll-tags, .crit-x, .by-type";
 
 export function markRollDetails(content, selectors = ROLL_DETAIL) {
   const doc = new DOMParser().parseFromString(`<div>${content}</div>`, "text/html");

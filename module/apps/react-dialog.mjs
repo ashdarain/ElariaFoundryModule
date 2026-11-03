@@ -1,5 +1,6 @@
 import { ELARIA } from "../config.mjs";
 import { postRolls } from "../dice/check.mjs";
+import { bonusIsValid, parseBonus } from "../dice/bonus.mjs";
 import { findCombatant, reactionCount, reactionStates, reactionSummary, recordReaction } from "../combat/reactions.mjs";
 
 const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api;
@@ -167,7 +168,7 @@ export class ElariaReactDialog extends HandlebarsApplicationMixin(ApplicationV2)
     const v = this.#read();
     const el = this.element;
     el.querySelector("[name=penalty]")?.classList.toggle("has-penalty", v.penalty !== 0);
-    const bad = v.bonus && !Roll.validate(v.bonus);
+    const bad = v.bonus && !bonusIsValid(v.bonus);
     el.querySelector(".bonus-error").hidden = !bad;
   }
 
@@ -175,7 +176,7 @@ export class ElariaReactDialog extends HandlebarsApplicationMixin(ApplicationV2)
     const actor = this.actor;
     if (!actor) return ui.notifications.warn(L("ELARIA.React.pickUnit"));
     const v = this.#read();
-    if (v.bonus && !Roll.validate(v.bonus)) return ui.notifications.warn(L("ELARIA.Dice.badBonus"));
+    if (v.bonus && !bonusIsValid(v.bonus)) return ui.notifications.warn(L("ELARIA.Dice.badBonus"));
     const combatant = this.combatant;
     await rollReaction({ actor, combatant, ...v, item: this.item, mode: target.dataset.mode ?? "normal" });
     return this.close();
@@ -193,9 +194,16 @@ export async function rollReaction({ actor, combatant = null, type = "towards", 
   const mod = actor.system.stats?.[stat]?.mod ?? 0;
   const dice = mode === "advantage" ? "{3d6, 3d6}kh" : mode === "disadvantage" ? "{3d6, 3d6}kl" : "3d6";
   let formula = `${dice} + ${mod}`;
-  if (bonus) formula += ` + (${bonus})`;
   if (penalty) formula += ` - ${penalty}`;
-  const roll = await new Roll(formula).evaluate();
+  const rollData = actor.getRollData?.() ?? {};
+  const roll = await new Roll(formula, rollData).evaluate();
+  // Bonus parts rolled and shown one by one ("1d4 Bless + 1").
+  const bonusParts = [];
+  for (const t of parseBonus(bonus).terms) {
+    const r = await new Roll(t.formula, rollData).evaluate();
+    bonusParts.push({ roll: r, value: t.sign * r.total, name: [r.dice.length ? t.formula : "", t.label].filter(Boolean).join(" ") });
+  }
+  const total = roll.total + bonusParts.reduce((s, p) => s + p.value, 0);
 
   const sets = roll.dice.slice(0, mode === "normal" ? 1 : 2).map(d => {
     const faces = d.results.map(x => x.result);
@@ -206,7 +214,6 @@ export async function rollReaction({ actor, combatant = null, type = "towards", 
     sets[1 - keep].kept = false;
   }
   const kept = sets.find(s => s.kept)?.total ?? 0;
-  const bonusValue = roll.total - kept - mod + penalty;
   const sign = x => (x < 0 ? `− ${Math.abs(x)}` : `+ ${x}`);
   const n = reactionSummary(combatant, actor).n;
 
@@ -225,10 +232,10 @@ export async function rollReaction({ actor, combatant = null, type = "towards", 
         <div class="set ${s.kept ? "kept" : "dropped"}">${s.faces.map(f => `<span class="die d6">${f}</span>`).join("")}
           <span class="eq">= ${s.total}</span></div>`).join("")}</div>
       <div class="breakdown">3d6 <b>${kept}</b> ${sign(mod)} <small>${esc(L(ELARIA.stats[stat]?.label ?? stat))}</small>
-        ${bonus ? ` ${sign(bonusValue)}` : ""}${penalty ? ` − ${penalty} <small>${L("ELARIA.Dice.penaltyShort")}</small>` : ""}</div>
+        ${bonusParts.map(p => ` <span class="bonus-part">${sign(p.value)}${p.name ? ` <small>${esc(p.name)}</small>` : ""}</span>`).join("")}${penalty ? ` − ${penalty} <small>${L("ELARIA.Dice.penaltyShort")}</small>` : ""}</div>
       <div class="dc-line gm-only">${L("ELARIA.React.dc")}: ${esc(dcFormula(type, n))}</div>
       <div class="results two">
-        <div class="result"><span class="label">${L("ELARIA.Dice.total")}</span><span class="value">${roll.total}</span></div>
+        <div class="result"><span class="label">${L("ELARIA.Dice.total")}</span><span class="value">${total}</span></div>
         <div class="result verdict pending"><span class="label">${L("ELARIA.React.result")}</span>
           <span class="value">${L("ELARIA.React.pending")}</span></div>
       </div>
@@ -238,7 +245,7 @@ export async function rollReaction({ actor, combatant = null, type = "towards", 
       </div>
       <p class="react-foot">${L("ELARIA.React.pendingNote")}</p>
     </div>`;
-  return postRolls([roll], { actor, content, flags: { react: {
+  return postRolls([roll, ...bonusParts.filter(p => p.roll.dice.length).map(p => p.roll)], { actor, content, flags: { react: {
     type, passed: null, itemUuid: item?.uuid ?? "", actorUuid: actor.uuid,
     combatId: combatant?.parent?.id ?? null, combatantId: combatant?.id ?? null
   } } });

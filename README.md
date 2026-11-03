@@ -88,7 +88,7 @@ Under the chat box are **Roll 3d6** and **Roll d20**.
 - **Roll 3d6** opens the roll window, which every 3d6 roll uses (clicking a stat modifier on the sheet opens it with that stat chosen). It has:
   - **Character**: the selected token's actor, else your assigned character, else none.
   - **Stat**: whose modifier is added (default none).
-  - **Add to roll**: a number or dice formula (`2`, `-1`, `1d4+1`).
+  - **Add to roll**: one or more parts, each a number or dice formula with an optional name after it (`2`, `-1`, `1d4+1`, `2d6 Fire 4 Wind`, `1d4 Bless`). Spaces or + separate the parts. The chat card shows every part on its own ("+ 7 2d6 Fire · + 4 Wind"). On damage rolls, a part named after a damage type, element or form (Fire, Wind, True, Magical, Divine …) is extra damage of that type: the card shows the total split by type, and applying it gives that part its own armour and resistance (see *Applying damage*). Other names (Bless, Rage …) are just labels.
   - **Injury / exhaustion**: the check penalty from the sheet.
   - **Crit chance / crit damage**: from the character's sheet, 0 with no character.
   - **Roll**, **Roll with Advantage**, **Roll with Disadvantage**. Advantage rolls the 3d6 twice and keeps the higher sum; disadvantage keeps the lower.
@@ -130,7 +130,8 @@ Under the chat box are **Roll 3d6** and **Roll d20**.
 A simple **Monster** actor following the *Monster stat block* tab. When a GM creates an actor, **Monster** is preselected; players can only create characters (a GM can make a monster and give a player ownership in the usual Foundry way).
 
 - **Header:** picture, name, type, power, size, elements, HP / FTG / MP (current / max, all typed in), and an **Initiative** button (3d6 + Fin). It rolls for the monster's combatants in the current combat; if it isn't in one, its tokens on the scene (the selected ones first, so unlinked copies work) are added and roll; with no token on the scene the roll is just posted to chat. GMs see the nature check DCs from the stat block (10 + Power for the overview, 8 + Power for HP/FTG/MP, 14 + Power for the stats, 12 + Power for loot, 16 + Power for abilities).
-- **Stat block tab:** the 13 stat modifiers, typed in directly (monsters have no stat points; click a name or the die to open the roll window), defence (AR, MAR, AAR, NAR, NMAR, elemental res) and combat (passive awareness, reactions per round, crit chance, crit damage, Mv). Crit and reactions feed the roll window and the combat tracker pips.
+- **Stat block tab:** the 13 stat modifiers, typed in directly (monsters have no stat points; click a name or the die to open the roll window), defence (AR, MAR, AAR, NAR, NMAR) and combat (passive awareness, reactions per round, crit chance, crit damage, Mv). Crit and reactions feed the roll window and the combat tracker pips.
+- **Resistances** (stat block tab, laid out like characters'): a **Mortal / Divine / Demonic** toggle sets the built-in form resistances (Mortal: Divine +25 %, Demonic −25 %; Divine: Demonic +25 %, Mortal −25 %; Demonic: Mortal +25 %, Divine −25 %). The elements typed in the header (e.g. "Fire, Dark") add their built-in elemental resistances from Mechanics' *Elemental Weaknesses* table (several elements add together). Each cell shows built-in → your bonus → total, green for resist, red for weak. An old typed *Elemental Res* note stays visible under the grid until you clear it.
 - **Abilities tab:** monster *abilities* (name, skill mod, damage, cost, tags, description, all optional). Click one to use it exactly like a mastery: skill mod first (with "No reaction"), then damage, or post to chat. Only a Damage field with dice in it (e.g. `2d6+Str`) counts as damage: blank, "—", "None" or plain text means there's nothing to roll, so the ability (or mastery) just posts its name and description to chat. Masteries can be dragged onto monsters too, and abilities can go on the hotbar.
 - **Description & loot tab:** description, unique loot, loot tables.
 - **Hidden rolls:** players who don't own a monster see only the results of its rolls (totals, per-hit values, crit or not) and its ability descriptions. The dice, formula, modifiers, crit chance, crit multiplier and an ability's skill mod / damage / cost are shown to the GM (and the monster's owners) only. Foundry's own roll messages for monsters, such as initiative, hide their formula and dice the same way.
@@ -139,6 +140,26 @@ A simple **Monster** actor following the *Monster stat block* tab. When a GM cre
 ## Token bars
 
 Tokens show **HP in red at the bottom**, and **MP in blue with FTG in green stacked under it at the top**. New characters and monsters default to HP as bar 1 and MP as bar 2; FTG is added automatically as a third bar (unless one of the two bars already shows it). A resource with a max of 0 (a monster with no mana) isn't drawn and the next bar moves up. When bars are shown (always, on hover, owner only …) is still Foundry's token setting.
+
+## Applying damage
+
+Damage rolls from masteries, monster abilities and weapons can be applied straight from the chat card, following Mechanics' *Damage Modifier*:
+
+`final = (dmg rolled + flat dmg mods − relevant armour) × (crit dmg + other % mods − resistance)`
+
+- The multiplier terms are **added**: a crit with +50 % crit damage against 25 % resistance is × (1.5 − 0.25) = × 1.25; no crit against 25 % resistance is × 0.75. The multiplier never goes below 0.
+- Armour comes off **every hit** separately; a hit never goes below 0. A once-only bonus (and the injury penalty) counts on the first hit. Typed bonus parts (`2d6 Fire`) are their own damage: their own armour (by their type) and their own resistance, with the same crit. The result is **rounded to the nearest whole number**.
+- **Armour by damage type:** Physical / Slashing full AR · Piercing ½ AR · Blunt AR without AAR · Chopping AR without NAR · Magical MAR · Magical Piercing ½ MAR · Magical Chopping MAR without NMAR · True: no armour and no resistance · Toxic: only the target's Con mod. The *AR Piercing* tag ignores all armour, *AAR Piercing* ignores AAR.
+- **Resistance** = the target's resistance to the damage's element + to its form (Mortal by default).
+- **Damage type** is read from the tags (Physical, Slashing, …, Magical, an element, Divine / Demonic, True Damage, Toxic; a weapon's damage type text like "Phy. Slashing"). An element without anything physical counts as magical; nothing at all counts as Physical, Mortal. *Weapon Damage* takes the type of the first weapon on the belt; *Elemental* asks for the element. The roll window shows the type (Damage type section) so it can be changed before rolling.
+
+On the card, each targeted token gets **Apply n to <name>**, with n worked out for that target (hover for the breakdown). Clicking asks to confirm (the amount can be changed), then takes it from temp HP first, then HP. Afterwards the row shows **n applied · Undo**, and the same card can't be applied to that token twice. Without targets, **Apply to selected token(s)** uses the tokens selected when you click.
+
+- The **GM** can apply any damage to anyone; **players** only to actors they own (e.g. a monster's hit on their own character). Players never see a monster's breakdown, only the number.
+- Hitting **0 HP** only prompts: characters can take 1 injury; monsters can be marked defeated.
+- Not automatic yet: hit locations (head, arms, legs), bleed from Slashing, Frozen's half damage, Scorch, blocking into a breakpoint, healing and lifesteal. Change the amount in the confirm window for those.
+
+`node tools/test-damage.mjs` checks the maths.
 
 ## Combat tracker: reactions
 

@@ -34,6 +34,23 @@
       <input type="number" name="penalty" value="{{penalty}}" min="0" step="1"></label>
   </div>
 
+  {{#if damage}}
+  <fieldset class="damage-type">
+    <legend><i class="fa-solid fa-shield-halved"></i> {{localize "ELARIA.Damage.section"}}</legend>
+    <div class="damage-grid">
+      <label><span>{{localize "ELARIA.Damage.typeLabel"}}</span>
+        <select name="dmgType">{{selectOptions damageChoices.type selected=damage.type}}</select></label>
+      <label><span>{{localize "ELARIA.Damage.element"}}</span>
+        <select name="dmgElement" class="{{#if damage.askElement}}ask{{/if}}">{{selectOptions damageChoices.element selected=damage.element}}</select></label>
+      <label><span>{{localize "ELARIA.Damage.form"}}</span>
+        <select name="dmgForm">{{selectOptions damageChoices.form selected=damage.form}}</select></label>
+      <label><span>{{localize "ELARIA.Damage.pierceLabel"}}</span>
+        <select name="dmgPierce">{{selectOptions damageChoices.pierce selected=damage.pierce}}</select></label>
+    </div>
+    <p class="hint">{{#if damage.weaponName}}{{localize "ELARIA.Damage.fromWeapon" name=damage.weaponName}} {{/if}}{{#if damage.askElement}}{{localize "ELARIA.Damage.askElement"}} {{/if}}{{localize "ELARIA.Damage.sectionHint"}}</p>
+  </fieldset>
+  {{/if}}
+
   <fieldset class="crit">
     <legend><i class="fa-solid fa-burst"></i> {{localize "ELARIA.Dice.critSection"}}</legend>
     <div class="crit-grid">

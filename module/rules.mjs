@@ -131,6 +131,26 @@ export function elementCombos(elements) {
  * @param {"mortal"|"divine"|"demonic"} form
  * @returns {{mortal:number, divine:number, demonic:number}}
  */
+/**
+ * Built-in elemental resistance from a creature's own elements (Mechanics, "Elemental Weaknesses"); several
+ * elements add together. Used for monsters (PCs have none innate, A15).
+ * @param {string[]} elements  element keys, e.g. ["fire", "dark"]
+ * @returns {Object<string, number>}
+ */
+export function elementResistances(elements, affinity) {
+  const out = {};
+  for (const el of new Set(elements)) {
+    for (const [k, v] of Object.entries(affinity[el] ?? {})) out[k] = (out[k] ?? 0) + v;
+  }
+  return out;
+}
+
+/** Element keys named in free text ("Fire, Dark" → ["fire", "dark"]). */
+export function elementsInText(text, elementKeys) {
+  const words = String(text ?? "").toLowerCase();
+  return elementKeys.filter(k => new RegExp(`\\b${k}\\b`).test(words));
+}
+
 export function formResistances(form) {
   switch (form) {
     case "divine": return { mortal: -25, divine: 0, demonic: 25 };

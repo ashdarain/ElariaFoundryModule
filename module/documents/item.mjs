@@ -1,6 +1,7 @@
 import { ELARIA } from "../config.mjs";
 import { statCode } from "../importer/convert.mjs";
 import { defaultRollActor, hidesRollDetails, skillButton } from "../dice/check.mjs";
+import { itemDamageProfile } from "../combat/damage.mjs";
 import { readSkillMod, skillRollPreset } from "../dice/skill.mjs";
 
 /**
@@ -83,7 +84,7 @@ export class ElariaItem extends Item {
     // "x3" = 3 hits on each target; an AOE tag = one shared damage roll for every target.
     const hits = /^\d+$/.test(String(d.hits ?? "")) ? Number(d.hits) : (Number(/x\s*(\d+)/i.exec(d.raw ?? "")?.[1] ?? /^\s*(\d+)\s*x\s/i.exec(d.raw ?? "")?.[1]) || 1);
     return { actor: actor ?? null, dice: dice || "3d6", stat, bonus: "", label: this.name, note, img: this.img, penalty: 0,
-      hits, aoe: this.isAoe, targets };
+      hits, aoe: this.isAoe, targets, damage: itemDamageProfile(this, actor ?? this.actor) };
   }
 
   /**

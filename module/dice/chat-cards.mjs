@@ -2,6 +2,7 @@ import { ElariaRollDialog } from "../apps/roll-dialog.mjs";
 import { rollD20, defaultRollActor } from "./check.mjs";
 import { skillRollPreset } from "./skill.mjs";
 import { resolveReaction } from "../apps/react-dialog.mjs";
+import { renderDamageApply } from "./damage-card.mjs";
 
 /**
  * Buttons on Elaria chat cards:
@@ -15,6 +16,7 @@ export function onRenderChatMessage(message, html) {
   html = html instanceof HTMLElement ? html : html?.[0];
   if (!game.user.isGM) html?.querySelectorAll(".gm-only").forEach(el => el.remove());
   hideRollDetails(message, html);
+  renderDamageApply(message, html);
   const buttons = html?.querySelectorAll("[data-elaria-action]");
   if (!buttons?.length) return;
   const mine = message.isAuthor || game.user.isGM;
@@ -58,7 +60,8 @@ async function onCardButton(message, action) {
         critChanceBonus: r.critChanceBonus ?? 0, critDamageBonus: r.critDamageBonus ?? 0, fixedCrit: !!r.fixedCrit,
         label: r.label, note: r.note, img: r.img,
         skill: flags.skill ? { raw: flags.skill.raw, stats: flags.skill.stats, bonus: flags.skill.bonus } : null,
-        next: flags.next ?? null
+        next: flags.next ?? null,
+        damage: flags.damage?.profile ?? null
       });
     }
     case "skill": {

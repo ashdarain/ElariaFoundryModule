@@ -282,7 +282,9 @@
       "formsHint": "(first number is built in from your form)",
       "neutral": "No change to damage taken.",
       "less": "Takes {n}% less damage.",
-      "more": "Takes {n}% more damage."
+      "more": "Takes {n}% more damage.",
+      "elements": "Elements",
+      "builtIn": "Built in: {n}%"
     },
     "Burst": {
       "title": "Burst",
@@ -395,8 +397,8 @@
       "stat": "Stat",
       "noStat": "None",
       "bonus": "Add to roll",
-      "bonusHint": "e.g. 2, -1 or 1d4+1",
-      "badBonus": "That isn't a number or dice formula.",
+      "bonusHint": "e.g. 2, 1d4+1 or 2d6 Fire 4 Wind",
+      "badBonus": "That isn't a number or dice formula (a name goes after its number, e.g. 2d6 Fire).",
       "penalty": "Injury / exhaustion",
       "penaltyShort": "penalty",
       "critSection": "Crit",
@@ -501,7 +503,12 @@
       "dcVitals": "HP/FTG/MP DC",
       "dcVitalsHint": "Nature check DC (8 + Power) to learn its HP, FTG and MP. Only the GM sees this.",
       "modHint": "Modifier, added to rolls with this stat",
-      "initiativeHint": "Roll initiative (3d6 + Fin); adds the monster to the combat"
+      "initiativeHint": "Roll initiative (3d6 + Fin); adds the monster to the combat",
+      "formHint": "The monster's damage form (Mechanics). Sets its built-in Mortal / Divine / Demonic resistances.",
+      "formsHint": "(first number is built in from the form, then your bonus, then the total)",
+      "elementsFrom": "(built in from its elements: {names}; then your bonus, then the total)",
+      "noElements": "(type its elements in the header, e.g. \"Fire, Dark\", to add their built-in values)",
+      "elementalResOld": "Old resistance note (move it into the grid, then clear this)"
     },
     "Ability": {
       "new": "New Ability",
@@ -628,6 +635,57 @@
       "perk": "Perk",
       "inventory": "Starting inventory",
       "noData": "The GM hasn't imported backgrounds yet (Data importer → Backgrounds tab)."
+    },
+    "Damage": {
+      "type": {
+        "physical": "Physical",
+        "slashing": "Slashing",
+        "piercing": "Piercing",
+        "blunt": "Blunt",
+        "chopping": "Chopping",
+        "magical": "Magical",
+        "magicalPiercing": "Magical Piercing",
+        "magicalChopping": "Magical Chopping",
+        "true": "True",
+        "toxic": "Toxic"
+      },
+      "pierce": {
+        "none": "—",
+        "aar": "ignores AAR",
+        "all": "ignores all armour"
+      },
+      "section": "Damage type",
+      "sectionHint": "Read from the tags; change it if needed. Used when the damage is applied.",
+      "typeLabel": "Type",
+      "element": "Element",
+      "form": "Form",
+      "pierceLabel": "Armour piercing",
+      "noElement": "None",
+      "fromWeapon": "Weapon Damage: from {name}.",
+      "askElement": "Elemental: pick the element.",
+      "crit": "crit",
+      "noCrit": "no crit",
+      "applyTo": "Apply {n} to {name}",
+      "appliedTo": "{n} applied to {name}",
+      "applySelected": "Apply to selected token(s)",
+      "selectFirst": "Select the token(s) to damage first (only ones you own, unless you're the GM).",
+      "undo": "Undo",
+      "undoHint": "Give the HP (and temp HP) back",
+      "confirm": "Damage to {name}:",
+      "amount": "Damage",
+      "apply": "Apply",
+      "cancel": "Cancel",
+      "applyTitle": "Damage {name}",
+      "applied": "{name} takes {n} damage.",
+      "undone": "{n} damage to {name} undone.",
+      "already": "This damage was already applied to {name}.",
+      "notYours": "You can only apply damage to your own characters.",
+      "zeroTitle": "{name} is at 0 HP",
+      "zeroChar": "Hitting 0 HP gives 1 injury (Mechanics). Add it now?",
+      "zeroMonster": "Mark it as defeated?",
+      "addInjury": "Add 1 injury",
+      "markDefeated": "Mark defeated",
+      "leave": "Leave it"
     }
   }
 }

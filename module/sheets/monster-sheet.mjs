@@ -84,6 +84,21 @@ export class ElariaMonsterSheet extends HandlebarsApplicationMixin(ActorSheetV2)
           ["critChance", L("ELARIA.Monster.critChance")], ["critDamage", L("ELARIA.Monster.critDamage")],
           ["mv", L("ELARIA.Monster.mv")]
         ].map(([key, label]) => ({ key, label, value: system.combat[key] }));
+        {
+          const resRow = (key, label) => {
+            const r = system.resistanceTotals[key];
+            return { key, label, ...r, showBase: true,
+              state: r.total > 0 ? "is-resist" : r.total < 0 ? "is-weak" : "",
+              tooltip: (r.total === 0 ? L("ELARIA.Resist.neutral")
+                : game.i18n.format(r.total > 0 ? "ELARIA.Resist.less" : "ELARIA.Resist.more", { n: Math.abs(r.total) }))
+                + (r.base ? `<br>${game.i18n.format("ELARIA.Resist.builtIn", { n: r.base > 0 ? `+${r.base}` : r.base })}` : "") };
+          };
+          context.resistElements = Object.entries(ELARIA.resistanceElements).map(([k, label]) => resRow(k, label));
+          context.resistForms = Object.entries(ELARIA.forms).map(([k, label]) => resRow(k, L(label)));
+          context.formChoices = Object.entries(ELARIA.forms).map(([key, label]) => ({
+            key, label: L(label), checked: system.details.form === key }));
+          context.elementNames = system.elementList.map(k => ELARIA.resistanceElements[k]).join(", ");
+        }
         break;
       case "abilities":
         context.abilities = actor.items.filter(i => i.isUsable).sort((a, b) => a.sort - b.sort).map(item => ({

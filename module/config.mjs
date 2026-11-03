@@ -138,6 +138,23 @@ ELARIA.defaultBurstMax = 6;
 ELARIA.resistanceElements = Object.fromEntries(ELARIA.elements.map(e => [e.toLowerCase(), e]));
 
 /**
+ * Elemental weaknesses (Mechanics): what a creature *of* each element takes more / less of. Positive = resists.
+ * A creature with several elements adds them together (e.g. Fire + Water: Water −25 + 25 = 0, Fire +25 + 25 …).
+ */
+ELARIA.elementAffinity = {
+  fire: { water: -25, fire: 25, ice: 25 },
+  ice: { fire: -25, ice: 25, earth: 25 },
+  lightning: { wind: -25, lightning: 25, water: 25 },
+  wind: { earth: -25, wind: 25, lightning: 25 },
+  water: { lightning: -25, water: 25, fire: 25 },
+  earth: { ice: -25, earth: 25, wind: 25 },
+  light: { dark: -25, light: 50 },
+  dark: { light: -25, dark: 50 },
+  nature: { poison: -25, nature: 50 },
+  poison: { nature: -25, poison: 50 }
+};
+
+/**
  * Sub-stats shown in the Stats tab side panel. Each gets a manual Bonus column (masteries aren't
  * automated yet). `input` = the base itself is typed in (bag rank).
  */

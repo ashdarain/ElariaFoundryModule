@@ -25,8 +25,6 @@
       {{#each defenceRows}}
       <label class="m-field"><span>{{label}}</span><input type="number" name="system.defence.{{key}}" value="{{value}}" step="1"></label>
       {{/each}}
-      <label class="m-field wide"><span>{{localize "ELARIA.Monster.elementalRes"}}</span>
-        <input type="text" name="system.defence.elementalRes" value="{{system.defence.elementalRes}}" placeholder="{{localize 'ELARIA.Monster.elementalResHint'}}"></label>
     </fieldset>
     <fieldset>
       <legend>{{localize "ELARIA.Monster.combat"}}</legend>
@@ -35,4 +33,27 @@
       {{/each}}
     </fieldset>
   </div>
+
+  <section class="resistances m-resistances">
+    <div class="resist-head">
+      <h4>{{localize "ELARIA.Resist.title"}} <small>{{localize "ELARIA.Resist.hint"}}</small></h4>
+      <div class="form-toggle" data-tooltip="ELARIA.Monster.formHint">
+        {{#each formChoices}}
+        <label class="{{key}} {{#if checked}}active{{/if}}"><input type="radio" name="system.details.form" value="{{key}}" {{checked checked}}> {{label}}</label>
+        {{/each}}
+      </div>
+    </div>
+    <h5>{{localize "ELARIA.Resist.forms"}} <small>{{localize "ELARIA.Monster.formsHint"}}</small></h5>
+    <div class="resist-grid forms">
+      {{#each resistForms}}{{> resistCell this}}{{/each}}
+    </div>
+    <h5>{{localize "ELARIA.Resist.elements"}} <small>{{#if elementNames}}{{localize "ELARIA.Monster.elementsFrom" names=elementNames}}{{else}}{{localize "ELARIA.Monster.noElements"}}{{/if}}</small></h5>
+    <div class="resist-grid">
+      {{#each resistElements}}{{> resistCell this}}{{/each}}
+    </div>
+    {{#if system.defence.elementalRes}}
+    <label class="m-field wide old-res"><span>{{localize "ELARIA.Monster.elementalResOld"}}</span>
+      <input type="text" name="system.defence.elementalRes" value="{{system.defence.elementalRes}}"></label>
+    {{/if}}
+  </section>
 </section>

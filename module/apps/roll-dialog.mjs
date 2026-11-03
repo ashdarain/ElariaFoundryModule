@@ -1,5 +1,7 @@
 import { ELARIA } from "../config.mjs";
 import { rollDice, defaultRollActor, DICE_RE } from "../dice/check.mjs";
+import { DAMAGE_TYPES, PIERCE_OPTIONS } from "../combat/damage.mjs";
+import { bonusIsValid } from "../dice/bonus.mjs";
 
 const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api;
 
@@ -68,7 +70,7 @@ export class ElariaRollDialog extends HandlebarsApplicationMixin(ApplicationV2) 
 
   #setPreset({ actor = null, stat = "", dice = "3d6", bonus = "", label = "", note = "", img = "", penalty = null,
     critChanceBonus = 0, critDamageBonus = 0, fixedCrit = false, skill = null,
-    hits = 1, targets = null, aoe = false, bonusPerHit = false, next = null, skip = null } = {}) {
+    hits = 1, targets = null, aoe = false, bonusPerHit = false, next = null, skip = null, damage = null } = {}) {
     this.#actorUuid = actor?.uuid ?? "";
     this.#preset = {
       stat, dice: dice || "3d6", bonus: String(bonus ?? ""), label, note, img, skill, fixedCrit, next, skip,
@@ -76,7 +78,9 @@ export class ElariaRollDialog extends HandlebarsApplicationMixin(ApplicationV2) 
       hits: Math.max(1, Number(hits) || 1),
       // Default: one target per token you have targeted.
       targets: Math.max(1, Number(targets) || game.user.targets?.size || 1),
-      aoe: !!aoe, bonusPerHit: !!bonusPerHit
+      aoe: !!aoe, bonusPerHit: !!bonusPerHit,
+      // A damage roll (mastery / ability / weapon): its damage type, so the card can apply the damage.
+      damage: damage ? { ...damage } : null
     };
   }
 
@@ -117,6 +121,12 @@ export class ElariaRollDialog extends HandlebarsApplicationMixin(ApplicationV2) 
       critDamageBase: this.#critBase().damage,
       critChanceBonus: this.#preset.critChanceBonus,
       critDamageBonus: this.#preset.critDamageBonus,
+      damageChoices: this.#preset.damage ? {
+        type: Object.fromEntries(Object.entries(DAMAGE_TYPES).map(([k, v]) => [k, L(v)])),
+        element: { "": L("ELARIA.Damage.noElement"), ...ELARIA.resistanceElements },
+        form: Object.fromEntries(Object.entries(ELARIA.forms).map(([k, v]) => [k, L(v)])),
+        pierce: Object.fromEntries(Object.entries(PIERCE_OPTIONS).map(([k, v]) => [k, L(v)]))
+      } : null,
       critSource: this.#preset.fixedCrit ? L("ELARIA.Dice.critSkill")
         : actor ? game.i18n.format("ELARIA.Dice.critFromSheet", { name: actor.name }) : L("ELARIA.Dice.critNoActor")
     };
@@ -140,7 +150,7 @@ export class ElariaRollDialog extends HandlebarsApplicationMixin(ApplicationV2) 
     const v = this.#values();
     Object.assign(this.#preset, {
       stat: v.stat, dice: v.dice, bonus: v.bonus, critChanceBonus: v.critChanceBonus, critDamageBonus: v.critDamageBonus,
-      hits: v.hits, targets: v.targets, aoe: v.aoe, bonusPerHit: v.bonusPerHit
+      hits: v.hits, targets: v.targets, aoe: v.aoe, bonusPerHit: v.bonusPerHit, damage: v.damage
     });
   }
 
@@ -168,12 +178,19 @@ export class ElariaRollDialog extends HandlebarsApplicationMixin(ApplicationV2) 
       stat: f.stat ?? "",
       bonus: String(f.bonus ?? "").trim(),
       penalty: Number(f.penalty) || 0,
+      damage: this.#preset.damage ? {
+        ...this.#preset.damage,
+        type: DAMAGE_TYPES[f.dmgType] ? f.dmgType : "physical",
+        element: f.dmgElement ?? "",
+        form: f.dmgForm || "mortal",
+        pierce: f.dmgPierce ?? ""
+      } : null
     };
   }
 
   #problem(v) {
     if (!DICE_RE.test(v.dice)) return game.i18n.localize("ELARIA.Dice.badDice");
-    if (v.bonus && !Roll.validate(v.bonus)) return game.i18n.localize("ELARIA.Dice.badBonus");
+    if (v.bonus && !bonusIsValid(v.bonus)) return game.i18n.localize("ELARIA.Dice.badBonus");
     return "";
   }
 
@@ -220,9 +237,11 @@ export class ElariaRollDialog extends HandlebarsApplicationMixin(ApplicationV2) 
     if (problem) return ui.notifications.warn(problem);
     const { label, note, img, skill, fixedCrit, next } = this.#preset;
     // Name the targets after the tokens you have targeted, when the counts match.
-    const targeted = [...(game.user.targets ?? [])].map(t => t.name);
-    const targetNames = targeted.length === v.targets ? targeted : [];
-    await rollDice({ actor: this.actor, ...v, targetNames, mode: target.dataset.mode ?? "normal", label, note, img, skill, fixedCrit, next });
+    const targetedTokens = [...(game.user.targets ?? [])];
+    const match = targetedTokens.length === v.targets;
+    const targetNames = match ? targetedTokens.map(t => t.name) : [];
+    const targetTokens = match ? targetedTokens.map(t => t.document.uuid) : [];
+    await rollDice({ actor: this.actor, ...v, targetNames, targetTokens, mode: target.dataset.mode ?? "normal", label, note, img, skill, fixedCrit, next });
     this.#setPreset({});
     return this.close();
   }

@@ -23,6 +23,7 @@ import { ElariaRollDialog } from "./module/apps/roll-dialog.mjs";
 import { roll3d6, rollDice, rollD20 } from "./module/dice/check.mjs";
 import { onHotbarDrop, useMastery } from "./module/helpers/hotbar.mjs";
 import { onRenderChatMessage } from "./module/dice/chat-cards.mjs";
+import { onUpdateActorDamage } from "./module/dice/damage-card.mjs";
 import { onRenderCombatTracker, onUpdateCombat } from "./module/combat/reactions.mjs";
 import { initReactButton } from "./module/combat/react-button.mjs";
 import { ElariaReactDialog, rollReaction } from "./module/apps/react-dialog.mjs";
@@ -91,6 +92,7 @@ Hooks.once("init", () => {
 
 // Buttons on chat cards (reroll, skill mod, damage)
 Hooks.on("renderChatMessageHTML", onRenderChatMessage);
+Hooks.on("updateActor", onUpdateActorDamage);
 
 // Reaction pips in the combat tracker; emptied every round
 Hooks.on("renderCombatTracker", onRenderCombatTracker);
