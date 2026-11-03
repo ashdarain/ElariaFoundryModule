@@ -161,7 +161,8 @@ const roundAway = x => Math.sign(x) * Math.round(Math.abs(x)) || 0;
 
 /**
  * Work out one target's damage.
- * @param {object} entry   {hits: number[], flat: number, crit: boolean}
+ * @param {object} entry   {hits: number[], flat: number, crit: boolean, flatHit?: number}
+ *                          flatHit: which hit the once-only flat mods go on (default the first)
  * @param {object} p       damage profile
  * @param {number} critDamage  crit damage % (50 → crit multiplier 1.5)
  * @param {Actor} actor    the target
@@ -171,8 +172,9 @@ export function computeDamage(entry, p, critDamage, actor) {
   const res = resistanceFor(actor, p);
   const critTerm = entry.crit ? 1 + (Number(critDamage) || 0) / 100 : 1;
   const multiplier = critTerm - res.value / 100;
+  const flatHit = Math.clamp(Number(entry.flatHit) || 0, 0, Math.max(0, (entry.hits?.length ?? 1) - 1));
   const hits = (entry.hits ?? []).map((value, i) => {
-    const rolled = value + (i === 0 ? (entry.flat ?? 0) : 0);
+    const rolled = value + (i === flatHit ? (entry.flat ?? 0) : 0);
     const after = Math.max(0, rolled - armour.value);
     return { rolled, after, dealt: after * multiplier };
   });
@@ -189,7 +191,7 @@ export function computeDamage(entry, p, critDamage, actor) {
       dealt: parts.reduce((n, h) => n + h.dealt, 0) };
   });
   const exact = hits.reduce((n, h) => n + h.dealt, 0) + extras.reduce((n, x) => n + x.dealt, 0);
-  return { armour, res, critTerm, multiplier, hits, extras, exact, final: roundAway(exact), heals: roundAway(exact) < 0 };
+  return { armour, res, critTerm, multiplier, hits, extras, exact, flatHit, final: roundAway(exact), heals: roundAway(exact) < 0 };
 }
 
 /** A readable breakdown for the GM (and for players hit by characters, whose numbers aren't secret). */

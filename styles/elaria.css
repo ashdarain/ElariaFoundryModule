@@ -975,3 +975,5 @@
 .elaria.roll-card .by-type { font-size: 11px; color: var(--el-muted); text-align: center; margin-top: 2px; }
 .elaria.roll-card .apply-row button.apply.heal { color: #2f6b2a; border-color: #2f6b2a; }
 .elaria.roll-card .apply-row button.apply.heal:hover { background: #e1f0d9; }
+.elaria.apply-damage-dialog .flat-hit { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; font-size: 12px; margin: 4px 0; }
+.elaria.apply-damage-dialog .flat-hit label { display: flex; align-items: center; gap: 3px; }

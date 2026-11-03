@@ -77,13 +77,14 @@ export class ElariaMonsterSheet extends HandlebarsApplicationMixin(ActorSheetV2)
           stats: Object.entries(ELARIA.stats).filter(([, s]) => s.group === group)
             .map(([key, s]) => ({ key, label: s.label, mod: system.stats[key].mod }))
         }));
-        context.defenceRows = [["ar", "AR"], ["mar", "MAR"], ["aar", "AAR"], ["nar", "NAR"], ["nmar", "NMAR"]]
-          .map(([key, label]) => ({ key, label, value: system.defence[key] }));
-        context.combatRows = [
-          ["passiveAwareness", L("ELARIA.Monster.passiveAwa")], ["reacts", L("ELARIA.Monster.reacts")],
-          ["critChance", L("ELARIA.Monster.critChance")], ["critDamage", L("ELARIA.Monster.critDamage")],
-          ["mv", L("ELARIA.Monster.mv")]
-        ].map(([key, label]) => ({ key, label, value: system.combat[key] }));
+        // Same tables as a character's: formula (from the modifiers) + bonus = total.
+        context.substatGroups = ["defence", "combat"].map(group => ({
+          label: ELARIA.substats[group].label,
+          rows: Object.entries(ELARIA.substats[group].rows)
+            .filter(([key]) => key in system.substats)
+            .map(([key, cfg]) => ({ key, ...cfg, ...system.substats[key],
+              hint: key === "aar" ? "ELARIA.Monster.aarHint" : cfg.hint }))
+        }));
         {
           const resRow = (key, label) => {
             const r = system.resistanceTotals[key];

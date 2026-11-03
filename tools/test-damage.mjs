@@ -3,6 +3,7 @@
  * Run from the system folder:  node tools/test-damage.mjs
  */
 import assert from "node:assert/strict";
+Math.clamp ??= (v, a, b) => Math.min(b, Math.max(a, v));
 globalThis.game = { i18n: { localize: k => k, format: k => k } };
 const D = await import("../module/combat/damage.mjs");
 
@@ -37,6 +38,9 @@ const cases = [
   ["demonic +25 %", dmg([10], P("Physical", "Demonic")), 5],                 // 4 × 1.25
   ["armour per hit (3 × 5 vs AR 6)", dmg([5, 5, 5], P("Physical")), 0],
   ["multi-hit, once-only bonus on hit 1", dmg([5, 7, 9], P("Physical"), { flat: 3 }), 6],  // 2 + 1 + 3
+  ["once-only bonus moved to hit 3", D.computeDamage({ hits: [5, 7, 9], flat: 3, crit: false, flatHit: 2 }, P("Physical"), 50, target()).final, 7],
+  ["once-only bonus on hit 1 of weak hits", D.computeDamage({ hits: [4, 4, 9], flat: 3, crit: false }, P("Physical"), 50, target()).final, 4],
+  ["… moved to the hit that gets through", D.computeDamage({ hits: [4, 4, 9], flat: 3, crit: false, flatHit: 2 }, P("Physical"), 50, target()).final, 6],
   ["never negative", dmg([1], P("Physical"), { flat: -5 }), 0],
   // "2d6 Fire 4 Wind" on a 10-damage physical hit vs AR 6 / MAR 3, fire res 25: 4 + (6−3)×0.75 + (4−3)×1 = 7.25
   ["typed bonus parts", D.computeDamage({ hits: [10], flat: 0, crit: false, extras: [

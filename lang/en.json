@@ -508,7 +508,9 @@
       "formsHint": "(first number is built in from the form, then your bonus, then the total)",
       "elementsFrom": "(built in from its elements: {names}; then your bonus, then the total)",
       "noElements": "(type its elements in the header, e.g. \"Fire, Dark\", to add their built-in values)",
-      "elementalResOld": "Old resistance note (move it into the grid, then clear this)"
+      "elementalResOld": "Old resistance note (move it into the grid, then clear this)",
+      "aarHint": "Armour AAR. Monsters wear no armour items, so type it in Bonus; it's added to AR and MAR.",
+      "formulaHint": "Worked out from the stat modifiers, as for characters: NAR = Stf, NMAR = Wis, AR = NAR + AAR, MAR = NMAR + AAR, crit chance = Lck × 5 %, crit damage = Ins × 10 %, Mv = Fin + 4, reactions from Awa, passive awareness = Awa + 10."
     },
     "Ability": {
       "new": "New Ability",
@@ -689,7 +691,8 @@
       "healTo": "Heal {name} for {n}",
       "healedTo": "{name} healed for {n}",
       "healed": "{name} heals {n} HP.",
-      "negativeHeals": "A negative amount heals (resistance over 100 %)."
+      "negativeHeals": "A negative amount heals (resistance over 100 %).",
+      "flatOn": "Once-only bonus ({n}) goes on:"
     }
   }
 }

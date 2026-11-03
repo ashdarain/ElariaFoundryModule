@@ -6,6 +6,18 @@ const int = (initial = 0, opts = {}) => new f.NumberField({ required: true, null
 const text = () => new f.StringField({ required: true, blank: true, initial: "" });
 const html = () => new f.HTMLField({ required: true, blank: true, initial: "" });
 
+/** Defence and combat numbers a monster works out from its modifiers (plus a typed bonus). */
+export const MONSTER_SUBSTATS = ["nar", "nmar", "aar", "ar", "mar", "critChance", "critDamage", "mv", "reacts", "passiveAwareness"];
+
+/** The formula part of each, from the stat modifiers (AR / MAR are built from the others afterwards). */
+function monsterBase(m) {
+  return {
+    nar: m.stf ?? 0, nmar: m.wis ?? 0, aar: 0, ar: (m.stf ?? 0), mar: (m.wis ?? 0),
+    critChance: R.critChance(m.lck ?? 0), critDamage: R.critDamage(m.ins ?? 0),
+    mv: R.movement(m.fin ?? 0), reacts: R.reactsPerRound(m.awa ?? 0), passiveAwareness: R.passiveAwareness(m.awa ?? 0)
+  };
+}
+
 /** A monster resource: everything typed in by the GM (no formulas). Temp is spent first, like characters. */
 const resourceField = (max = 10) => new f.SchemaField({
   value: int(max, { min: 0 }),
@@ -46,17 +58,13 @@ export class MonsterData extends foundry.abstract.TypeDataModel {
       // Resistance % per element and damage form on top of the built-in values (positive = takes less).
       resistances: new f.SchemaField(Object.fromEntries(
         [...Object.keys(ELARIA.resistanceElements), ...Object.keys(ELARIA.forms)].map(k => [k, int(0)]))),
-      defence: new f.SchemaField({
-        ar: int(0), mar: int(0), aar: int(0), nar: int(0), nmar: int(0),
-        elementalRes: text()
-      }),
-      combat: new f.SchemaField({
-        passiveAwareness: int(10),
-        reacts: int(2, { min: 0 }),
-        critChance: int(0),
-        critDamage: int(0),
-        mv: int(6)
-      }),
+      // Old free-text resistance note (before the resistance grid); shown until cleared.
+      defence: new f.SchemaField({ elementalRes: text() }),
+      // Defence and combat numbers are worked out from the stat modifiers like a character's (NAR = Stf,
+      // NMAR = Wis, AR = NAR + AAR, MAR = NMAR + AAR, crit chance = Lck × 5, crit damage = Ins × 10,
+      // Mv = Fin + 4, reactions from Awa, passive awareness = Awa + 10); the GM types a bonus on top.
+      // AAR has no formula for monsters (no worn armour), so it's all bonus.
+      bonuses: new f.SchemaField(Object.fromEntries(MONSTER_SUBSTATS.map(k => [k, int(0)]))),
       loot: new f.SchemaField({
         unique: html(),
         tables: html()
@@ -68,6 +76,22 @@ export class MonsterData extends foundry.abstract.TypeDataModel {
   static migrateData(source) {
     for (const s of Object.values(source.stats ?? {})) {
       if (s && s.mod === undefined && Number.isFinite(s.value)) s.mod = Math.floor(s.value / 4);
+    }
+    // v0.12: typed defence / combat numbers became formula + bonus. Keep every number as it was by storing the
+    // difference from the formula as the bonus.
+    const oldD = source.defence ?? {}, oldC = source.combat ?? {};
+    const hasOld = ["ar", "mar", "aar", "nar", "nmar"].some(k => Number.isFinite(oldD[k]))
+      || ["passiveAwareness", "reacts", "critChance", "critDamage", "mv"].some(k => Number.isFinite(oldC[k]));
+    if (hasOld && !source.bonuses) {
+      const mods = Object.fromEntries(Object.entries(source.stats ?? {}).map(([k, s]) => [k, s?.mod ?? 0]));
+      const base = monsterBase(mods);
+      const old = { ...oldD, ...oldC };
+      source.bonuses = Object.fromEntries(MONSTER_SUBSTATS.map(k => [k, Number.isFinite(old[k]) ? old[k] - base[k] : 0]));
+      // AR and MAR include AAR, so their bonus is what's left after NAR / NMAR and AAR's own bonus.
+      if (Number.isFinite(oldD.ar)) source.bonuses.ar = oldD.ar - ((base.nar + source.bonuses.nar) + source.bonuses.aar);
+      if (Number.isFinite(oldD.mar)) source.bonuses.mar = oldD.mar - ((base.nmar + source.bonuses.nmar) + source.bonuses.aar);
+      for (const k of ["ar", "mar", "aar", "nar", "nmar"]) delete oldD[k];
+      delete source.combat;
     }
     return super.migrateData(source);
   }
@@ -83,6 +107,22 @@ export class MonsterData extends foundry.abstract.TypeDataModel {
       const b = base[k] ?? 0;
       return [k, { base: b, bonus, total: b + bonus }];
     }));
+    // Defence and combat: formula + the GM's bonus (same shape as a character's, so dice and damage code can read it).
+    const mods = Object.fromEntries(Object.entries(this.stats).map(([k, s]) => [k, s.mod]));
+    const b = this.bonuses;
+    const sub = {};
+    const put = (key, base) => (sub[key] = { base, bonus: b[key] ?? 0, total: base + (b[key] ?? 0) });
+    const fbase = monsterBase(mods);
+    put("nar", fbase.nar);
+    put("nmar", fbase.nmar);
+    put("aar", 0);
+    put("ar", sub.nar.total + sub.aar.total);
+    put("mar", sub.nmar.total + sub.aar.total);
+    for (const k of ["critChance", "critDamage", "mv", "reacts", "passiveAwareness"]) put(k, fbase[k]);
+    this.substats = sub;
+    Object.assign(this.defence, { nar: sub.nar.total, nmar: sub.nmar.total, aar: sub.aar.total, ar: sub.ar.total, mar: sub.mar.total });
+    this.combat = { critChance: sub.critChance.total, critDamage: sub.critDamage.total, mv: sub.mv.total,
+      reacts: Math.max(0, sub.reacts.total), passiveAwareness: sub.passiveAwareness.total };
     this.natureDC = { overview: 10 + p, vitals: 8 + p, stats: 14 + p, loot: 12 + p, abilities: 16 + p };
     // Same shape as characters where the dice code looks (crit, initiative, check penalty).
     this.penalties = { check: 0, initiative: 0 };

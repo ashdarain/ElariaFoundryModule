@@ -20,18 +20,28 @@
   </div>
 
   <div class="m-defence-grid">
-    <fieldset>
-      <legend>{{localize "ELARIA.Monster.defence"}}</legend>
-      {{#each defenceRows}}
-      <label class="m-field"><span>{{label}}</span><input type="number" name="system.defence.{{key}}" value="{{value}}" step="1"></label>
-      {{/each}}
-    </fieldset>
-    <fieldset>
-      <legend>{{localize "ELARIA.Monster.combat"}}</legend>
-      {{#each combatRows}}
-      <label class="m-field"><span>{{label}}</span><input type="number" name="system.combat.{{key}}" value="{{value}}" step="1"></label>
-      {{/each}}
-    </fieldset>
+    {{#each substatGroups}}
+    <table class="substats">
+      <thead>
+        <tr>
+          <th class="label">{{localize label}}</th>
+          <th data-tooltip="ELARIA.Monster.formulaHint">{{localize "ELARIA.Stats.base"}}</th>
+          <th>{{localize "ELARIA.Stats.bonus"}}</th>
+          <th>{{localize "ELARIA.Stats.total"}}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{#each rows}}
+        <tr class="{{#if strong}}strong{{/if}}">
+          <td class="label" {{#if hint}}data-tooltip="{{hint}}"{{/if}}>{{localize label}}</td>
+          <td class="base">{{base}}</td>
+          <td class="bonus"><input type="number" name="system.bonuses.{{key}}" value="{{bonus}}" step="1"></td>
+          <td class="total">{{total}}{{suffix}}</td>
+        </tr>
+        {{/each}}
+      </tbody>
+    </table>
+    {{/each}}
   </div>
 
   <section class="resistances m-resistances">

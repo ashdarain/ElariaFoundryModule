@@ -60,7 +60,7 @@ function targetRow({ message, data, entry, index, actor, showBreakdown }) {
   if (showBreakdown) row.querySelector(".apply").dataset.tooltip = breakdownHTML(calc, data.profile);
   row.querySelector(".apply").addEventListener("click", async ev => {
     ev.preventDefault();
-    const amount = await confirmAmount({ actor, calc, profile: data.profile, showBreakdown });
+    const amount = await confirmAmount({ actor, entry, data, showBreakdown });
     if (amount === null) return;
     await applyDamage(actor, amount, { messageId: message.id, index, label: message.flags.elaria.roll?.label ?? "" });
     refresh(message);
@@ -82,8 +82,7 @@ function selectedRow({ message, data, entry, index, showBreakdown }) {
         ui.notifications.warn(game.i18n.format("ELARIA.Damage.already", { name: actor.name }));
         continue;
       }
-      const calc = computeDamage(entry, data.profile, data.critDamage, actor);
-      const amount = await confirmAmount({ actor, calc, profile: data.profile, showBreakdown });
+      const amount = await confirmAmount({ actor, entry, data, showBreakdown });
       if (amount === null) continue;
       await applyDamage(actor, amount, { messageId: message.id, index, label: message.flags.elaria.roll?.label ?? "" });
     }
@@ -93,11 +92,21 @@ function selectedRow({ message, data, entry, index, showBreakdown }) {
   return row;
 }
 
-/** Confirm (and optionally change) the amount before it's taken off. Returns the amount, or null. */
-async function confirmAmount({ actor, calc, profile, showBreakdown }) {
+/**
+ * Confirm (and optionally change) the amount before it's taken off. With several hits and a once-only bonus,
+ * toggles choose which hit the bonus goes on (armour comes off each hit, so it can matter). Returns the amount,
+ * or null.
+ */
+async function confirmAmount({ actor, entry, data, showBreakdown }) {
+  const many = showBreakdown && (entry.hits?.length ?? 0) > 1 && (entry.flat ?? 0) !== 0;
+  let calc = computeDamage(entry, data.profile, data.critDamage, actor);
+  const toggles = many ? `<div class="flat-hit"><span>${esc(game.i18n.format("ELARIA.Damage.flatOn", { n: entry.flat > 0 ? `+${entry.flat}` : entry.flat }))}</span>
+      ${entry.hits.map((_, i) => `<label><input type="checkbox" name="flatHit" value="${i}" ${i === calc.flatHit ? "checked" : ""}> `
+        + `${esc(game.i18n.format("ELARIA.Dice.hitN", { n: i + 1 }))}</label>`).join("")}</div>` : "";
   const content = `
     <p>${esc(game.i18n.format("ELARIA.Damage.confirm", { name: actor.name }))}</p>
-    ${showBreakdown ? breakdownHTML(calc, profile) : ""}
+    ${toggles}
+    <div class="breakdown-slot">${showBreakdown ? breakdownHTML(calc, data.profile) : ""}</div>
     <label class="amount-row"><span>${L("ELARIA.Damage.amount")}</span>
       <input type="number" name="amount" value="${calc.final}" step="1" autofocus></label>
     <p class="hint">${L("ELARIA.Damage.negativeHeals")}</p>`;
@@ -105,6 +114,18 @@ async function confirmAmount({ actor, calc, profile, showBreakdown }) {
     window: { title: game.i18n.format("ELARIA.Damage.applyTitle", { name: actor.name }), icon: "fa-solid fa-heart-crack" },
     classes: ["elaria", "apply-damage-dialog"],
     content,
+    render: (event, dialog) => {
+      const root = dialog?.element ?? event?.target?.element;
+      if (!many || !root) return;
+      const boxes = [...root.querySelectorAll("input[name=flatHit]")];
+      for (const box of boxes) box.addEventListener("change", () => {
+        // Behaves like a choice: ticking one unticks the others (and one stays ticked).
+        for (const other of boxes) other.checked = other === box;
+        calc = computeDamage({ ...entry, flatHit: Number(box.value) }, data.profile, data.critDamage, actor);
+        root.querySelector(".breakdown-slot").innerHTML = breakdownHTML(calc, data.profile);
+        root.querySelector("input[name=amount]").value = calc.final;
+      });
+    },
     buttons: [
       { action: "apply", label: L("ELARIA.Damage.apply"), icon: "fa-solid fa-check", default: true,
         callback: (event, button) => Number(button.form.elements.amount.value) },
