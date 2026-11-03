@@ -150,7 +150,7 @@ export class ElariaRollDialog extends HandlebarsApplicationMixin(ApplicationV2) 
     const v = this.#values();
     Object.assign(this.#preset, {
       stat: v.stat, dice: v.dice, bonus: v.bonus, critChanceBonus: v.critChanceBonus, critDamageBonus: v.critDamageBonus,
-      hits: v.hits, targets: v.targets, aoe: v.aoe, bonusPerHit: v.bonusPerHit, damage: v.damage
+      hits: v.hits, targets: v.targets, aoe: v.aoe, bonusPerHit: v.bonusPerHit, damage: v.damage, bonusTarget: v.bonusTarget
     });
   }
 
@@ -170,6 +170,7 @@ export class ElariaRollDialog extends HandlebarsApplicationMixin(ApplicationV2) 
       targets: Math.clamp(Math.round(Number(f.targets) || 1), 1, 50),
       aoe: !!f.aoe,
       bonusPerHit: !!f.bonusPerHit,
+      bonusTarget: Math.max(0, Number(f.bonusTarget) || 0),
       critChanceBonus,
       critDamageBonus,
       critChance: base.chance + critChanceBonus,
@@ -215,7 +216,25 @@ export class ElariaRollDialog extends HandlebarsApplicationMixin(ApplicationV2) 
     if (v.penalty) parts.push(`− ${v.penalty} <small>${game.i18n.localize("ELARIA.Dice.penaltyShort")}</small>`);
     // The AoE / "each hit" options only matter with several targets / hits.
     this.element.querySelector(".aoe-option")?.classList.toggle("inactive", v.targets < 2);
-    this.element.querySelector(".per-hit-option")?.classList.toggle("inactive", v.hits < 2);
+    // "Each hit" matters with several hits, or several separate targets (else the bonus goes to one target).
+    const separateTargets = v.targets > 1 && !v.aoe;
+    this.element.querySelector(".per-hit-option")?.classList.toggle("inactive", v.hits < 2 && !separateTargets);
+    // Once-only bonus with several separate targets: which target gets it.
+    const row = this.element.querySelector(".bonus-target-row");
+    if (row) {
+      const show = !!v.bonus && !v.bonusPerHit && separateTargets;
+      row.hidden = !show;
+      const select = row.querySelector("select");
+      if (show && select.options.length !== v.targets) {
+        const targeted = [...(game.user.targets ?? [])].map(t => t.name);
+        const names = targeted.length === v.targets ? targeted : [];
+        const keep = Math.min(v.bonusTarget, v.targets - 1);
+        select.innerHTML = Array.from({ length: v.targets }, (_, i) => {
+          const label = names[i] || game.i18n.format("ELARIA.Dice.targetN", { n: i + 1 });
+          return `<option value="${i}" ${i === keep ? "selected" : ""}>${foundry.utils.escapeHTML(label)}</option>`;
+        }).join("");
+      }
+    }
     // Crit totals: base + input
     const setTotal = (sel, n) => { const el = this.element.querySelector(sel); if (el) el.textContent = `${n}%`; };
     setTotal(".crit-total.chance", Math.clamp(v.critChance, 0, 100));
@@ -249,8 +268,11 @@ export class ElariaRollDialog extends HandlebarsApplicationMixin(ApplicationV2) 
   /** "No reaction": close and carry on (e.g. straight to the damage roll). */
   static async #onSkip() {
     const action = this.#preset.skip?.action;
+    const { targets } = this.#values();
+    // An AoE skill roll is one roll for every target: its damage keeps the targets it was opened with.
+    const carry = this.#preset.next?.aoe ? this.#preset.next.targets : targets;
     await this.close();
-    return action?.();
+    return action?.({ targets: carry });
   }
 
   /** Enter in a field = normal roll. */

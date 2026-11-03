@@ -2,16 +2,69 @@
   <div class="filters">
     <div class="search-row">
       <i class="fa-solid fa-magnifying-glass"></i>
-      <input type="search" name="text" value="{{filters.text}}" placeholder="{{localize 'ELARIA.Picker.search'}}" autocomplete="off">
+      <input type="search" name="text" data-filter="text" value="{{filters.text}}" placeholder="{{localize 'ELARIA.Picker.search'}}" autocomplete="off">
+      <label class="in-text" data-tooltip="ELARIA.Picker.inTextHint"><input type="checkbox" data-filter="inText" {{checked filters.inText}}> {{localize "ELARIA.Picker.inText"}}</label>
       <a class="clear" data-action="clear" data-tooltip="ELARIA.Picker.clear"><i class="fa-solid fa-filter-circle-xmark"></i></a>
     </div>
     <div class="select-row">
-      <select name="pack">{{selectOptions packChoices selected=filters.pack}}</select>
-      <select name="category">{{selectOptions categoryChoices selected=filters.category}}</select>
+      <select data-filter="pack">{{selectOptions packChoices selected=filters.pack}}</select>
+      <select data-filter="category">{{selectOptions categoryChoices selected=filters.category}}</select>
+      <select data-filter="sort" data-tooltip="ELARIA.Picker.sortHint">{{selectOptions sortChoices selected=filters.sort}}</select>
     </div>
+
+    <details class="more-filters" {{#if moreOpen}}open{{/if}}>
+      <summary><i class="fa-solid fa-sliders"></i> {{localize "ELARIA.Picker.moreFilters"}}
+        <span class="badge" {{#unless activeCount}}hidden{{/unless}}>{{activeCount}}</span></summary>
+      <div class="filter-grid">
+        {{#if isGear}}
+        <label><span>{{localize "ELARIA.Gear.family"}}</span>
+          <select data-filter="family">{{selectOptions familyChoices selected=filters.family}}</select></label>
+        <label><span>{{localize "ELARIA.Picker.tier"}}</span>
+          <span class="range"><input type="number" data-filter="tierMin" value="{{filters.tierMin}}" placeholder="{{localize 'ELARIA.Picker.min'}}" min="0" step="1">
+          – <input type="number" data-filter="tierMax" value="{{filters.tierMax}}" placeholder="{{localize 'ELARIA.Picker.max'}}" min="0" step="1"></span></label>
+        <label><span>{{localize "ELARIA.Gear.weight"}}</span>
+          <select data-filter="weight">{{selectOptions weightChoices selected=filters.weight}}</select></label>
+        <label><span>{{localize "ELARIA.Gear.classTrinket"}}</span>
+          <select data-filter="classTrinket">{{selectOptions trinketChoices selected=filters.classTrinket}}</select></label>
+        <label><span>{{localize "ELARIA.Picker.maxLoad"}}</span>
+          <span class="range"><input type="number" data-filter="loadMax" value="{{filters.loadMax}}" placeholder="—" min="0" step="1">
+          {{#if isCharacter}}<label class="check" data-tooltip="ELARIA.Picker.fitsLoadHint"><input type="checkbox" data-filter="fitsLoad" {{checked filters.fitsLoad}}> {{localize "ELARIA.Picker.fitsLoad" n=equipLoad}}</label>{{/if}}</span></label>
+        {{else}}
+        <label><span>{{localize "ELARIA.Picker.sourceType"}}</span>
+          <select data-filter="sourceType">{{selectOptions sourceTypeChoices selected=filters.sourceType}}</select></label>
+        <label><span>{{localize "ELARIA.Picker.source"}}</span>
+          <select data-filter="sourceName">{{selectOptions sourceNameChoices selected=filters.sourceName}}</select></label>
+        <label><span>{{localize "ELARIA.Mastery.FIELDS.value"}}</span>
+          <select data-filter="value">{{selectOptions valueChoices selected=filters.value}}</select></label>
+        <label><span>{{localize "ELARIA.Picker.reaction"}}</span>
+          <select data-filter="rxn">{{selectOptions rxnChoices selected=filters.rxn}}</select></label>
+        <label><span>{{localize "ELARIA.Picker.rolls"}}</span>
+          <select data-filter="damage">{{selectOptions damageChoices selected=filters.damage}}</select></label>
+        <label><span>{{localize "ELARIA.Picker.cost"}}</span>
+          <select data-filter="cost">{{selectOptions costChoices selected=filters.cost}}</select></label>
+        {{/if}}
+        <label><span>{{localize "ELARIA.Picker.damageType"}}</span>
+          <select data-filter="dmgType">{{selectOptions dmgTypeChoices selected=filters.dmgType}}</select></label>
+        <label><span>{{localize "ELARIA.Picker.levelRange"}}</span>
+          <span class="range"><input type="number" data-filter="levelMin" value="{{filters.levelMin}}" placeholder="{{localize 'ELARIA.Picker.min'}}" min="0" step="1">
+          – <input type="number" data-filter="levelMax" value="{{filters.levelMax}}" placeholder="{{localize 'ELARIA.Picker.max'}}" min="0" step="1"></span></label>
+      </div>
+      {{#unless isGear}}
+      <div class="check-row">
+        <label><input type="checkbox" data-filter="aoe" {{checked filters.aoe}}> {{localize "ELARIA.Picker.aoe"}}</label>
+        <label><input type="checkbox" data-filter="multi" {{checked filters.multi}}> {{localize "ELARIA.Picker.multi"}}</label>
+        {{#if isCharacter}}<label><input type="checkbox" data-filter="hideOwned" {{checked filters.hideOwned}}> {{localize "ELARIA.Picker.hideOwned"}}</label>{{/if}}
+      </div>
+      {{/unless}}
+      <div class="tag-row">
+        <select name="addTag" data-tooltip="ELARIA.Picker.tagsHint">{{selectOptions tagChoices}}</select>
+        {{#each filters.tags}}<a class="tag-chip" data-tag="{{this}}" data-tooltip="ELARIA.Picker.removeTag">{{this}} <i class="fa-solid fa-xmark"></i></a>{{/each}}
+      </div>
+    </details>
+
     <div class="check-row">
-      <label {{#unless hasActor}}hidden{{/unless}} {{#if isGear}}hidden{{/if}}><input type="checkbox" name="mine" {{checked filters.mine}}> {{localize "ELARIA.Picker.mine"}}</label>
-      <label {{#unless hasActor}}hidden{{/unless}}><input type="checkbox" name="level" {{checked filters.level}}> {{localize "ELARIA.Picker.upToLevel" level=level}}</label>
+      <label {{#unless isCharacter}}hidden{{/unless}} {{#if isGear}}hidden{{/if}}><input type="checkbox" data-filter="mine" {{checked filters.mine}}> {{localize "ELARIA.Picker.mine"}}</label>
+      <label {{#unless hasActor}}hidden{{/unless}}><input type="checkbox" data-filter="level" {{checked filters.level}}> {{localize "ELARIA.Picker.upToLevel" level=level}}</label>
       <span class="count"></span>
     </div>
   </div>

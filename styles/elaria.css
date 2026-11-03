@@ -977,3 +977,24 @@
 .elaria.roll-card .apply-row button.apply.heal:hover { background: #e1f0d9; }
 .elaria.apply-damage-dialog .flat-hit { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; font-size: 12px; margin: 4px 0; }
 .elaria.apply-damage-dialog .flat-hit label { display: flex; align-items: center; gap: 3px; }
+
+/* Picker: detailed filters */
+.elaria.mastery-picker .search-row .in-text { display: flex; align-items: center; gap: 3px; font-size: 11px; color: var(--el-muted); white-space: nowrap; }
+.elaria.mastery-picker .search-row .in-text input { margin: 0; }
+.elaria.mastery-picker details.more-filters { border: 1px solid var(--el-line); border-radius: 5px; padding: 2px 8px; }
+.elaria.mastery-picker details.more-filters[open] { padding-bottom: 6px; }
+.elaria.mastery-picker details.more-filters summary { cursor: pointer; font-size: 12px; color: var(--el-accent); padding: 2px 0; }
+.elaria.mastery-picker details.more-filters .badge { display: inline-block; min-width: 16px; padding: 0 4px; margin-left: 4px; border-radius: 8px;
+  background: var(--el-accent); color: #fff; font-size: 10px; text-align: center; }
+.elaria.mastery-picker .filter-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 4px 10px; margin: 4px 0; }
+.elaria.mastery-picker .filter-grid > label { display: flex; align-items: center; gap: 6px; font-size: 12px; }
+.elaria.mastery-picker .filter-grid > label > span:first-child { min-width: 70px; color: var(--el-muted); }
+.elaria.mastery-picker .filter-grid select { flex: 1; min-width: 0; height: 24px; }
+.elaria.mastery-picker .filter-grid .range { display: flex; align-items: center; gap: 4px; flex: 1; }
+.elaria.mastery-picker .filter-grid .range input[type=number] { width: 50px; height: 24px; }
+.elaria.mastery-picker .filter-grid .range .check { display: flex; align-items: center; gap: 3px; font-size: 11px; white-space: nowrap; }
+.elaria.mastery-picker .tag-row { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; margin-top: 4px; }
+.elaria.mastery-picker .tag-row select { height: 24px; max-width: 220px; }
+.elaria.mastery-picker .tag-chip { font-size: 11px; padding: 1px 6px; border-radius: 10px; background: rgba(0, 0, 0, 0.08); border: 1px solid var(--el-line); }
+.elaria.mastery-picker .tag-chip:hover { border-color: var(--el-bad); color: var(--el-bad); text-shadow: none; }
+.elaria.mastery-picker .pick-meta .tag-hit { border-color: var(--el-accent); color: var(--el-accent); }

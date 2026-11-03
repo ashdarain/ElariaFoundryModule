@@ -1,6 +1,7 @@
 import { ELARIA } from "../config.mjs";
 import { sourceLabelFor } from "../data/item-mastery.mjs";
 import { actorHasMastery, addMasteriesToActor, addGearToActor } from "../helpers/masteries.mjs";
+import { DAMAGE_TYPES, profileFromText } from "../combat/damage.mjs";
 
 const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api;
 
@@ -10,12 +11,29 @@ const MAX_ROWS = 150;
 const INDEX_FIELDS = {
   mastery: [
     "system.ref", "system.reqLevel", "system.value", "system.category", "system.sources",
-    "system.isReaction", "system.tags", "system.cost", "system.damage.raw", "system.skillMod.raw"
+    "system.isReaction", "system.tags", "system.cost", "system.damage.raw", "system.skillMod.raw", "system.details",
+    "system.usageLimit"
   ],
   gear: [
     "system.ref", "system.reqLevel", "system.kind", "system.family", "system.tier", "system.tags", "system.classTrinket",
-    "system.baseAttack.raw", "system.damageType", "system.armourRating", "system.weight", "system.equipLoad"
+    "system.baseAttack.raw", "system.damageType", "system.armourRating", "system.weight", "system.equipLoad",
+    "system.breakpoint", "system.affinity", "system.description", "system.effects"
   ]
+};
+
+const PHYSICAL = new Set(["physical", "slashing", "piercing", "blunt", "chopping"]);
+const MAGICAL = new Set(["magical", "magicalPiercing", "magicalChopping"]);
+const strip = h => String(h ?? "").replace(/<[^>]+>/g, " ").replace(/&[a-z]+;/g, " ").replace(/\s+/g, " ").trim();
+
+/** Every filter, at its "off" value. */
+const BLANK_FILTERS = {
+  text: "", inText: false, pack: "", category: "", sort: "name", tags: [],
+  levelMin: "", levelMax: "", level: false,
+  // masteries
+  sourceType: "", sourceName: "", value: "", rxn: "", damage: "", dmgType: "", cost: "", aoe: false, multi: false,
+  mine: false, hideOwned: false,
+  // gear
+  family: "", tierMin: "", tierMax: "", weight: "", classTrinket: "", loadMax: "", fitsLoad: false
 };
 
 /**
@@ -69,7 +87,7 @@ export class ElariaMasteryPicker extends HandlebarsApplicationMixin(ApplicationV
   #entries = null;
 
   /** Current filter values (kept across re-renders). */
-  #filters = { text: "", pack: "", category: "", mine: false, level: false };
+  #filters = foundry.utils.deepClone(BLANK_FILTERS);
 
   async #loadEntries() {
     const entries = [];
@@ -94,10 +112,26 @@ export class ElariaMasteryPicker extends HandlebarsApplicationMixin(ApplicationV
     const sources = system.sources ?? [];
     const sourceLabel = this.isGear ? [system.family, system.classTrinket ? game.i18n.localize("ELARIA.Gear.classTrinket") : ""]
       .filter(x => x).join(" · ") : sourceLabelFor(sources);
-    const tags = system.tags ?? [];
+    const tags = (system.tags ?? []).map(t => String(t).trim()).filter(Boolean);
+    const lowTags = tags.map(t => t.toLowerCase());
+    // Damage: masteries with dice in their Damage field (type from the tags); gear from its base attack + type.
+    const dmgRaw = this.isGear ? system.baseAttack?.raw : system.damage?.raw;
+    const hasDamage = /\d+\s*d\s*\d+/i.test(dmgRaw ?? "");
+    const profile = hasDamage ? profileFromText([...tags, system.damageType ?? ""]) : null;
+    const cost = String(system.cost ?? "").toLowerCase();
+    const text = strip(this.isGear ? `${system.effects ?? ""} ${system.description ?? ""}` : system.details);
     return {
-      uuid: e.uuid, name: e.name, img: e.img, pack, packLabel, system, sources, sourceLabel,
-      search: [e.name, sourceLabel, ...tags].join(" ").toLowerCase()
+      uuid: e.uuid, name: e.name, img: e.img, pack, packLabel, system, sources, sourceLabel, tags, lowTags,
+      hasDamage, profile,
+      isReaction: !!system.isReaction || lowTags.some(t => /^(reactions?|rxn)$/.test(t)),
+      isAoe: lowTags.some(t => t.startsWith("aoe") || t.includes("area of effect")),
+      isMulti: lowTags.some(t => t.startsWith("multi")) || /x\s*(\d+|#)/i.test(dmgRaw ?? ""),
+      costs: {
+        ftg: /\bftg\b|fatigue/.test(cost), mp: /\bmp\b|mana/.test(cost), hp: /\bhp\b|health/.test(cost),
+        free: !cost || /^(0|none|free|n\/a|-|—)$/.test(cost.trim())
+      },
+      search: [e.name, sourceLabel, ...tags].join(" ").toLowerCase(),
+      fullText: text.toLowerCase()
     };
   }
 
@@ -119,26 +153,109 @@ export class ElariaMasteryPicker extends HandlebarsApplicationMixin(ApplicationV
           none: L("ELARIA.Mastery.noCategory")
         },
       hasActor: !!this.actor,
+      isCharacter: this.actor?.type === "character",
       level: this.actor?.system?.level ?? "",
-      total: this.#entries.length
+      equipLoad: this.actor?.system?.combat?.equipLoad ?? "",
+      total: this.#entries.length,
+      ...this.#choices(),
+      activeCount: this.#activeCount(),
+      moreOpen: this._moreOpen ?? this.#activeCount() > 0
     };
+  }
+
+  /** Options for the detailed filters, built from what's actually in the compendiums. */
+  #choices() {
+    const L = k => game.i18n.localize(k);
+    const entries = this.#entries;
+    const count = new Map();
+    for (const e of entries) for (const t of e.tags) count.set(t, (count.get(t) ?? 0) + 1);
+    const tagChoices = { "": L("ELARIA.Picker.addTag") };
+    for (const [t, n] of [...count].sort((a, b) => a[0].localeCompare(b[0]))) {
+      if (!this.#filters.tags.includes(t)) tagChoices[t] = `${t} (${n})`;
+    }
+    const dmgTypeChoices = {
+      "": L("ELARIA.Picker.anyDamageType"),
+      "group:physical": L("ELARIA.Picker.anyPhysical"),
+      "group:magical": L("ELARIA.Picker.anyMagical"),
+      ...Object.fromEntries(Object.entries(DAMAGE_TYPES).map(([k, v]) => [`type:${k}`, L(v)])),
+      ...Object.fromEntries(Object.entries(ELARIA.resistanceElements).map(([k, v]) => [`el:${k}`, `${L("ELARIA.Damage.element")}: ${v}`])),
+      "form:divine": `${L("ELARIA.Damage.form")}: ${L("ELARIA.Form.divine")}`,
+      "form:demonic": `${L("ELARIA.Damage.form")}: ${L("ELARIA.Form.demonic")}`
+    };
+    const sortChoices = this.isGear
+      ? { name: L("ELARIA.Picker.sortName"), level: L("ELARIA.Picker.sortLevel"), tier: L("ELARIA.Picker.sortTier"),
+        aar: "AAR", load: L("ELARIA.Gear.equipLoad") }
+      : { name: L("ELARIA.Picker.sortName"), level: L("ELARIA.Picker.sortLevel"), value: L("ELARIA.Mastery.FIELDS.value"),
+        source: L("ELARIA.Picker.sortSource") };
+    if (this.isGear) {
+      const families = [...new Set(entries.map(e => e.system.family).filter(Boolean))].sort((a, b) => a.localeCompare(b));
+      const weights = [...new Set(entries.map(e => String(e.system.weight ?? "").trim()).filter(Boolean))].sort();
+      return {
+        tagChoices, dmgTypeChoices, sortChoices,
+        familyChoices: { "": L("ELARIA.Picker.allFamilies"), ...Object.fromEntries(families.map(f => [f, f])) },
+        weightChoices: { "": L("ELARIA.Picker.anyWeight"), ...Object.fromEntries(weights.map(w => [w, w])) },
+        trinketChoices: { "": L("ELARIA.Picker.anyTrinket"), only: L("ELARIA.Picker.classOnly"), exclude: L("ELARIA.Picker.classExclude") }
+      };
+    }
+    // Source names for the chosen source type (e.g. every discipline), with counts.
+    const names = new Map();
+    for (const e of entries) for (const src of e.sources) {
+      if (this.#filters.sourceType && src.type !== this.#filters.sourceType) continue;
+      if (src.name) names.set(src.name, (names.get(src.name) ?? 0) + 1);
+    }
+    const values = [...new Set(entries.map(e => e.system.value).filter(v => v != null))].sort((a, b) => a - b);
+    return {
+      tagChoices, dmgTypeChoices, sortChoices,
+      sourceTypeChoices: { "": L("ELARIA.Picker.allSourceTypes"),
+        ...Object.fromEntries(Object.entries(ELARIA.masterySources).map(([k, v]) => [k, L(v)])) },
+      sourceNameChoices: { "": L("ELARIA.Picker.allSources"),
+        ...Object.fromEntries([...names].sort((a, b) => a[0].localeCompare(b[0])).map(([n, c]) => [n, `${n} (${c})`])) },
+      valueChoices: { "": L("ELARIA.Picker.anyValue"), ...Object.fromEntries(values.map(v => [v, String(v)])) },
+      rxnChoices: { "": L("ELARIA.Picker.rxnAny"), only: L("ELARIA.Picker.rxnOnly"), exclude: L("ELARIA.Picker.rxnExclude") },
+      damageChoices: { "": L("ELARIA.Picker.dmgAny"), damage: L("ELARIA.Picker.dmgYes"), none: L("ELARIA.Picker.dmgNo"),
+        skill: L("ELARIA.Picker.hasSkill") },
+      costChoices: { "": L("ELARIA.Picker.costAny"), ftg: L("ELARIA.Resource.ftg"), mp: L("ELARIA.Resource.mp"),
+        hp: L("ELARIA.Resource.hp"), free: L("ELARIA.Picker.costFree") }
+    };
+  }
+
+  /** How many detailed filters are on (shown on the "More filters" toggle). */
+  #activeCount() {
+    const f = this.#filters;
+    const skip = new Set(["text", "pack", "category", "sort", "tags", "mine", "level"]);
+    return Object.entries(f).filter(([k, v]) => !skip.has(k) && v !== "" && v !== false).length + f.tags.length;
   }
 
   _onRender(context, options) {
     super._onRender(context, options);
     const el = this.element;
-    const read = () => {
-      this.#filters = {
-        text: el.querySelector("[name=text]").value,
-        pack: el.querySelector("[name=pack]").value,
-        category: el.querySelector("[name=category]").value,
-        mine: el.querySelector("[name=mine]").checked,
-        level: el.querySelector("[name=level]").checked
-      };
+    const read = (ev) => {
+      for (const input of el.querySelectorAll("[data-filter]")) {
+        const key = input.dataset.filter;
+        this.#filters[key] = input.type === "checkbox" ? input.checked : input.value;
+      }
+      // Picking a tag adds it to the list; a new source type resets the source name.
+      if (ev?.target?.name === "addTag" && ev.target.value) {
+        this.#filters.tags = [...new Set([...this.#filters.tags, ev.target.value])];
+        return this.render();
+      }
+      if (ev?.target?.dataset.filter === "sourceType") {
+        this.#filters.sourceName = "";
+        return this.render();
+      }
       this.#renderResults();
+      this.#updateBadge();
     };
-    el.querySelector("[name=text]").addEventListener("input", foundry.utils.debounce(read, 150));
+    for (const input of el.querySelectorAll("input[type=search], input[type=number]")) {
+      input.addEventListener("input", foundry.utils.debounce(read, 150));
+    }
     for (const input of el.querySelectorAll("select, input[type=checkbox]")) input.addEventListener("change", read);
+    for (const chip of el.querySelectorAll(".tag-chip")) chip.addEventListener("click", () => {
+      this.#filters.tags = this.#filters.tags.filter(t => t !== chip.dataset.tag);
+      this.render();
+    });
+    const more = el.querySelector("details.more-filters");
+    more?.addEventListener("toggle", () => (this._moreOpen = more.open));
 
     // Rows can be dragged onto any actor sheet; the sheet's drop handler does the rest.
     const list = el.querySelector(".results");
@@ -149,6 +266,14 @@ export class ElariaMasteryPicker extends HandlebarsApplicationMixin(ApplicationV
     });
     this.#renderResults();
     el.querySelector("[name=text]").focus();
+  }
+
+  #updateBadge() {
+    const badge = this.element.querySelector(".more-filters .badge");
+    if (!badge) return;
+    const n = this.#activeCount();
+    badge.textContent = n;
+    badge.hidden = !n;
   }
 
   /** Names this character's masteries can come from (race, heritage, elements, deity, disciplines, profession). */
@@ -164,16 +289,79 @@ export class ElariaMasteryPicker extends HandlebarsApplicationMixin(ApplicationV
   #matches() {
     const f = this.#filters;
     const words = f.text.toLowerCase().split(/\s+/).filter(w => w);
-    const mine = f.mine && !this.isGear && this.actor ? this.#characterSources() : null;
+    const mine = f.mine && !this.isGear && this.actor?.type === "character" ? this.#characterSources() : null;
     const level = this.actor?.system?.level;
-    return this.#entries.filter(e => {
+    const num = v => (v === "" || v === null || v === undefined || !Number.isFinite(Number(v)) ? null : Number(v));
+    const lvMin = num(f.levelMin), lvMax = num(f.levelMax), tMin = num(f.tierMin), tMax = num(f.tierMax);
+    const loadMax = f.fitsLoad && Number.isFinite(this.actor?.system?.combat?.equipLoad)
+      ? this.actor.system.combat.equipLoad : num(f.loadMax);
+    const tags = f.tags.map(t => t.toLowerCase());
+    const out = this.#entries.filter(e => {
+      const s = e.system;
       if (f.pack && e.pack !== f.pack) return false;
-      if (f.category && (this.isGear ? e.system.kind : e.system.category) !== f.category) return false;
-      if (f.level && Number.isFinite(level) && e.system.reqLevel != null && e.system.reqLevel > level) return false;
-      if (mine && !e.sources.some(s => ["bond", "general"].includes(s.type) || mine.has(String(s.name).toLowerCase()))) {
-        return false;
+      if (f.category && (this.isGear ? s.kind : s.category) !== f.category) return false;
+      const req = s.reqLevel;
+      if (f.level && Number.isFinite(level) && req != null && req > level) return false;
+      if (lvMin !== null && (req == null || req < lvMin)) return false;
+      if (lvMax !== null && req != null && req > lvMax) return false;
+      if (tags.length && !tags.every(t => e.lowTags.includes(t))) return false;
+      if (f.dmgType && !this.#damageMatches(e, f.dmgType)) return false;
+      if (this.isGear) {
+        if (f.family && s.family !== f.family) return false;
+        if (tMin !== null && (s.tier == null || s.tier < tMin)) return false;
+        if (tMax !== null && s.tier != null && s.tier > tMax) return false;
+        if (f.weight && String(s.weight ?? "").trim() !== f.weight) return false;
+        if (f.classTrinket === "only" && !s.classTrinket) return false;
+        if (f.classTrinket === "exclude" && s.classTrinket) return false;
+        if (loadMax !== null && s.equipLoad != null && s.equipLoad > loadMax) return false;
+      } else {
+        if (f.sourceType && !e.sources.some(src => src.type === f.sourceType)) return false;
+        if (f.sourceName && !e.sources.some(src => src.name === f.sourceName)) return false;
+        if (f.value !== "" && String(s.value) !== String(f.value)) return false;
+        if (f.rxn === "only" && !e.isReaction) return false;
+        if (f.rxn === "exclude" && e.isReaction) return false;
+        if (f.damage === "damage" && !e.hasDamage) return false;
+        if (f.damage === "none" && e.hasDamage) return false;
+        if (f.damage === "skill" && !s.skillMod?.raw) return false;
+        if (f.cost && !e.costs[f.cost]) return false;
+        if (f.aoe && !e.isAoe) return false;
+        if (f.multi && !e.isMulti) return false;
+        if (mine && !e.sources.some(src => ["bond", "general"].includes(src.type) || mine.has(String(src.name).toLowerCase()))) {
+          return false;
+        }
+        if (f.hideOwned && this.actor && actorHasMastery(this.actor, e)) return false;
       }
-      return words.every(w => e.search.includes(w));
+      return words.every(w => e.search.includes(w) || (f.inText && e.fullText.includes(w)));
+    });
+    return this.#sort(out);
+  }
+
+  /** "group:physical", "type:slashing", "el:fire", "form:divine" */
+  #damageMatches(e, key) {
+    const p = e.profile;
+    if (!p) return false;
+    const [kind, value] = key.split(":");
+    if (kind === "group") return value === "physical" ? PHYSICAL.has(p.type) : MAGICAL.has(p.type);
+    if (kind === "type") return p.type === value;
+    if (kind === "el") return p.element === value;
+    if (kind === "form") return p.form === value;
+    return true;
+  }
+
+  #sort(list) {
+    const by = this.#filters.sort;
+    const n = v => (v == null ? Infinity : Number(v));
+    const keyed = {
+      level: e => n(e.system.reqLevel), value: e => n(e.system.value), tier: e => n(e.system.tier),
+      aar: e => -(e.system.armourRating ?? -Infinity), load: e => n(e.system.equipLoad),
+      source: e => e.sourceLabel || "\uffff"
+    }[by];
+    if (!keyed) return list;
+    return [...list].sort((a, b) => {
+      const x = keyed(a), y = keyed(b);
+      if (x < y) return -1;
+      if (x > y) return 1;
+      return a.name.localeCompare(b.name);
     });
   }
 
@@ -201,7 +389,9 @@ export class ElariaMasteryPicker extends HandlebarsApplicationMixin(ApplicationV
         s.reqLevel != null ? `${L("ELARIA.Mastery.lvl")} ${s.reqLevel}` : "",
         s.value != null ? `${L("ELARIA.Mastery.FIELDS.value")} ${s.value}` : "",
         s.skillMod?.raw, s.damage?.raw, s.cost
-      ]).filter(m => m).map(m => `<span>${esc(String(m))}</span>`).join("");
+      ]).filter(m => m).map(m => `<span>${esc(String(m))}</span>`).join("")
+        + (this.#filters.tags.length || this.#filters.dmgType
+          ? e.tags.filter(t => this.#filters.tags.includes(t)).map(t => `<span class="tag-hit">${esc(t)}</span>`).join("") : "");
       return `
         <li class="pick ${owned ? "owned" : ""}" data-uuid="${e.uuid}" draggable="true">
           <img src="${esc(e.img ?? "")}" alt="">
@@ -239,7 +429,7 @@ export class ElariaMasteryPicker extends HandlebarsApplicationMixin(ApplicationV
   }
 
   static #onClear() {
-    this.#filters = { text: "", pack: "", category: "", mine: false, level: false };
+    this.#filters = foundry.utils.deepClone(BLANK_FILTERS);
     return this.render();
   }
 

@@ -88,7 +88,7 @@ Under the chat box are **Roll 3d6** and **Roll d20**.
 - **Roll 3d6** opens the roll window, which every 3d6 roll uses (clicking a stat modifier on the sheet opens it with that stat chosen). It has:
   - **Character**: the selected token's actor, else your assigned character, else none.
   - **Stat**: whose modifier is added (default none).
-  - **Add to roll**: one or more parts, each a number or dice formula with an optional name after it (`2`, `-1`, `1d4+1`, `2d6 Fire 4 Wind`, `1d4 Bless`). Spaces or + separate the parts. The chat card shows every part on its own ("+ 7 2d6 Fire · + 4 Wind"). On damage rolls, a part named after a damage type, element or form (Fire, Wind, True, Magical, Divine …) is extra damage of that type: the card shows the total split by type, and applying it gives that part its own armour and resistance (see *Applying damage*). Other names (Bless, Rage …) are just labels.
+  - **Add to roll**: one or more parts, each a number or dice formula with an optional name after it (`2`, `-1`, `1d4+1`, `2d6 Fire 4 Wind`, `1d4 Bless`). Spaces or + separate the parts. With several separate targets (not AoE) the bonus is added **once**: **Bonus goes to** picks which target gets it; tick **each hit** to give it to every hit of every target. The chat card shows every part on its own ("+ 7 2d6 Fire · + 4 Wind"). On damage rolls, a part named after a damage type, element or form (Fire, Wind, True, Magical, Divine …) is extra damage of that type: the card shows the total split by type, and applying it gives that part its own armour and resistance (see *Applying damage*). Other names (Bless, Rage …) are just labels.
   - **Injury / exhaustion**: the check penalty from the sheet.
   - **Crit chance / crit damage**: from the character's sheet, 0 with no character.
   - **Roll**, **Roll with Advantage**, **Roll with Disadvantage**. Advantage rolls the 3d6 twice and keeps the higher sum; disadvantage keeps the lower.
@@ -182,6 +182,15 @@ Rolls are made from the player's side: when an enemy attacks a player, the playe
 ## Browsing the compendiums
 
 The Compendium sidebar has **Masteries** and **Gear** buttons at the top. They open the same search window as *Add mastery* / *Add item* (search, compendium and category/kind filters). With a token selected (or your assigned character) the + buttons add to it; otherwise the window just browses, and rows can be dragged onto any sheet or the hotbar.
+
+The search window has:
+
+- **Search** (name, source, tags), with **Descriptions** to search the description / effect text too; **compendium**, **category** (masteries) or **kind** (gear), and **Sort** (name, level, value or source; gear: name, level, tier, AAR, equip load).
+- **More filters** (the number shows how many are on):
+  - Masteries: **source type** (discipline, elemental, deity, ancestry, profession, set, bond, general) and **source** (e.g. one discipline, with counts), **value**, **reaction** (rxn only / none), **rolls** (deals damage / no damage / has a skill mod), **cost** (FTG, MP, HP, free), **AoE**, **Multi-hit**, **Hide already known**.
+  - Gear: **family**, **tier** range, **weight**, **class trinkets** (only / none), **max equip load**, and **Fits** (only what the character can wield).
+  - Both: **damage type** (Physical or Magical of any kind, a specific type, an element, Divine / Demonic; read from the tags as for applying damage), **required level** range, and **must have tags** (pick any number; results need all of them, and matching tags are highlighted).
+- **Only this character's sources** and **Up to level n** when adding to a character. The filter-clear button resets everything.
 
 ## Icons
 

@@ -40,6 +40,7 @@ export function roll3d6(options = {}) {
  * @param {string} [options.stat]          Stat key ("" = none)
  * @param {string} [options.bonus]         Extra number or dice formula, e.g. "2" or "1d4+1"
  * @param {boolean} [options.bonusPerHit]  Add the bonus to every hit instead of once
+ * @param {number} [options.bonusTarget]   Several targets, not AoE, bonus once: which target (index) gets it
  * @param {number} [options.penalty]       Injury/exhaustion penalty to subtract (once per target)
  * @param {number} [options.critChance]    0–100
  * @param {number} [options.critDamage]    percent, e.g. 20 → ×1.2
@@ -59,7 +60,7 @@ export function roll3d6(options = {}) {
 export async function rollDice({ actor = null, stat = "", bonus = "", bonusPerHit = false, penalty = 0,
   critChance = 0, critDamage = 0, mode = "normal", dice: diceSpec = "3d6", hits = 1, targets = 1, targetNames = [],
   aoe = false, label = "", note = "", img = "", skill = null, next = null,
-  critChanceBonus = 0, critDamageBonus = 0, fixedCrit = false, damage = null, targetTokens = [] } = {}) {
+  critChanceBonus = 0, critDamageBonus = 0, fixedCrit = false, damage = null, targetTokens = [], bonusTarget = 0 } = {}) {
   diceSpec = DICE_RE.test(String(diceSpec).trim().toLowerCase()) ? String(diceSpec).trim().toLowerCase() : "3d6";
   const mod = stat && actor ? actor.system.stats?.[stat]?.mod ?? 0 : 0;
   const statLabel = stat ? L(ELARIA.stats[stat]?.label ?? stat) : "";
@@ -67,6 +68,8 @@ export async function rollDice({ actor = null, stat = "", bonus = "", bonusPerHi
   penalty = Math.max(0, Math.round(Number(penalty) || 0));
   hits = Math.clamp(Math.round(Number(hits) || 1), 1, 50);
   targets = Math.clamp(Math.round(Number(targets) || 1), 1, 50);
+  // The damage roll after this skill roll gets the number of targets actually rolled for (AoE: as opened).
+  if (next && !next.aoe) next = { ...next, targets };
   aoe = !!aoe && targets > 1;
   critChance = pct(critChance);
   critDamage = Math.round(Number(critDamage) || 0);
@@ -112,7 +115,7 @@ export async function rollDice({ actor = null, stat = "", bonus = "", bonusPerHi
    * One target's damage: the dice are rolled separately for every hit (so hits differ); each hit adds the stat
    * (and the bonus, if "each hit"). A once-only bonus and the penalty apply to the total.
    */
-  const rollDamage = async () => {
+  const rollDamage = async (skipOnce = false) => {
     const hitList = [];
     for (let h = 0; h < hits; h++) {
       const pool = await rollPool();
@@ -120,7 +123,7 @@ export async function rollDice({ actor = null, stat = "", bonus = "", bonusPerHi
       hitList.push({ ...pool, bonus: hitBonus, main: pool.diceTotal + mod + hitBonus.plain,
         value: pool.diceTotal + mod + hitBonus.total });
     }
-    const once = bonusPerHit ? noBonus : await rollBonus();
+    const once = bonusPerHit || skipOnce ? noBonus : await rollBonus();
     const raw = hitList.reduce((n, x) => n + x.value, 0) + once.total - penalty;
     return { hitList, once, raw, sets: hitList[0].sets, diceTotal: hitList[0].diceTotal };
   };
@@ -135,9 +138,12 @@ export async function rollDice({ actor = null, stat = "", bonus = "", bonusPerHi
 
   // One damage roll per target (or one shared for AoE), one crit roll per target.
   const shared = aoe ? await rollDamage() : null;
+  // A once-only bonus with several separate targets goes to one of them (picked in the roll window), not to each.
+  const onceToOne = !!bonus && !bonusPerHit && !aoe && targets > 1;
+  bonusTarget = Math.clamp(Math.round(Number(bonusTarget) || 0), 0, targets - 1);
   const results = [];
   for (let i = 0; i < targets; i++) {
-    const dmg = shared ?? await rollDamage();
+    const dmg = shared ?? await rollDamage(onceToOne && i !== bonusTarget);
     const crit = await rollCrit();
     results.push({
       tokenUuid: targetTokens[i] ?? "",

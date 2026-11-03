@@ -57,7 +57,8 @@ export class ElariaItem extends Item {
     if (!skill) return null;
     targets ??= game.user.targets?.size || 1;
     const preset = skillRollPreset({ actor, skill, name: this.name, img: this.img, targets, aoe: this.isAoe });
-    if (this.hasDamage) preset.next = { itemUuid: this.uuid, actorUuid: actor?.uuid ?? "", targets };
+    // The damage roll that follows gets the same number of targets (an AoE skill roll is one roll for all of them).
+    if (this.hasDamage) preset.next = { itemUuid: this.uuid, actorUuid: actor?.uuid ?? "", targets, aoe: this.isAoe };
     return preset;
   }
 
@@ -99,7 +100,7 @@ export class ElariaItem extends Item {
    * @param {boolean} [options.skipSkill]  Go straight to damage (the target didn't react).
    * @param {boolean} [options.normal]     For reaction (rxn) masteries: skip the "react or use normally?" question.
    */
-  async use({ skipSkill = false, normal = false } = {}) {
+  async use({ skipSkill = false, normal = false, targets = null } = {}) {
     const actor = this.actor ?? defaultRollActor();
     const L = k => game.i18n.localize(k);
 
@@ -125,11 +126,12 @@ export class ElariaItem extends Item {
         skip: {
           label: this.hasDamage ? L("ELARIA.Dice.noReactionDamage") : L("ELARIA.Dice.noReactionPost"),
           hint: L("ELARIA.Dice.noReactionHint"),
-          action: () => this.use({ skipSkill: true })
+          // Keeps the number of targets typed in the skill mod window.
+          action: ({ targets } = {}) => this.use({ skipSkill: true, targets })
         }
       });
     }
-    if (this.hasDamage) return game.elaria.RollDialog.open(this.damageRollPreset(actor));
+    if (this.hasDamage) return game.elaria.RollDialog.open(this.damageRollPreset(actor, { targets }));
     // Nothing (left) to roll: post the card. Coming from the skill mod step, it doesn't offer the skill mod again.
     return this.toChat({ skillButton: !skipSkill && !this.skillInfo });
   }

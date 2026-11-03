@@ -30,6 +30,8 @@
         <label class="check aoe-option" data-tooltip="ELARIA.Dice.aoeHint">
           <input type="checkbox" name="aoe" {{checked aoe}}> {{localize "ELARIA.Dice.aoeOption"}}</label>
       </span></div>
+    <label class="row bonus-target-row" hidden><span>{{localize "ELARIA.Dice.bonusTarget"}}</span>
+      <select name="bonusTarget" data-tooltip="ELARIA.Dice.bonusTargetHint"></select></label>
     <label class="row"><span>{{localize "ELARIA.Dice.penalty"}}</span>
       <input type="number" name="penalty" value="{{penalty}}" min="0" step="1"></label>
   </div>
