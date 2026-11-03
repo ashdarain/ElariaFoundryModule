@@ -685,7 +685,11 @@
       "zeroMonster": "Mark it as defeated?",
       "addInjury": "Add 1 injury",
       "markDefeated": "Mark defeated",
-      "leave": "Leave it"
+      "leave": "Leave it",
+      "healTo": "Heal {name} for {n}",
+      "healedTo": "{name} healed for {n}",
+      "healed": "{name} heals {n} HP.",
+      "negativeHeals": "A negative amount heals (resistance over 100 %)."
     }
   }
 }

@@ -39,7 +39,10 @@ function targetRow({ message, data, entry, index, actor, showBreakdown }) {
   const done = appliedEntry(actor, message.id, index);
   if (done) {
     row.classList.add("done");
-    row.innerHTML = `<span><i class="fa-solid fa-check"></i> ${esc(game.i18n.format("ELARIA.Damage.appliedTo", { n: done.amount, name: actor.name }))}</span>`
+    const text = done.amount < 0
+      ? game.i18n.format("ELARIA.Damage.healedTo", { n: -done.hp, name: actor.name })
+      : game.i18n.format("ELARIA.Damage.appliedTo", { n: done.amount, name: actor.name });
+    row.innerHTML = `<span><i class="fa-solid fa-check"></i> ${esc(text)}</span>`
       + `<a class="undo" data-tooltip="${esc(L("ELARIA.Damage.undoHint"))}"><i class="fa-solid fa-rotate-left"></i> ${L("ELARIA.Damage.undo")}</a>`;
     row.querySelector(".undo").addEventListener("click", async ev => {
       ev.preventDefault();
@@ -49,8 +52,11 @@ function targetRow({ message, data, entry, index, actor, showBreakdown }) {
     return row;
   }
   const calc = computeDamage(entry, data.profile, data.critDamage, actor);
-  row.innerHTML = `<button type="button" class="apply"><i class="fa-solid fa-heart-crack"></i> `
-    + `${esc(game.i18n.format("ELARIA.Damage.applyTo", { n: calc.final, name: actor.name }))}</button>`;
+  row.innerHTML = calc.final < 0
+    ? `<button type="button" class="apply heal"><i class="fa-solid fa-heart-pulse"></i> `
+      + `${esc(game.i18n.format("ELARIA.Damage.healTo", { n: -calc.final, name: actor.name }))}</button>`
+    : `<button type="button" class="apply"><i class="fa-solid fa-heart-crack"></i> `
+      + `${esc(game.i18n.format("ELARIA.Damage.applyTo", { n: calc.final, name: actor.name }))}</button>`;
   if (showBreakdown) row.querySelector(".apply").dataset.tooltip = breakdownHTML(calc, data.profile);
   row.querySelector(".apply").addEventListener("click", async ev => {
     ev.preventDefault();
@@ -93,7 +99,8 @@ async function confirmAmount({ actor, calc, profile, showBreakdown }) {
     <p>${esc(game.i18n.format("ELARIA.Damage.confirm", { name: actor.name }))}</p>
     ${showBreakdown ? breakdownHTML(calc, profile) : ""}
     <label class="amount-row"><span>${L("ELARIA.Damage.amount")}</span>
-      <input type="number" name="amount" value="${calc.final}" min="0" step="1" autofocus></label>`;
+      <input type="number" name="amount" value="${calc.final}" step="1" autofocus></label>
+    <p class="hint">${L("ELARIA.Damage.negativeHeals")}</p>`;
   const result = await foundry.applications.api.DialogV2.wait({
     window: { title: game.i18n.format("ELARIA.Damage.applyTitle", { name: actor.name }), icon: "fa-solid fa-heart-crack" },
     classes: ["elaria", "apply-damage-dialog"],
@@ -105,7 +112,7 @@ async function confirmAmount({ actor, calc, profile, showBreakdown }) {
     ],
     rejectClose: false
   });
-  return typeof result === "number" && Number.isFinite(result) ? Math.max(0, Math.round(result)) : null;
+  return typeof result === "number" && Number.isFinite(result) ? Math.round(result) : null;
 }
 
 /** Re-draw the card here so the button shows "Applied". */

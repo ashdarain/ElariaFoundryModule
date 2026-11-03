@@ -6,10 +6,13 @@ import { ELARIA } from "../config.mjs";
  *   final = (dmg rolled + flat dmg mods − relevant armour) × (crit dmg + other % dmg mods − resistance)
  *
  * - The multiplier terms are added (Ash, 2026-11-02): a crit at +50 % crit damage against 25 % resistance is
- *   × (1.5 − 0.25) = × 1.25; no crit against 25 % resistance is × 0.75. It never goes below 0.
+ *   × (1.5 − 0.25) = × 1.25; no crit against 25 % resistance is × 0.75.
+ * - Resistance over 100 % heals: every % over 100 turns damage into healing (Ash, 2026-11-02), e.g. 4 Fire
+ *   against 150 % Fire resistance is 4 × (1 − 1.5) = −2, so it heals 2. So the multiplier can be negative.
  * - Armour comes off every hit separately (Multi Attacks); a hit can't go below 0. Flat mods that apply once
  *   (a once-only bonus, the injury penalty) are added to the first hit.
- * - Rounded to the nearest whole number at the end (Ash, 2026-11-02); final damage is never negative.
+ * - Rounded to the nearest whole number at the end (Ash, 2026-11-02), halves away from 0. A negative total
+ *   (only possible through resistance over 100 %) heals.
  * - Resistance = the target's resistance to the damage's element + to its form (Mortal by default); they add.
  *
  * Damage types (Mechanics, "Physical / Magical Damage Types", "Unique types"):
@@ -153,6 +156,9 @@ export function resistanceFor(actor, p) {
   return { value: parts.reduce((n, [, v]) => n + v, 0), parts };
 }
 
+/** Nearest whole number, halves away from 0 (2.5 → 3, −2.5 → −3). */
+const roundAway = x => Math.sign(x) * Math.round(Math.abs(x)) || 0;
+
 /**
  * Work out one target's damage.
  * @param {object} entry   {hits: number[], flat: number, crit: boolean}
@@ -164,7 +170,7 @@ export function computeDamage(entry, p, critDamage, actor) {
   const armour = armourFor(actor, p);
   const res = resistanceFor(actor, p);
   const critTerm = entry.crit ? 1 + (Number(critDamage) || 0) / 100 : 1;
-  const multiplier = Math.max(0, critTerm - res.value / 100);
+  const multiplier = critTerm - res.value / 100;
   const hits = (entry.hits ?? []).map((value, i) => {
     const rolled = value + (i === 0 ? (entry.flat ?? 0) : 0);
     const after = Math.max(0, rolled - armour.value);
@@ -174,7 +180,7 @@ export function computeDamage(entry, p, critDamage, actor) {
   const extras = (entry.extras ?? []).map(x => {
     const xArmour = armourFor(actor, x.profile);
     const xRes = resistanceFor(actor, x.profile);
-    const xMult = Math.max(0, critTerm - xRes.value / 100);
+    const xMult = critTerm - xRes.value / 100;
     const parts = x.values.map(v => {
       const after = Math.max(0, v - xArmour.value);
       return { rolled: v, after, dealt: after * xMult };
@@ -183,7 +189,7 @@ export function computeDamage(entry, p, critDamage, actor) {
       dealt: parts.reduce((n, h) => n + h.dealt, 0) };
   });
   const exact = hits.reduce((n, h) => n + h.dealt, 0) + extras.reduce((n, x) => n + x.dealt, 0);
-  return { armour, res, critTerm, multiplier, hits, extras, exact, final: Math.max(0, Math.round(exact)) };
+  return { armour, res, critTerm, multiplier, hits, extras, exact, final: roundAway(exact), heals: roundAway(exact) < 0 };
 }
 
 /** A readable breakdown for the GM (and for players hit by characters, whose numbers aren't secret). */
@@ -227,15 +233,26 @@ export function canApplyTo(actor) {
 }
 
 /**
- * Take damage: temp HP first, then HP (never below 0). Logged on the actor so it can't be applied twice and
- * can be undone. A drop to 0 HP opens a prompt (injury / defeated), nothing automatic.
+ * Take damage: temp HP first, then HP (never below 0). A negative amount heals (resistance over 100 %): HP goes
+ * up to its max, temp HP isn't touched. Logged on the actor so it can't be applied twice and can be undone.
+ * A drop to 0 HP opens a prompt (injury / defeated), nothing automatic.
  */
 export async function applyDamage(actor, amount, { messageId, index, label = "" } = {}) {
   if (!canApplyTo(actor)) return ui.notifications.warn(game.i18n.localize("ELARIA.Damage.notYours"));
   if (appliedEntry(actor, messageId, index)) return ui.notifications.warn(game.i18n.format("ELARIA.Damage.already", { name: actor.name }));
   const hp = actor.system.resources?.hp;
   if (!hp) return;
-  amount = Math.max(0, Math.round(amount));
+  amount = Math.round(amount) || 0;
+  if (amount < 0) {
+    const before = hp.value ?? 0;
+    const healed = Math.max(0, Math.min((hp.max ?? before) - before, -amount));
+    await actor.update({
+      "system.resources.hp.value": before + healed,
+      [`flags.elaria.damageLog.${logKey(messageId, index)}`]: { amount, temp: 0, hp: -healed, label, time: Date.now() }
+    });
+    ui.notifications.info(game.i18n.format("ELARIA.Damage.healed", { n: healed, name: actor.name }));
+    return amount;
+  }
   const fromTemp = Math.min(hp.temp ?? 0, amount);
   const fromHp = Math.min(hp.value ?? 0, amount - fromTemp);
   const before = hp.value ?? 0;
@@ -259,7 +276,7 @@ export async function undoDamage(actor, messageId, index) {
     "system.resources.hp.value": Math.min(hp.max ?? Infinity, (hp.value ?? 0) + (entry.hp ?? 0)),
     [`flags.elaria.damageLog.${logKey(messageId, index)}`]: null
   });
-  ui.notifications.info(game.i18n.format("ELARIA.Damage.undone", { n: entry.amount, name: actor.name }));
+  ui.notifications.info(game.i18n.format("ELARIA.Damage.undone", { n: Math.abs(entry.amount), name: actor.name }));
 }
 
 /** 0 HP: just a prompt (Ash, 2026-11-02). Characters can take an injury; monsters can be marked defeated. */

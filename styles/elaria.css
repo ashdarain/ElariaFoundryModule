@@ -973,3 +973,5 @@
 /* Bonus parts on roll cards ("+ 7 2d6 Fire") and the damage split by type */
 .elaria.roll-card .bonus-part.typed { color: #8b3a1e; }
 .elaria.roll-card .by-type { font-size: 11px; color: var(--el-muted); text-align: center; margin-top: 2px; }
+.elaria.roll-card .apply-row button.apply.heal { color: #2f6b2a; border-color: #2f6b2a; }
+.elaria.roll-card .apply-row button.apply.heal:hover { background: #e1f0d9; }

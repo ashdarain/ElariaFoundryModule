@@ -44,7 +44,13 @@ const cases = [
     { profile: D.labelDamageProfile("Wind"), label: "Wind", values: [4] }] }, P("Physical"), 50, target()).final, 7],
   ["true bonus ignores armour", D.computeDamage({ hits: [10], flat: 0, crit: false, extras: [
     { profile: D.labelDamageProfile("True"), label: "True", values: [5] }] }, P("Physical"), 50, target()).final, 9],
-  ["multiplier never below 0", dmg([20], P("Physical"), { t: target({ res: { mortal: { total: 150 } } }) }), 0]
+  // Ash's example: 4 Fire vs 150 % Fire resistance (no armour) → 4 × (1 − 1.5) = −2 → heals 2
+  ["resistance over 100 % heals", dmg([4], P("Fire"), { t: target({ defence: { mar: 0 }, res: { fire: { total: 150 } } }) }), -2],
+  ["crit against 150 % = 0", dmg([4], P("Fire"), { crit: true, t: target({ defence: { mar: 0 }, res: { fire: { total: 150 } } }) }), 0],
+  ["heal rounds halves away from 0", dmg([5], P("Fire"), { t: target({ defence: { mar: 0 }, res: { fire: { total: 150 } } }) }), -3],
+  ["mixed: physical hurts, fire heals", D.computeDamage({ hits: [10], flat: 0, crit: false, extras: [
+    { profile: D.labelDamageProfile("Fire"), label: "Fire", values: [7] }] }, P("Physical"), 50,
+    target({ res: { fire: { total: 200 } } })).final, 0]   // 4 + (7 − 3) × (1 − 2) = 0
 ];
 let failed = 0;
 for (const [label, actual, expected] of cases) {
