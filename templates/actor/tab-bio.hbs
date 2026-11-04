@@ -3,9 +3,19 @@
     <fieldset>
       <legend>{{localize "ELARIA.Bio.ancestry"}}</legend>
       <label><span>{{localize "ELARIA.Bio.race"}}</span>
-        <select name="system.identity.race">{{selectOptions choices.races selected=system.identity.race}}</select></label>
+        <select name="system.identity.race">{{selectOptions choices.races selected=raceValue}}</select></label>
       <label><span>{{localize "ELARIA.Bio.heritage"}}</span>
-        <select name="system.identity.heritage">{{selectOptions choices.heritages selected=system.identity.heritage}}</select></label>
+        <select name="system.identity.heritage">{{selectOptions choices.heritages selected=heritageValue}}</select></label>
+      {{#if heritageInfo}}
+      <div class="heritage-mods">
+        <span class="label">{{localize "ELARIA.Bio.heritageMods"}}</span> <span class="raw">{{heritageInfo.text}}</span>
+        {{#each heritageInfo.choices}}
+        <label class="heritage-choice"><span>{{label}}</span>
+          <select name="system.identity.heritageChoices.{{index}}" class="{{#unless chosen}}unpicked{{/unless}}">{{selectOptions options selected=chosen}}</select></label>
+        {{/each}}
+        {{#if heritageInfo.applied}}<span class="applied" data-tooltip="ELARIA.Bio.heritageAppliedHint"><i class="fa-solid fa-check"></i> {{heritageInfo.applied}}</span>{{/if}}
+      </div>
+      {{/if}}
     </fieldset>
 
     <fieldset>

@@ -1017,3 +1017,105 @@
 .elaria.roll-card .verdict-row button.chosen.fail { background: #b3261e; color: #fff; }
 .elaria.roll-card .next-roll.waiting { opacity: 0.5; cursor: not-allowed; }
 .elaria.roll-card .aoe-targets { font-size: 11px; color: var(--el-muted); margin-bottom: 2px; }
+
+/* Bio: heritage stat mods */
+.elaria .heritage-mods { display: flex; flex-direction: column; gap: 3px; font-size: 12px; margin-top: 2px; }
+.elaria .heritage-mods .label { color: var(--el-muted); }
+.elaria .heritage-mods .raw { font-style: italic; }
+.elaria .heritage-mods .heritage-choice { display: flex; align-items: center; gap: 6px; }
+.elaria .heritage-mods .heritage-choice select { flex: 1; height: 24px; }
+.elaria .heritage-mods select.unpicked { border-color: var(--el-bad); }
+.elaria .heritage-mods .applied { color: var(--el-good); font-size: 11px; }
+
+/* Crafting tab */
+.elaria .tab.crafting.active { display: flex; flex-direction: column; gap: 8px; }
+.elaria .craft-head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.elaria .craft-head .profession { font-size: 15px; }
+.elaria .craft-head .profession i { color: var(--el-accent); }
+.elaria .craft-head .hint { font-size: 11px; color: var(--el-muted); }
+.elaria table.materials-table { width: 100%; border-collapse: collapse; margin: 0; }
+.application.elaria table.materials-table :is(thead, tbody, tr, th, td) { background: none; border: none; }
+.elaria table.materials-table th { font-size: 11px; color: var(--el-muted); font-weight: normal; text-align: center; }
+.elaria table.materials-table th.label, .elaria table.materials-table td.label { text-align: left; font-size: 12px; white-space: nowrap; }
+.elaria table.materials-table td { padding: 1px 2px; text-align: center; }
+.elaria table.materials-table input { width: 52px; height: 22px; text-align: center; color: var(--el-muted); }
+.elaria table.materials-table input.has { color: inherit; font-weight: bold; }
+.elaria .recipe-filters { display: flex; align-items: center; gap: 8px; font-size: 12px; flex-wrap: wrap; }
+.elaria .recipe-filters input[type=search] { flex: 1; min-width: 140px; height: 26px; }
+.elaria .recipe-filters label { display: flex; align-items: center; gap: 3px; white-space: nowrap; }
+.elaria .recipe-filters .recipe-count { color: var(--el-muted); margin-left: auto; }
+.elaria .recipe-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.elaria .recipe { display: flex; gap: 8px; align-items: flex-start; padding: 4px 6px; border: 1px solid var(--el-line); border-radius: 5px; }
+.elaria .recipe.ready { border-color: var(--el-good); }
+.elaria .recipe.locked { opacity: 0.55; }
+.elaria .recipe img { width: 32px; height: 32px; flex: none; border: 1px solid var(--el-line); border-radius: 4px; }
+.elaria .recipe-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.elaria .recipe-name { font-weight: bold; }
+.elaria .recipe-meta { font-size: 11px; color: var(--el-muted); }
+.elaria .recipe-cost { display: flex; flex-wrap: wrap; gap: 3px; }
+.elaria .recipe-cost .mat { font-size: 11px; padding: 0 5px; border-radius: 3px; border: 1px solid var(--el-line); }
+.elaria .recipe-cost .mat.ok { border-color: var(--el-good); color: var(--el-good); }
+.elaria .recipe-cost .mat.short { border-color: var(--el-bad); color: var(--el-bad); }
+.elaria .recipe-text { margin: 0; font-size: 11px; line-height: 1.3; color: var(--el-muted); }
+.elaria .recipe-buttons { display: flex; flex-direction: column; gap: 3px; flex: none; }
+.elaria .recipe-buttons button { line-height: 22px; font-size: 12px; padding: 0 8px; white-space: nowrap; }
+.elaria .recipe-buttons button.short { opacity: 0.5; }
+.elaria .recipe-buttons button.busy { pointer-events: none; opacity: 0.4; }
+.elaria .recipe-list .empty { padding: 16px; text-align: center; color: var(--el-muted); font-style: italic; }
+.elaria.craft-dialog .any-row { display: flex; align-items: center; gap: 8px; }
+.elaria.craft-dialog .hint.warn { color: var(--el-bad); }
+.elaria .recipe[hidden] { display: none; }
+
+/* GM Tools */
+.elaria-gm-button { background: rgba(58, 46, 92, 0.92); }
+.elaria-gm-button:hover { background: #5b4a91; }
+.application.elaria.gm-tools .window-content { padding: 0; background: var(--el-paper); color: var(--el-ink); display: flex; flex-direction: column; }
+.elaria.gm-tools .tab.gm-tools-players.active { display: flex; flex-direction: column; flex: 1; min-height: 0; padding: 8px 12px; gap: 10px; }
+.elaria.gm-tools .gm-players-zone { flex: 1 1 60%; min-height: 0; display: flex; flex-direction: column; gap: 6px; }
+.elaria.gm-tools .gm-section-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.elaria.gm-tools .gm-section-head h3 { margin: 0; border: none; flex: 1; color: var(--el-accent); }
+.elaria.gm-tools .gm-section-head select { max-width: 260px; height: 28px; }
+.elaria.gm-tools .gm-section-head button { width: auto; line-height: 26px; padding: 0 10px; flex: none; }
+.elaria.gm-tools .gm-section-head label { display: flex; align-items: center; gap: 4px; font-size: 12px; white-space: nowrap; }
+.elaria.gm-tools .gm-section-head .amount input { width: 46px; height: 24px; text-align: center; }
+.elaria.gm-tools .hint { margin: 0; font-size: 11px; color: var(--el-muted); }
+.elaria.gm-tools .gm-players { flex: 1; min-height: 0; overflow-y: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 8px; align-content: start; }
+.elaria.gm-tools .gm-player { border: 1px solid var(--el-line); border-radius: 6px; padding: 6px 8px; background: rgba(255, 255, 255, 0.35); display: flex; flex-direction: column; gap: 6px; }
+.elaria.gm-tools .gm-player header { display: flex; align-items: center; gap: 8px; }
+.elaria.gm-tools .gm-player header img { width: 40px; height: 40px; border: 1px solid var(--el-line); border-radius: 4px; cursor: pointer; }
+.elaria.gm-tools .gm-player .who { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.elaria.gm-tools .gm-player .name { font-weight: bold; font-size: 14px; }
+.elaria.gm-tools .gm-player .sub { font-size: 11px; color: var(--el-muted); }
+.elaria.gm-tools .gm-player .remove { color: var(--el-muted); }
+.elaria.gm-tools .grant-buttons { display: flex; gap: 4px; flex-wrap: wrap; }
+.elaria.gm-tools .grant-buttons button { flex: 1; width: auto; line-height: 24px; font-size: 12px; padding: 0 6px; white-space: nowrap; }
+.elaria.gm-tools .pending { display: flex; flex-wrap: wrap; gap: 4px; min-height: 30px; padding: 4px; border: 1px dashed var(--el-line); border-radius: 4px; }
+.elaria.gm-tools .pending .drop-hint { font-size: 11px; color: var(--el-muted); font-style: italic; margin: auto; }
+.elaria.gm-tools .chip { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; padding: 1px 6px; border-radius: 10px; border: 1px solid var(--el-line); background: var(--el-panel); }
+.elaria.gm-tools .chip img { width: 16px; height: 16px; border: none; }
+.elaria.gm-tools .chip.mastery { border-color: #6b5aa8; }
+.elaria.gm-tools .chip.gear { border-color: #8b5a2b; }
+.elaria.gm-tools .chip.material { border-color: #4b7a8c; }
+.elaria.gm-tools .chip.coin { border-color: #c9a227; }
+.elaria.gm-tools .chip a { color: var(--el-muted); }
+.elaria.gm-tools .gm-player footer { display: flex; align-items: center; justify-content: space-between; gap: 6px; font-size: 12px; }
+.elaria.gm-tools button.give { width: auto; line-height: 26px; padding: 0 14px; color: #fff; background: var(--el-good); border-color: var(--el-good); }
+.elaria.gm-tools .give-all-row { display: flex; justify-content: flex-end; }
+.elaria.gm-tools .empty-players { grid-column: 1 / -1; text-align: center; color: var(--el-muted); font-style: italic; padding: 12px; }
+.elaria.gm-tools .gm-party { flex: 0 0 auto; border-top: 2px solid var(--el-line); padding-top: 8px; display: flex; flex-direction: column; gap: 6px; }
+.elaria.gm-tools .party-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+.elaria.gm-tools .party-actions button { flex: 1; width: auto; line-height: 28px; padding: 0 8px; white-space: nowrap; }
+.elaria.gm-tools .party-table-wrap { max-height: 190px; overflow-y: auto; }
+.elaria.gm-tools table.party-table { width: 100%; border-collapse: collapse; margin: 0; font-size: 12px; }
+.application.elaria.gm-tools table.party-table :is(thead, tbody, tr, th, td) { background: none; border: none; }
+.elaria.gm-tools table.party-table th { color: var(--el-muted); font-weight: normal; text-align: center; }
+.elaria.gm-tools table.party-table td { text-align: center; padding: 1px 4px; border-bottom: 1px dotted var(--el-line); }
+.elaria.gm-tools table.party-table .label { text-align: left; }
+.elaria.gm-tools table.party-table img { width: 22px; height: 22px; border: none; vertical-align: middle; }
+.elaria.gm-tools table.party-table tr.not-picked { opacity: 0.4; }
+.elaria.gm-tools table.party-table .empty { color: var(--el-muted); font-style: italic; }
+.elaria.gm-grant-dialog .coins { display: flex; gap: 6px; }
+.elaria.gm-grant-dialog .coin { display: flex; flex-direction: column; align-items: center; font-size: 11px; }
+.elaria.gm-grant-dialog .coin input { width: 64px; text-align: center; }
+.elaria.gm-grant-dialog table.materials-table input { width: 52px; }
+.elaria.chat-card.gm-grant ul, .elaria.chat-card.gm-party ul { margin: 4px 0 0; padding-left: 18px; font-size: 12px; }

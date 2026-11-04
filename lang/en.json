@@ -27,7 +27,8 @@
       "stats": "Stats",
       "masteries": "Masteries",
       "inventory": "Inventory",
-      "bio": "Bio"
+      "bio": "Bio",
+      "crafting": "Crafting"
     },
     "Stat": {
       "str": "Strength",
@@ -76,7 +77,8 @@
       "rollHint": "Click a modifier to open the roll window. Shift-click rolls with advantage, Ctrl-click with disadvantage.",
       "scalingOff": "Scaling is off (all stats treated as Gen). Unlock full editing to change.",
       "totalHint": "(Level + points) × scaling. Base is always your level.",
-      "rollName": "Roll"
+      "rollName": "Roll",
+      "heritagePart": "Heritage {n}."
     },
     "Resource": {
       "hp": "HP",
@@ -269,7 +271,23 @@
       "biography": "Biography",
       "formHint": "Damage form. Player characters are Mortal unless something says otherwise.",
       "elementsShort": "Elements",
-      "alignment2": "Second alignment"
+      "alignment2": "Second alignment",
+      "heritageMods": "Heritage mods:",
+      "noHeritageMods": "No mods",
+      "pickStat": "— pick —",
+      "heritagePlus": "+{n} to",
+      "heritageMinus": "−{n} to",
+      "pickRaceFirst": "— pick a race first —",
+      "heritageAppliedHint": "Applied to the character's modifiers (and defences / maximums).",
+      "derived": {
+        "nar": "NAR",
+        "nmar": "NMAR",
+        "aar": "AAR",
+        "ar": "AR",
+        "mar": "MAR",
+        "critChance": "crit chance",
+        "critDamage": "crit damage"
+      }
     },
     "EditMode": {
       "unlock": "Unlock full editing (scaling toggle, damage form)",
@@ -754,6 +772,121 @@
       "healed": "{name} heals {n} HP.",
       "negativeHeals": "A negative amount heals (resistance over 100 %).",
       "flatOn": "Once-only bonus ({n}) goes on:"
+    },
+    "Material": {
+      "metal": "Metal",
+      "wood": "Wood",
+      "leather": "Leather",
+      "fabric": "Fabric",
+      "bone": "Bone",
+      "artifact": "Artifact",
+      "soul": "Soul",
+      "alchemical": "Alchemical Ingredient",
+      "food": "Food Ingredient",
+      "etherCore": "Ether Core",
+      "any": "Any material"
+    },
+    "Craft": {
+      "noProfession": "No profession: pick one on the Bio tab.",
+      "hint": "Materials are counted per tier; a recipe uses materials of its tier.",
+      "materials": "Materials",
+      "tierShort": "T{n}",
+      "tierN": "Tier {n}",
+      "search": "Search recipes…",
+      "onlyReady": "Only what I can craft",
+      "showLocked": "Show above level {n}",
+      "count": "{n} recipes",
+      "refresh": "Re-read the compendiums (after importing)",
+      "evolvesFrom": "evolves from {name}",
+      "have": "You have {n}",
+      "noMaterials": "No materials listed",
+      "craft": "Craft",
+      "evolve": "Evolve",
+      "lockedHint": "Needs level {n}.",
+      "shortHint": "Not enough materials of this tier.",
+      "evolveHint": "Turn your {name} into this (it keeps its belt / worn spot).",
+      "noRecipes": "Nothing to craft for this profession. Import the sheet (Craftables compendium), or this profession crafts from the Gear tab.",
+      "confirm": "Craft {item}?",
+      "confirmEvolve": "Evolve your {from} into {item}?",
+      "cost": "Costs:",
+      "payAny": "Pay the {n} with:",
+      "unknownParts": "Not counted (unknown material): {parts}",
+      "notEnough": "Not enough materials of this tier.",
+      "notEnoughGM": "Not enough materials of this tier: as GM you can craft it anyway (counts stop at 0).",
+      "noBase": "You don't have a {name} to evolve.",
+      "missing": "Couldn't find {name} in the compendiums.",
+      "craftedCard": "{name} crafted {item}",
+      "evolvedCard": "{name} evolved {from} into {item}",
+      "usedCard": "Used {used} (tier {n})."
+    },
+    "Compendium": {
+      "masteries": "Masteries (Item)",
+      "gear": "Gear (Item)",
+      "wrongKind": "This compendium only holds {kind}: a {type} can't go in it."
+    },
+    "GMTools": {
+      "button": "GM Tools",
+      "buttonHint": "Give players items, materials and coins; level up, long rest …",
+      "title": "GM Tools",
+      "tab": {
+        "players": "Players"
+      },
+      "players": "Players",
+      "pickCharacter": "— pick a character —",
+      "add": "Add",
+      "addParty": "Add the party",
+      "addPartyHint": "Add every character a player owns",
+      "partyAlreadyAdded": "The whole party is already here.",
+      "playersHint": "Line up what each character gets, then press Give. Drag masteries or gear from the compendiums, the Items sidebar or the search windows onto a card; drag a character from the Actors sidebar here to add it.",
+      "selectedHint": "Ticked: included in the party actions when \"Ticked players\" is chosen",
+      "removePlayer": "Remove from this list (nothing lined up is given)",
+      "masteries": "Masteries",
+      "gear": "Gear",
+      "materials": "Materials",
+      "coins": "Coins",
+      "dropHint": "Nothing lined up yet. Drop masteries or gear here.",
+      "dropOnCard": "Drop items onto a character's card.",
+      "clear": "Clear",
+      "give": "Give",
+      "giveAll": "Give to everyone",
+      "noPlayers": "No characters added yet.",
+      "lineUp": "Add",
+      "materialsFor": "Materials for {name}",
+      "coinsFor": "Coins for {name}",
+      "pickMasteriesFor": "Masteries for {name}",
+      "pickGearFor": "Gear for {name}",
+      "queued": "{item} lined up for {name}.",
+      "gm": "GM",
+      "receivedCard": "{name} received",
+      "party": "Party",
+      "wholeParty": "Whole party",
+      "pickedOnly": "Ticked players",
+      "pickedHint": "Only the players ticked above",
+      "levelUp": "Level up",
+      "longRest": "Long rest",
+      "longRestHint": "Full HP, MP and FTG; +1 life point; −1 exhaustion; −1 injury",
+      "addExhaustion": "+ Exhaustion",
+      "addInjury": "+ Injury",
+      "takeLifePoint": "− Life point",
+      "character": "Character",
+      "lifePoints": "Life points",
+      "exhaustion": "Exhaustion",
+      "injuries": "Injuries",
+      "noParty": "No player-owned characters.",
+      "noTargets": "No characters to apply it to: tick players above or choose Whole party.",
+      "line": {
+        "level": "{name}: level {n}",
+        "exhaustion": "{name}: exhaustion {n}",
+        "injuries": "{name}: {n} injuries",
+        "lifePoints": "{name}: {n}/{max} life points"
+      },
+      "card": {
+        "levelUp": "Level up (+{n})",
+        "longRest": "Long rest",
+        "exhaustion": "+{n} exhaustion",
+        "injury": "+{n} injury",
+        "lifePoint": "−{n} life point"
+      }
     }
   }
 }

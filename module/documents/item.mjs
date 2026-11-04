@@ -2,6 +2,7 @@ import { ELARIA } from "../config.mjs";
 import { statCode } from "../importer/convert.mjs";
 import { defaultRollActor, hidesRollDetails, skillButton } from "../dice/check.mjs";
 import { itemDamageProfile } from "../combat/damage.mjs";
+import { itemTypesFor } from "../apps/compendium-types.mjs";
 import { readSkillMod, skillRollPreset } from "../dice/skill.mjs";
 
 /**
@@ -11,6 +12,16 @@ import { readSkillMod, skillRollPreset } from "../dice/skill.mjs";
 export const USABLE_TYPES = ["mastery", "ability", "gear"];
 
 export class ElariaItem extends Item {
+
+  /** Inside a Masteries / Gear compendium, Create Item makes that kind only. */
+  static async createDialog(data = {}, createOptions = {}, options = {}) {
+    const types = itemTypesFor(createOptions);
+    if (types) {
+      data = { ...data, type: types[0] };
+      options = { ...options, types };
+    }
+    return super.createDialog(data, createOptions, options);
+  }
 
   /** Default icons for new items (systems/elaria/assets/icons). */
   static getDefaultArtwork(itemData = {}) {

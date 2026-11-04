@@ -10,8 +10,17 @@ export function packBanner(packKey) {
   return null;
 }
 
-const bannerByCollection = () => Object.fromEntries(Object.entries(PACKS)
-  .map(([key, meta]) => [`world.${meta.name}`, packBanner(key)]).filter(([, b]) => b));
+/** Imported packs by name, plus compendiums made as "Masteries" / "Gear" (flags.elaria.itemType). */
+const bannerByCollection = () => {
+  const out = Object.fromEntries(Object.entries(PACKS)
+    .map(([key, meta]) => [`world.${meta.name}`, packBanner(key)]).filter(([, b]) => b));
+  for (const pack of game.packs ?? []) {
+    const kind = pack.metadata?.flags?.elaria?.itemType;
+    const banner = kind === "mastery" ? CONFIG.JournalEntry?.compendiumBanner : kind === "gear" ? CONFIG.Item?.compendiumBanner : null;
+    if (banner && !out[pack.collection]) out[pack.collection] = banner;
+  }
+  return out;
+};
 
 /** On ready: set the banner on the packs themselves, so every view of them uses it. */
 export function applyPackBanners() {

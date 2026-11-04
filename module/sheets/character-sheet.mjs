@@ -2,6 +2,8 @@ import { ELARIA } from "../config.mjs";
 import { ElariaMasteryPicker } from "../apps/mastery-picker.mjs";
 import { addMasteriesToActor, addGearToActor } from "../helpers/masteries.mjs";
 import { backgroundData, findBackground, standingAdjustment } from "../helpers/backgrounds.mjs";
+import { ancestryData, findHeritage, findRace } from "../helpers/ancestry.mjs";
+import { checkCost, clearRecipeCache, craftRecipe, materialLabel, recipesFor } from "../helpers/crafting.mjs";
 
 const { HandlebarsApplicationMixin } = foundry.applications.api;
 const { ActorSheetV2 } = foundry.applications.sheets;
@@ -33,7 +35,10 @@ export class ElariaCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV
       postItem: ElariaCharacterSheet.#onPostItem,
       createGear: ElariaCharacterSheet.#onCreateGear,
       toggleGearEquip: ElariaCharacterSheet.#onToggleGearEquip,
-      useItem: ElariaCharacterSheet.#onUseItem
+      useItem: ElariaCharacterSheet.#onUseItem,
+      craft: ElariaCharacterSheet.#onCraft,
+      viewRecipe: ElariaCharacterSheet.#onViewRecipe,
+      refreshRecipes: ElariaCharacterSheet.#onRefreshRecipes
     }
   };
 
@@ -43,12 +48,13 @@ export class ElariaCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV
     stats: { template: `${TEMPLATES}/tab-stats.hbs`, scrollable: [""] },
     masteries: { template: `${TEMPLATES}/tab-masteries.hbs`, scrollable: [""] },
     inventory: { template: `${TEMPLATES}/tab-inventory.hbs`, scrollable: [""] },
+    crafting: { template: `${TEMPLATES}/tab-crafting.hbs`, scrollable: [""] },
     bio: { template: `${TEMPLATES}/tab-bio.hbs`, scrollable: [""] }
   };
 
   static TABS = {
     primary: {
-      tabs: [{ id: "stats" }, { id: "masteries" }, { id: "inventory" }, { id: "bio" }],
+      tabs: [{ id: "stats" }, { id: "masteries" }, { id: "inventory" }, { id: "crafting" }, { id: "bio" }],
       initial: "stats",
       labelPrefix: "ELARIA.Tab"
     }
@@ -111,6 +117,7 @@ export class ElariaCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV
       case "stats": this.#prepareStats(context); break;
       case "masteries": this.#prepareMasteries(context); break;
       case "inventory": this.#prepareInventory(context); break;
+      case "crafting": await this.#prepareCrafting(context); break;
       case "bio": await this.#prepareBio(context); break;
     }
     return context;
@@ -130,7 +137,7 @@ export class ElariaCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV
           scalingChoices,
           modTooltip: game.i18n.format("ELARIA.Stats.modBreakdown", {
             base: Math.floor(s.total / 4), bonus: s.bonus, effects: s.effectBonus
-          })
+          }) + (s.heritage ? ` ${game.i18n.format("ELARIA.Stats.heritagePart", { n: s.heritage > 0 ? `+${s.heritage}` : s.heritage })}` : "")
         };
       })
     }));
@@ -250,19 +257,84 @@ export class ElariaCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV
     };
   }
 
+  /** Recipes shown on the Crafting tab (kept for the Craft buttons). */
+  #recipes = [];
+
+  /**
+   * Crafting tab: materials owned (per tier) and everything the character's profession can craft, with what each
+   * costs and whether they have it.
+   */
+  async #prepareCrafting(context) {
+    const actor = this.document;
+    const system = context.system;
+    const profession = system.identity.profession;
+    const level = system.level ?? 0;
+    const L = k => game.i18n.localize(k);
+    this.#recipes = profession ? await recipesFor(profession) : [];
+    const ownedNames = new Set(actor.items.filter(i => i.type === "gear").map(i => i.name));
+    context.crafting = {
+      profession,
+      tiers: ELARIA.materialTiers,
+      materials: Object.keys(ELARIA.materials).map(key => ({
+        key, label: materialLabel(key),
+        tiers: ELARIA.materialTiers.map(t => ({ t, name: `system.materials.${key}.t${t}`, value: system.materials[key][`t${t}`] }))
+      })),
+      recipes: this.#recipes.map((r, index) => {
+        const cost = checkCost(actor, r);
+        const locked = r.reqLevel > level;
+        const canEvolve = !!r.evolvesFrom && ownedNames.has(r.evolvesFrom);
+        return {
+          index, ...r, locked, ok: cost.ok, canEvolve,
+          search: [r.name, r.family, r.text, r.evolvesFrom].join(" ").toLowerCase(),
+          costParts: cost.parts.map(p => ({ text: `${p.amount} ${materialLabel(p.key)}`, ok: p.ok, have: p.have })),
+          noMaterials: !r.parts.length,
+          kindLabel: r.kind && r.kind !== "item" ? L(ELARIA.gearKinds[r.kind] ?? r.kind) : "",
+          short: r.text.length > 160 ? `${r.text.slice(0, 157)}…` : r.text
+        };
+      }),
+      level,
+      editable: this.isEditable
+    };
+    context.crafting.count = context.crafting.recipes.length;
+  }
+
   async #prepareBio(context) {
     const system = context.system;
     const id = system.identity;
+    // Ancestry: the race list and only that race's heritages (Ancestry tab). Old names ("Bushido") match the
+    // sheet's ("Bushido Clan").
+    const anc = ancestryData();
+    const race = findRace(id.race, anc);
+    const heritage = system.heritageData;
+    context.raceValue = race?.name ?? id.race;
+    context.heritageValue = heritage?.name ?? id.heritage;
+    const statLabel = k => game.i18n.localize(ELARIA.stats[k]?.label ?? k);
+    context.heritageInfo = heritage ? {
+      text: heritage.statModsRaw || game.i18n.localize("ELARIA.Bio.noHeritageMods"),
+      choices: system.heritageMods.choices.map(c => ({
+        index: c.index, chosen: c.chosen,
+        label: game.i18n.format(c.amount >= 0 ? "ELARIA.Bio.heritagePlus" : "ELARIA.Bio.heritageMinus", { n: Math.abs(c.amount) }),
+        options: { "": game.i18n.localize("ELARIA.Bio.pickStat"), ...Object.fromEntries(c.options.map(o => [o, statLabel(o)])) }
+      })),
+      applied: [
+        ...Object.entries(system.heritageMods.stats).filter(([, v]) => v).map(([k, v]) => `${v > 0 ? "+" : ""}${v} ${ELARIA.stats[k]?.abbr ?? k}`),
+        ...Object.entries(system.heritageMods.derived).map(([k, v]) => `${v > 0 ? "+" : ""}${v}${/crit/.test(k) ? "%" : ""} ${game.i18n.localize(`ELARIA.Bio.derived.${k}`)}`),
+        ...Object.entries(system.heritageMods.resources).map(([k, v]) => `${v > 0 ? "+" : ""}${v} ${game.i18n.localize(`ELARIA.Resource.${k}`)} max`)
+      ].join(", ")
+    } : null;
+    const keep = (list, value) => (value && !list.includes(value) ? [...list, value] : list);
     context.choices = {
-      races: choicesFrom(ELARIA.races),
-      heritages: choicesFrom(ELARIA.heritages),
+      races: choicesFrom(keep(anc.map(r => r.name), context.raceValue)),
+      heritages: race
+        ? choicesFrom(keep((race.heritages ?? []).map(h => h.name), context.heritageValue))
+        : { "": game.i18n.localize("ELARIA.Bio.pickRaceFirst"), ...(id.heritage ? { [id.heritage]: id.heritage } : {}) },
       disciplines: choicesFrom(ELARIA.disciplines),
       slot2: {
         "": "—",
         ...Object.fromEntries(Object.entries(ELARIA.slot2Options).map(([k, v]) => [k, game.i18n.localize(v)])),
         ...Object.fromEntries(ELARIA.disciplines.map(d => [d, d]))
       },
-      professions: choicesFrom(ELARIA.professions),
+      professions: choicesFrom(keep(ELARIA.professions, id.profession)),
       elements: choicesFrom(ELARIA.elements),
       deities: choicesFrom(ELARIA.deities),
       alignments: choicesFrom(ELARIA.alignments),
@@ -301,8 +373,46 @@ export class ElariaCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV
 
   /* -------------------------------------------- */
 
+  /** Crafting filters (search, only craftable, show higher levels), kept across re-renders. */
+  #craftFilters = { text: "", ready: false, locked: false };
+
+  #applyCraftFilters() {
+    const root = this.element.querySelector(".tab.crafting");
+    if (!root) return;
+    const f = this.#craftFilters;
+    const words = f.text.toLowerCase().split(/\s+/).filter(Boolean);
+    let shown = 0;
+    for (const row of root.querySelectorAll(".recipe[data-recipe]")) {
+      const show = (!words.length || words.every(w => row.dataset.search.includes(w)))
+        && (!f.ready || row.dataset.ok === "true")
+        && (f.locked || row.dataset.locked !== "true");
+      row.hidden = !show;
+      if (show) shown++;
+    }
+    const count = root.querySelector(".recipe-count");
+    if (count) count.textContent = game.i18n.format("ELARIA.Craft.count", { n: shown });
+  }
+
   _onRender(context, options) {
     super._onRender(context, options);
+    const craft = this.element.querySelector(".tab.crafting");
+    if (craft) {
+      const search = craft.querySelector("[data-craft-filter=text]");
+      if (search) {
+        search.value = this.#craftFilters.text;
+        search.addEventListener("input", () => { this.#craftFilters.text = search.value; this.#applyCraftFilters(); });
+        search.addEventListener("change", ev => ev.stopPropagation());
+      }
+      for (const box of craft.querySelectorAll("input[type=checkbox][data-craft-filter]")) {
+        box.checked = this.#craftFilters[box.dataset.craftFilter];
+        box.addEventListener("change", ev => {
+          ev.stopPropagation();
+          this.#craftFilters[box.dataset.craftFilter] = box.checked;
+          this.#applyCraftFilters();
+        });
+      }
+      this.#applyCraftFilters();
+    }
     // Inputs that mirror a field shown elsewhere on the sheet. They have no name (so the form never submits
     // the same field twice) and save directly instead.
     for (const el of this.element.querySelectorAll("[data-actor-field]")) {
@@ -329,6 +439,28 @@ export class ElariaCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV
    */
   _processFormData(event, form, formData) {
     const data = super._processFormData(event, form, formData);
+    // Ancestry: a new race clears a heritage it doesn't have; a new heritage clears its stat picks; the stat
+    // picks come in as {0: "str"} and are stored as an array.
+    const idNow = this.document.system.identity;
+    const idNew = foundry.utils.getProperty(data, "system.identity");
+    if (idNew) {
+      const raceName = idNew.race ?? idNow.race;
+      const heritageName = idNew.heritage ?? idNow.heritage;
+      // "Changed" means a different race / heritage, not just an old name ("Bushido") saved as the new one.
+      const raceChanged = "race" in idNew && findRace(idNew.race)?.name !== findRace(idNow.race)?.name;
+      const race = findRace(raceName);
+      if (raceChanged && heritageName && !findHeritage(race, heritageName)) idNew.heritage = "";
+      const heritageChanged = raceChanged || ("heritage" in idNew
+        && findHeritage(race, idNew.heritage)?.name !== findHeritage(findRace(idNow.race), idNow.heritage)?.name);
+      let picks = idNew.heritageChoices;
+      if (picks && !Array.isArray(picks)) {
+        const arr = [...(idNow.heritageChoices ?? [])];
+        for (const [i, v] of Object.entries(picks)) arr[Number(i)] = v ?? "";
+        picks = Array.from(arr, v => v ?? "");
+      }
+      if (heritageChanged) picks = [];
+      if (picks !== undefined) idNew.heritageChoices = picks;
+    }
     // Choosing a scale or standing also stores the background's name (shown elsewhere and kept if data changes).
     const scalePath = "system.identity.backgroundScale", rollPath = "system.identity.backgroundRoll";
     if (foundry.utils.hasProperty(data, scalePath) || foundry.utils.hasProperty(data, rollPath)) {
@@ -502,6 +634,29 @@ export class ElariaCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV
   static #onToggleEquip(event, target) {
     const item = this.document.items.get(target.closest("[data-item-id]").dataset.itemId);
     return item?.update({ "system.equipped": !item.system.equipped });
+  }
+
+  /** Crafting tab: craft a recipe (or evolve the owned item it evolves from). */
+  static async #onCraft(event, target) {
+    const recipe = this.#recipes[Number(target.closest("[data-recipe]")?.dataset.recipe)];
+    if (!recipe) return;
+    target.classList.add("busy");
+    try {
+      await craftRecipe(this.document, recipe, { evolve: target.dataset.evolve === "true" });
+    } finally {
+      target.classList.remove("busy");
+    }
+  }
+
+  static async #onViewRecipe(event, target) {
+    const recipe = this.#recipes[Number(target.closest("[data-recipe]")?.dataset.recipe)];
+    (await fromUuid(recipe?.uuid ?? ""))?.sheet.render({ force: true });
+  }
+
+  /** Re-read the compendiums (after an import). */
+  static #onRefreshRecipes() {
+    clearRecipeCache();
+    return this.render({ parts: ["crafting"] });
   }
 
   /** Click a mastery's name: damage masteries open the roll window, others go to chat. */

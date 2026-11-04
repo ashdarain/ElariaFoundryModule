@@ -49,6 +49,11 @@ export class ElariaDataImporter extends HandlebarsApplicationMixin(ApplicationV2
       scope: "world", config: false, type: Object, default: null,
       onChange: () => { for (const app of foundry.applications.instances.values()) if (app.document?.type === "character") app.render(); }
     });
+    // Ancestry tab: races → heritages → heritage stat modifiers (Bio tab choices). null = the built-in copy.
+    game.settings.register("elaria", "ancestries", {
+      scope: "world", config: false, type: Array, default: null,
+      onChange: () => { for (const a of game.actors) if (a.type === "character") a.reset(); for (const app of foundry.applications.instances.values()) if (app.document?.type === "character") app.render(); }
+    });
     game.settings.registerMenu("elaria", "dataImporter", {
       name: "ELARIA.Importer.title",
       label: "ELARIA.Importer.open",
@@ -357,6 +362,13 @@ export class ElariaDataImporter extends HandlebarsApplicationMixin(ApplicationV2
         await game.settings.set("elaria", "backgrounds", backgrounds);
         summary.backgrounds = backgrounds.scales.reduce((n, sc) => n + sc.tiers.length, 0);
       }
+
+      // Ancestries (races, heritages, heritage stat mods) for the Bio tab.
+      const ancestries = [...(this.#conversion?.docs.entries() ?? [])]
+        .filter(([path]) => path.startsWith("ancestries/")).map(([, d]) => d)
+        .map(a => ({ name: a.name, heritages: (a.heritages ?? []).map(h => ({
+          name: h.name, statModsRaw: h.statModsRaw ?? "", statMods: h.statMods ?? [] })) }));
+      if (ancestries.length) await game.settings.set("elaria", "ancestries", ancestries);
 
       this.#setProgress(97, game.i18n.localize("ELARIA.Importer.step.save"));
       summary.savedTo = await this.#saveSnapshot();

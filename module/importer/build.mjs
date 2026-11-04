@@ -24,12 +24,39 @@ export const PACKS = {
   weapons:    { name: "elaria-weapons",              label: "Elaria: Weapons",              img: "systems/elaria/assets/icons/gear-weapon.svg" },
   armour:     { name: "elaria-armour",               label: "Elaria: Armour",               img: "systems/elaria/assets/icons/gear-armour.svg" },
   trinkets:   { name: "elaria-trinkets",             label: "Elaria: Trinkets",             img: "systems/elaria/assets/icons/gear-trinket.svg" },
-  uniques:    { name: "elaria-unique-gear",          label: "Elaria: Unique Gear",          img: "systems/elaria/assets/icons/gear-unique.svg" }
+  uniques:    { name: "elaria-unique-gear",          label: "Elaria: Unique Gear",          img: "systems/elaria/assets/icons/gear-unique.svg" },
+  // Professions tab: what each profession can craft (Enchanter / Instructor craft from the gear packs)
+  crafting:   { name: "elaria-craftables",           label: "Elaria: Craftables",           img: "systems/elaria/assets/icons/gear-item.svg" }
 };
 
 /** Which Foundry banner each pack uses in the Compendium sidebar: masteries one, gear another (see packBanner). */
 export const MASTERY_PACKS = ["discipline", "elemental", "deity", "ancestry", "profession", "set", "bond"];
-export const GEAR_PACKS = ["weapons", "armour", "trinkets", "uniques"];
+export const GEAR_PACKS = ["weapons", "armour", "trinkets", "uniques", "crafting"];
+
+/**
+ * A crafting recipe from the Professions tab as a gear item (kind "item"): the materials and their tier are
+ * what it costs to craft; `profession` says who can craft it. "Ammo x5" makes 5.
+ */
+function craftableSystem(it, prof) {
+  const qty = Number(/\bx\s*(\d+)\s*$/i.exec(it.name ?? "")?.[1]) || 1;
+  return {
+    kind: "item",
+    ref: `craft:${prof.id}/${it.id}`,
+    family: prof.name,
+    profession: prof.name,
+    tier: Number.isInteger(it.tierMinimum) ? it.tierMinimum : null,
+    reqLevel: Number.isInteger(it.reqLevel) ? it.reqLevel : null,
+    evolvesFrom: "", proficiency: "",
+    baseAttack: { raw: "", count: null, sides: null, stat: "", hits: "" },
+    damageType: "", armourRating: null, weight: "", affinity: "", equipLoad: null, breakpoint: null,
+    classTrinket: false, grants: "",
+    materials: it.materials ?? "",
+    tags: ["Craftable", prof.name],
+    effects: "",
+    description: textToHTML(it.description),
+    location: "bag", quantity: qty, broken: false
+  };
+}
 
 /** Icon for a gear item by kind. */
 const ICONS = "systems/elaria/assets/icons/";
@@ -179,6 +206,7 @@ function gearSystem(it, fam, nameOf) {
     breakpoint: Number.isInteger(it.breakpoint) ? it.breakpoint : null,
     classTrinket: false,
     grants: "",
+    profession: "",
     materials: it.materialsRaw ?? "",
     tags: [...(it.tags ?? [])],
     effects: textToHTML(it.effects),
@@ -202,6 +230,7 @@ function classTrinketSystem(it, group) {
     damageType: "", armourRating: null, weight: "", affinity: "", equipLoad: null, breakpoint: null,
     classTrinket: true,
     grants: it.grants ?? "",
+    profession: "",
     materials: it.materialsRaw ?? "",
     tags: ["Trinket", "Class Trinket"],
     effects: textToHTML(it.effect),
@@ -324,6 +353,13 @@ export async function buildCompendiumData(index, load, progress = () => {}) {
           const ref = `profession:${data.id}/${m.id}`;
           pushItem("profession", folder("profession", [data.name]), m,
             masterySystem(m, { ref, category: "any", sources: [source] }), ref);
+        }
+        // Crafting recipes (a folder per profession). Enchanter / Instructor list theirs on the Gear tab.
+        const seen = new Set();
+        for (const it of data.crafting?.items ?? []) {
+          if (!it.name || seen.has(it.id)) continue;
+          seen.add(it.id);
+          pushGear("crafting", folder("crafting", [data.name]), it.name, craftableSystem(it, data));
         }
         break;
       }

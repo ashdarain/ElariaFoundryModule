@@ -1,0 +1,85 @@
+<section class="tab gm-tools-players {{tab.cssClass}}" data-group="primary" data-tab="players">
+  <div class="gm-players-zone">
+    <div class="gm-section-head">
+      <h3><i class="fa-solid fa-gift"></i> {{localize "ELARIA.GMTools.players"}}</h3>
+      <select name="newPlayer">
+        <option value="">{{localize "ELARIA.GMTools.pickCharacter"}}</option>
+        {{#each candidates}}<option value="{{uuid}}">{{label}}</option>{{/each}}
+      </select>
+      <button type="button" data-action="addPlayer"><i class="fa-solid fa-user-plus"></i> {{localize "ELARIA.GMTools.add"}}</button>
+      <button type="button" data-action="addParty" data-tooltip="ELARIA.GMTools.addPartyHint"><i class="fa-solid fa-users"></i> {{localize "ELARIA.GMTools.addParty"}}</button>
+    </div>
+    <p class="hint">{{localize "ELARIA.GMTools.playersHint"}}</p>
+
+    <div class="gm-players">
+      {{#each players}}
+      <div class="gm-player" data-actor="{{uuid}}">
+        <header>
+          <label class="pick" data-tooltip="ELARIA.GMTools.selectedHint"><input type="checkbox" name="selected" {{checked selected}}></label>
+          <img src="{{img}}" alt="" data-action="openSheet">
+          <div class="who"><a class="name" data-action="openSheet">{{name}}</a>
+            <span class="sub">{{stats}}{{#if owner}} · {{owner}}{{/if}}</span></div>
+          <a class="remove" data-action="removePlayer" data-tooltip="ELARIA.GMTools.removePlayer"><i class="fa-solid fa-xmark"></i></a>
+        </header>
+        <div class="grant-buttons">
+          <button type="button" data-action="pickItems" data-kind="mastery"><i class="fa-solid fa-book-open"></i> {{localize "ELARIA.GMTools.masteries"}}</button>
+          <button type="button" data-action="pickItems" data-kind="gear"><i class="fa-solid fa-shield-halved"></i> {{localize "ELARIA.GMTools.gear"}}</button>
+          <button type="button" data-action="addMaterials"><i class="fa-solid fa-cubes"></i> {{localize "ELARIA.GMTools.materials"}}</button>
+          <button type="button" data-action="addCoins"><i class="fa-solid fa-coins"></i> {{localize "ELARIA.GMTools.coins"}}</button>
+        </div>
+        <div class="pending {{#if empty}}empty{{/if}}">
+          {{#if empty}}<span class="drop-hint">{{localize "ELARIA.GMTools.dropHint"}}</span>{{/if}}
+          {{#each items}}<span class="chip {{type}}"><img src="{{img}}" alt="">{{name}}
+            <a data-action="removePending" data-kind="item" data-index="{{@index}}"><i class="fa-solid fa-xmark"></i></a></span>{{/each}}
+          {{#each mats}}<span class="chip material">{{label}}
+            <a data-action="removePending" data-kind="material" data-key="{{key}}" data-tier="{{tier}}"><i class="fa-solid fa-xmark"></i></a></span>{{/each}}
+          {{#each coins}}<span class="chip coin {{key}}">{{label}}
+            <a data-action="removePending" data-kind="coin" data-key="{{key}}"><i class="fa-solid fa-xmark"></i></a></span>{{/each}}
+        </div>
+        {{#unless empty}}
+        <footer>
+          <a data-action="clearPending"><i class="fa-solid fa-eraser"></i> {{localize "ELARIA.GMTools.clear"}}</a>
+          <button type="button" class="give" data-action="give"><i class="fa-solid fa-check"></i> {{localize "ELARIA.GMTools.give"}}</button>
+        </footer>
+        {{/unless}}
+      </div>
+      {{else}}
+      <p class="empty-players">{{localize "ELARIA.GMTools.noPlayers"}}</p>
+      {{/each}}
+    </div>
+    {{#if anyPending}}
+    <div class="give-all-row"><button type="button" class="give" data-action="giveAll"><i class="fa-solid fa-gifts"></i> {{localize "ELARIA.GMTools.giveAll"}}</button></div>
+    {{/if}}
+  </div>
+
+  <div class="gm-party">
+    <div class="gm-section-head">
+      <h3><i class="fa-solid fa-campground"></i> {{localize "ELARIA.GMTools.party"}}</h3>
+      <label><input type="radio" name="partyTarget" value="all" {{#if (eq partyTarget "all")}}checked{{/if}}> {{localize "ELARIA.GMTools.wholeParty"}}</label>
+      <label data-tooltip="ELARIA.GMTools.pickedHint"><input type="radio" name="partyTarget" value="picked" {{#if (eq partyTarget "picked")}}checked{{/if}}> {{localize "ELARIA.GMTools.pickedOnly"}}</label>
+      <label class="amount">× <input type="number" name="amount" value="{{amount}}" min="1" step="1"></label>
+    </div>
+    <div class="party-actions">
+      <button type="button" data-action="party" data-party="levelUp"><i class="fa-solid fa-arrow-up"></i> {{localize "ELARIA.GMTools.levelUp"}}</button>
+      <button type="button" data-action="party" data-party="longRest" data-tooltip="ELARIA.GMTools.longRestHint"><i class="fa-solid fa-bed"></i> {{localize "ELARIA.GMTools.longRest"}}</button>
+      <button type="button" data-action="party" data-party="exhaustion"><i class="fa-solid fa-face-tired"></i> {{localize "ELARIA.GMTools.addExhaustion"}}</button>
+      <button type="button" data-action="party" data-party="injury"><i class="fa-solid fa-user-injured"></i> {{localize "ELARIA.GMTools.addInjury"}}</button>
+      <button type="button" data-action="party" data-party="lifePoint"><i class="fa-solid fa-heart-crack"></i> {{localize "ELARIA.GMTools.takeLifePoint"}}</button>
+    </div>
+    <div class="party-table-wrap">
+      <table class="party-table">
+        <thead><tr><th></th><th class="label">{{localize "ELARIA.GMTools.character"}}</th><th>{{localize "ELARIA.Level"}}</th><th>HP</th>
+          <th>{{localize "ELARIA.GMTools.lifePoints"}}</th><th>{{localize "ELARIA.GMTools.exhaustion"}}</th><th>{{localize "ELARIA.GMTools.injuries"}}</th></tr></thead>
+        <tbody>
+          {{#each party}}
+          <tr class="{{#if (eq ../partyTarget "picked")}}{{#unless picked}}not-picked{{/unless}}{{/if}}">
+            <td><img src="{{img}}" alt=""></td><td class="label">{{name}}</td><td>{{level}}</td><td>{{hp}}</td><td>{{lp}}</td><td>{{exhaustion}}</td><td>{{injuries}}</td>
+          </tr>
+          {{else}}
+          <tr><td colspan="7" class="empty">{{localize "ELARIA.GMTools.noParty"}}</td></tr>
+          {{/each}}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>

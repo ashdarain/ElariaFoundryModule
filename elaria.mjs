@@ -18,6 +18,8 @@ import { ElariaAbilitySheet } from "./module/sheets/ability-sheet.mjs";
 import { ElariaGearSheet } from "./module/sheets/gear-sheet.mjs";
 import { ElariaDataImporter } from "./module/apps/data-importer.mjs";
 import { addCompendiumBrowseButtons } from "./module/apps/compendium-buttons.mjs";
+import { ElariaGMTools, onActorChangeForGMTools } from "./module/apps/gm-tools.mjs";
+import { addCompendiumTypeChoices, onPreCreateItem, patchCreateCompendium } from "./module/apps/compendium-types.mjs";
 import { applyPackBanners, patchBannersInSidebar } from "./module/apps/compendium-banners.mjs";
 import { ElariaRollDialog } from "./module/apps/roll-dialog.mjs";
 import { roll3d6, rollDice, rollD20 } from "./module/dice/check.mjs";
@@ -34,7 +36,7 @@ Hooks.once("init", () => {
   console.log("Elaria | Initializing system");
 
   CONFIG.ELARIA = ELARIA;
-  game.elaria = { config: ELARIA, rules, DataImporter: ElariaDataImporter, RollDialog: ElariaRollDialog, ReactDialog: ElariaReactDialog, ReactionPicker: ElariaReactionPicker, rollReaction, roll3d6, rollDice, rollD20, useMastery };
+  game.elaria = { config: ELARIA, rules, DataImporter: ElariaDataImporter, RollDialog: ElariaRollDialog, ReactDialog: ElariaReactDialog, ReactionPicker: ElariaReactionPicker, GMTools: ElariaGMTools, rollReaction, roll3d6, rollDice, rollD20, useMastery };
 
   // GM importer: Google Sheet → world compendiums
   ElariaDataImporter.registerSettings();
@@ -114,6 +116,16 @@ Hooks.once("ready", () => {
   applyPackBanners();
   ui.compendium?.render?.();
 });
+
+// Create Compendium: "Masteries" and "Gear" next to "Item"; marked compendiums only take their kind.
+Hooks.once("init", () => patchCreateCompendium());
+Hooks.on("renderDialogV2", addCompendiumTypeChoices);
+Hooks.on("renderApplicationV2", addCompendiumTypeChoices);
+Hooks.on("preCreateItem", onPreCreateItem);
+
+// GM Tools (button left of React)
+Hooks.once("init", () => ElariaGMTools.registerSettings());
+Hooks.on("updateActor", onActorChangeForGMTools);
 
 Hooks.on("renderCompendiumDirectory", (app, html) => {
   patchBannersInSidebar(app, html);

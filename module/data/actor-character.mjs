@@ -1,5 +1,6 @@
 import { ELARIA } from "../config.mjs";
 import * as R from "../rules.mjs";
+import { findHeritage, findRace, heritageMods } from "../helpers/ancestry.mjs";
 
 const f = foundry.data.fields;
 
@@ -56,6 +57,8 @@ export class CharacterData extends foundry.abstract.TypeDataModel {
       identity: new f.SchemaField({
         race: new f.StringField({ required: true, blank: true, initial: "" }),
         heritage: new f.StringField({ required: true, blank: true, initial: "" }),
+        // For heritage mods like "+1 Strength or Precision": the stat picked for each "or" (by mod index).
+        heritageChoices: new f.ArrayField(new f.StringField({ required: true, blank: true, initial: "" })),
         discipline1: new f.StringField({ required: true, blank: true, initial: "" }),
         discipline2: new f.StringField({ required: true, blank: true, initial: "" }),   // a discipline, "extraElement" or "plusOutput"
         profession: new f.StringField({ required: true, blank: true, initial: "" }),
@@ -83,6 +86,9 @@ export class CharacterData extends foundry.abstract.TypeDataModel {
       bagRank: int(1, { min: 1 }),
       // Coins (Shops and Inventory): 1 pp = 10 gp = 100 sp = 1 000 cp = 10 000 ironne
       coins: new f.SchemaField(Object.fromEntries(Object.keys(ELARIA.coins).map(k => [k, int(0, { min: 0 })]))),
+      // Crafting materials owned: count per material per tier (t1 … t5).
+      materials: new f.SchemaField(Object.fromEntries(Object.keys(ELARIA.materials).map(k => [k, new f.SchemaField(
+        Object.fromEntries(ELARIA.materialTiers.map(t => [`t${t}`, int(0, { min: 0 })])))]))),
       // Inventory: show the total of all coins in silver beside them (toggle in edit mode).
       showCoinTotal: new f.BooleanField({ initial: true })
     };
@@ -114,13 +120,20 @@ export class CharacterData extends foundry.abstract.TypeDataModel {
   prepareDerivedData() {
     const lvl = this.level;
 
+    // Heritage stat modifiers (Ancestry tab), e.g. Bushido: +1 Str or Pre (chosen), −1 Smarts.
+    const race = findRace(this.identity.race);
+    this.heritageData = findHeritage(race, this.identity.heritage);
+    this.heritageMods = heritageMods(this.heritageData, this.identity.heritageChoices ?? [], Object.keys(this.stats));
+    const hm = this.heritageMods;
+
     // Stats (CS G46 / I46)
     let assigned = 0;
     const cap = R.perStatPointCap(lvl);
     for (const [key, stat] of Object.entries(this.stats)) {
       stat.base = lvl;
       stat.total = R.statTotal(lvl, stat.points, stat.scaling, this.scalingEnabled);
-      stat.mod = R.statMod(stat.total, stat.bonus + stat.effectBonus);
+      stat.heritage = hm.stats[key] ?? 0;
+      stat.mod = R.statMod(stat.total, stat.bonus + stat.effectBonus + stat.heritage);
       stat.overCap = stat.points > cap;
       stat.label = ELARIA.stats[key].label;
       assigned += stat.points;
@@ -134,7 +147,10 @@ export class CharacterData extends foundry.abstract.TypeDataModel {
     // Sub-stats: base from the formulas, plus a manual bonus column (and effects where supported).
     const b = this.bonuses, eff = this.effectBonuses;
     const sub = {};
-    const put = (key, base, extra = 0) => (sub[key] = { base, bonus: b[key] ?? 0, total: base + (b[key] ?? 0) + extra });
+    const put = (key, base, extra = 0) => {
+      const heritage = hm.derived[key] ?? 0;
+      return (sub[key] = { base, bonus: b[key] ?? 0, heritage, total: base + (b[key] ?? 0) + extra + heritage });
+    };
     put("nar", m.stf);
     put("nmar", m.wis);
     // AAR: worn armour that isn't broken (A5), plus the manual bonus column.
@@ -160,7 +176,8 @@ export class CharacterData extends foundry.abstract.TypeDataModel {
     for (const key of ["hp", "mp", "ftg"]) {
       const r = this.resources[key];
       r.formulaMax = formulaMax[key];
-      r.max = Math.max(0, formulaMax[key] + (r.maxBonus ?? 0));
+      r.heritage = hm.resources[key] ?? 0;
+      r.max = Math.max(0, formulaMax[key] + (r.maxBonus ?? 0) + r.heritage);
     }
     this.resources.lifePoints.max = Math.max(0, sub.lifePointsMax.total);
     // Total coin value in silver, rounded to the smallest coin (ironne = 0.01 sp).

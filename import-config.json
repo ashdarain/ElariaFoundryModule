@@ -13,7 +13,8 @@
     "armour": true,
     "trinkets": true,
     "uniques": true,
-    "backgrounds": true
+    "backgrounds": true,
+    "crafting": true
   },
   "tabs": {
     "general": "General Masteries",

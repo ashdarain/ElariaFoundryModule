@@ -38,7 +38,8 @@ export class GearData extends foundry.abstract.TypeDataModel {
       breakpoint: nullInt({ min: 0 }),       // damage that breaks it
       classTrinket: new f.BooleanField({ initial: false }),
       grants: text(),                        // class trinkets: the ability it grants
-      materials: text(),                     // e.g. "2 Metal, 1 Wood"
+      materials: text(),                     // e.g. "2 Metal, 1 Wood" (to craft / evolve to it, at its tier)
+      profession: text(),                    // crafting recipes: the profession that crafts it (Professions tab)
       tags: new f.ArrayField(new f.StringField({ required: true, blank: false })),
       effects: html(),
       description: html(),

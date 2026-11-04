@@ -42,10 +42,16 @@ const BLANK_FILTERS = {
  */
 export class ElariaMasteryPicker extends HandlebarsApplicationMixin(ApplicationV2) {
 
-  constructor({ actor, itemType = "mastery", ...options } = {}) {
-    super({ id: `elaria-${itemType}-picker-${actor?.id ?? "browse"}`, ...options });
+  /**
+   * @param {object} [options.onPick]   Instead of adding to a character, + calls this with the item (GM Tools).
+   * @param {string} [options.forName]  Shown in the title with onPick.
+   */
+  constructor({ actor, itemType = "mastery", onPick = null, forName = "", ...options } = {}) {
+    super({ id: `elaria-${itemType}-picker-${onPick ? "pick" : actor?.id ?? "browse"}`, ...options });
     this.actor = actor;
     this.itemType = itemType;
+    this.onPick = onPick;
+    this.forName = forName;
   }
 
   get isGear() {
@@ -72,13 +78,17 @@ export class ElariaMasteryPicker extends HandlebarsApplicationMixin(ApplicationV
    * @param {Actor|null} actor   The character to add to; null just browses (rows can still be dragged anywhere).
    * @param {"mastery"|"gear"} itemType
    */
-  static open(actor, itemType = "mastery") {
-    const existing = foundry.applications.instances.get(`elaria-${itemType}-picker-${actor?.id ?? "browse"}`);
-    if (existing) return existing.render({ force: true });
-    return new this({ actor, itemType }).render({ force: true });
+  static open(actor, itemType = "mastery", { onPick = null, forName = "" } = {}) {
+    const existing = foundry.applications.instances.get(`elaria-${itemType}-picker-${onPick ? "pick" : actor?.id ?? "browse"}`);
+    if (existing) {
+      if (onPick) { existing.onPick = onPick; existing.forName = forName; }
+      return existing.render({ force: true });
+    }
+    return new this({ actor, itemType, onPick, forName }).render({ force: true });
   }
 
   get title() {
+    if (this.onPick) return game.i18n.format(this.isGear ? "ELARIA.GMTools.pickGearFor" : "ELARIA.GMTools.pickMasteriesFor", { name: this.forName });
     if (!this.actor) return game.i18n.localize(this.isGear ? "ELARIA.Picker.browseGear" : "ELARIA.Picker.browseMasteries");
     return game.i18n.format(this.isGear ? "ELARIA.Picker.gearTitle" : "ELARIA.Picker.title", { name: this.actor.name });
   }
@@ -426,7 +436,7 @@ export class ElariaMasteryPicker extends HandlebarsApplicationMixin(ApplicationV
             <div class="pick-source">${esc(e.sourceLabel)}${this.#filters.pack ? "" : ` <span class="pack">· ${esc(e.packLabel)}</span>`}</div>
             <div class="pick-meta">${meta}</div>
           </div>
-          ${!this.actor ? ""
+          ${!this.actor && !this.onPick ? ""
             : owned
               ? `<span class="pick-owned" data-tooltip="${L("ELARIA.Picker.owned")}"><i class="fa-solid fa-check"></i></span>`
               : `<a class="pick-add" data-action="add" data-tooltip="${L("ELARIA.Picker.add")}"><i class="fa-solid fa-plus"></i></a>`}
@@ -447,6 +457,10 @@ export class ElariaMasteryPicker extends HandlebarsApplicationMixin(ApplicationV
     const row = target.closest("[data-uuid]");
     const item = await fromUuid(row.dataset.uuid);
     if (!item) return;
+    if (this.onPick) {
+      await this.onPick(item);
+      return ui.notifications.info(game.i18n.format("ELARIA.GMTools.queued", { item: item.name, name: this.forName }));
+    }
     target.classList.add("busy");
     const [created] = this.isGear ? await addGearToActor(this.actor, [item]) : await addMasteriesToActor(this.actor, [item]);
     if (created) ui.notifications.info(game.i18n.format("ELARIA.Picker.added", { item: created.name, name: this.actor.name }));

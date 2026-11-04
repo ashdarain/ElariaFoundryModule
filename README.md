@@ -59,7 +59,7 @@ Everything happens inside Foundry; there's nothing to install. No sheet link shi
 
 **No link, or the sheet isn't shared?** Download it from Google Sheets with **File → Download → Microsoft Excel (.xlsx)**, then, under the link box, either **Choose .xlsx on this computer** (read straight from your computer, nothing is uploaded) or **Browse Foundry files** (an .xlsx you've put in Foundry's Data folder, e.g. with the file browser's Upload button). While a file is chosen, Check reads it instead of the link; the × next to it goes back to the link.
 
-It creates up to eleven world compendiums: seven for masteries ("Elaria: Discipline Masteries", "… Elemental", "… Deity", "… Ancestry", "… Profession", "… Set", "… Bond"), each with a folder per discipline / element / god / race, and four for gear (see *Gear and inventory*). Run it again whenever the sheet changes: entries are updated in place (stable ids, nothing duplicated), and masteries already on characters are untouched because they're copies. Hand-made entries in those compendiums are never removed. The Backgrounds tab isn't a compendium: it's saved in the world for the Background section of character sheets (see *Character sheet: max resources and backgrounds*). The converted data is also saved as `worlds/<world>/elaria/elaria-data.json` so you can see exactly what was imported.
+It creates up to twelve world compendiums (eleven listed here, plus **Elaria: Craftables** from the Professions tab, see *Crafting*): seven for masteries ("Elaria: Discipline Masteries", "… Elemental", "… Deity", "… Ancestry", "… Profession", "… Set", "… Bond"), each with a folder per discipline / element / god / race, and four for gear (see *Gear and inventory*). Run it again whenever the sheet changes: entries are updated in place (stable ids, nothing duplicated), and masteries already on characters are untouched because they're copies. Hand-made entries in those compendiums are never removed. The Backgrounds tab isn't a compendium: it's saved in the world for the Background section of character sheets (see *Character sheet: max resources and backgrounds*). The converted data is also saved as `worlds/<world>/elaria/elaria-data.json` so you can see exactly what was imported.
 
 ### Import config
 
@@ -68,7 +68,7 @@ It creates up to eleven world compendiums: seven for masteries ("Elaria: Discipl
 | Setting | What it does |
 |---|---|
 | `defaultSheetLink` | A link to prefill the importer with in new worlds. Leave `""` to paste it in Foundry instead (the link is then saved in the world only). |
-| `compendiums` | Set any of `discipline`, `elemental`, `deity`, `ancestry`, `profession`, `set`, `bond`, `weapons`, `armour`, `trinkets`, `uniques`, `backgrounds` to `false` to skip it. Skipped compendiums are left exactly as they are. |
+| `compendiums` | Set any of `discipline`, `elemental`, `deity`, `ancestry`, `profession`, `set`, `bond`, `weapons`, `armour`, `trinkets`, `uniques`, `crafting`, `backgrounds` to `false` to skip it. Skipped compendiums are left exactly as they are. |
 | `tabs` | The tab names the importer reads: `general`, `disciplines` (list), `disciplineIndex`, `elemental`, `set`, `bond`, `deity`, `ancestry`, `professions` (list), `tags`, `gear`, `backgrounds`. Rename here if a tab is renamed in the sheet; set one to `""` to skip that tab. |
 | `ignoredTabs` | Tabs that look like mastery tabs but should be skipped (old copies, helper tables). |
 | `autoDetectDisciplines` | `true`: any new "… Masteries" tab not listed is converted as a discipline. |
@@ -126,6 +126,10 @@ Under the chat box are **Roll 3d6** and **Roll d20**.
 
 **Background** (Bio tab, beside Burst). Choose the type (Nobility, Military, Civilian, Criminal), then press **d20** to roll social standing (posted to chat and filled in) or type the number yourself; you may move the roll by Demeanor or Speechcraft mod ×2 (minimum 1). The matching background's **Description**, **Perk** and **Starting inventory** are shown below it, and its name is stored on the character. The data comes from the sheet's Backgrounds tab, saved when the GM imports; until then there's a plain text box. **Biography** is the large box under both.
 
+## Ancestry and heritage
+
+On the Bio tab, **Heritage** only lists the chosen race's heritages (Ancestry tab), and changing the race clears a heritage it doesn't have. Under it are the heritage's **stat modifiers** as written ("+1 Strength or Precision, -1 Smarts"); for an "or" pick which stat gets it. They're applied to the character: stat modifiers (the Mod column's tooltip shows the heritage part), NAR / NMAR / AR / MAR, crit chance / damage and max HP / MP / FTG. Older heritage names ("Bushido") are matched to the sheet's ("Bushido Clan"). The list is built in and refreshed by every import.
+
 ## Monsters
 
 A simple **Monster** actor following the *Monster stat block* tab. When a GM creates an actor, **Monster** is preselected; players can only create characters (a GM can make a monster and give a player ownership in the usual Foundry way).
@@ -141,6 +145,30 @@ A simple **Monster** actor following the *Monster stat block* tab. When a GM cre
 ## Token bars
 
 Tokens show **HP in red at the bottom**, and **MP in blue with FTG in green stacked under it at the top**. New characters and monsters default to HP as bar 1 and MP as bar 2; FTG is added automatically as a third bar (unless one of the two bars already shows it). A resource with a max of 0 (a monster with no mana) isn't drawn and the next bar moves up. When bars are shown (always, on hover, owner only …) is still Foundry's token setting.
+
+## GM Tools
+
+GMs get a **GM Tools** button left of *React* at the bottom left of the hotbar. The window has a **Players** tab:
+
+- **Players** (top): add characters (the list puts those with an online owner first; **Add the party** adds every character a player owns; or drag a character from the Actors sidebar). Each character gets a card where you line up what they'll get:
+  - **Masteries** / **Gear** open the search window, whose + buttons line the item up for that character; masteries and gear can also be dragged onto the card (from compendiums, the Items sidebar or the search window; a whole folder works too).
+  - **Materials** opens a table (material × tier) and **Coins** a row of coin boxes; the amounts are added to what's lined up.
+  - Nothing changes until **Give** (one card) or **Give to everyone**: then the items go into the character's sheet (masteries unequipped, gear in the bag; known masteries are skipped), materials and coins are added, and a chat card lists what they received. × on a chip removes it; **Clear** empties the card. What's lined up is kept until given, even after a reload.
+- **Party** (bottom): **Level up**, **Long rest** (full HP / MP / FTG, +1 life point, −1 exhaustion, −1 injury), **+ Exhaustion**, **+ Injury**, **− Life point**; the × box sets how many (levels, exhaustion, injuries, life points). They apply to the **Whole party** (every player-owned character) or only the **Ticked players** (the tick on each card above). A table shows each party member's level, HP, life points, exhaustion and injuries, and each action posts a chat card.
+
+## Crafting
+
+The character sheet's **Crafting** tab:
+
+- **Materials**: how many of each material the character has, per tier (T1–T5): Metal, Wood, Leather, Fabric, Bone, Artifact, Soul, Alchemical Ingredient, Food Ingredient, Ether Core. Type the counts in; crafting takes them off.
+- **Recipes** for the profession chosen on the Bio tab, sorted by required level, with the materials each costs (green: you have enough at that tier; red: not). A recipe's tier is the tier of the materials it uses.
+  - Most professions craft from the Professions tab's lists, imported as the **Elaria: Craftables** compendium (a folder per profession).
+  - **Enchanters** craft the evolution gear from the Gear tab (weapons, armour, trinkets; the materials listed are what it takes to evolve to that item, at its tier). If the character has the item it evolves from, **Evolve** swaps it for the new one (keeping its belt / worn spot).
+  - **Instructors** craft the class trinkets ("2 Any": pick which material pays).
+- **Craft** asks to confirm, takes the materials, adds the item (crafted items of the same name stack; "Ammo x5" makes 5) and posts it to chat. Players need the materials and the level; the GM can craft anyway.
+- Search, **Only what I can craft**, and **Show above level n**. The ↻ button re-reads the compendiums after an import.
+
+Not automated: the Exorcist / Necromancer tier conversions and the profession perks (type the new counts in).
 
 ## Applying damage
 
@@ -181,6 +209,8 @@ Rolls are made from the player's side: when an enemy attacks a player, the playe
 - **Reaction masteries (rxn):** using one (sheet, hotbar, mastery card) first asks **Roll as a reaction** or **Use normally**. As a reaction, the React window opens with the mastery shown at the top; once the GM marks it passed, the card gets a **Roll damage** button (the mastery's damage, e.g. 3d6 + Str); the reaction roll takes the place of the skill mod roll. With no damage, **Use <mastery>** posts it to chat instead. Masteries and abilities tagged *Reaction* (or *Rxn*) count as rxn even if the sheet didn't mark them.
 
 ## Browsing the compendiums
+
+**Making a compendium:** the Create Compendium window's Document Type list has **Masteries (Item)** and **Gear (Item)** above *Item*. Either makes an Item compendium that holds only that kind: its Create Item button makes a mastery / gear straight away, the other kind can't be added, and it gets the matching banner. (The imported compendiums behave the same way.)
 
 The Compendium sidebar has **Masteries** and **Gear** buttons at the top. They open the same search window as *Add mastery* / *Add item* (search, compendium and category/kind filters). With a token selected (or your assigned character) the + buttons add to it; otherwise the window just browses, and rows can be dragged onto any sheet or the hotbar.
 

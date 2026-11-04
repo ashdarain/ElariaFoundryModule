@@ -79,10 +79,29 @@ ELARIA.slot2Options = {
   plusOutput: "ELARIA.Slot2.plusOutput"
 };
 
+/** Professions (Professions tab). Older names ("Craftsmen", "Excorsist", "Thief") still match these. */
 ELARIA.professions = [
-  "Alchemist", "Arcane Artisan", "Craftsmen", "Devout", "Enchanter", "Excorsist", "Instructor",
-  "Mystic Chef", "Necromancer", "Survivalist", "Technomancer", "Gnomish Engineer", "Thief"
+  "Alchemist", "Arcane Artisan", "Craftsman", "Devout", "Doctor", "Enchanter", "Exorcist", "Gnomish Engineering",
+  "Instructor", "Mechnomancy", "Mystic Chef", "Necromancer", "Survivalist", "Technomancer", "Thief Specialist"
 ];
+
+/**
+ * Crafting materials (Professions and Gear tabs). Each comes in tiers 1–5; a recipe's tier is the tier of the
+ * materials it uses. "Any" (class trinkets) can be paid with any one material.
+ */
+ELARIA.materials = {
+  metal: "ELARIA.Material.metal",
+  wood: "ELARIA.Material.wood",
+  leather: "ELARIA.Material.leather",
+  fabric: "ELARIA.Material.fabric",
+  bone: "ELARIA.Material.bone",
+  artifact: "ELARIA.Material.artifact",
+  soul: "ELARIA.Material.soul",
+  alchemical: "ELARIA.Material.alchemical",
+  food: "ELARIA.Material.food",
+  etherCore: "ELARIA.Material.etherCore"
+};
+ELARIA.materialTiers = [1, 2, 3, 4, 5];
 
 ELARIA.races = [
   "Alumen", "Saaren", "Hagalaz", "Somar", "Astrren", "Dryad", "Ilfyra", "Herran", "Auroch", "Drake", "Raki",

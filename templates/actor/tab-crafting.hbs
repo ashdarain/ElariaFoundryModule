@@ -1,0 +1,61 @@
+<section class="tab crafting {{tab.cssClass}}" data-group="primary" data-tab="crafting">
+  <div class="craft-head">
+    <span class="profession"><i class="fa-solid fa-hammer"></i>
+      {{#if crafting.profession}}<b>{{crafting.profession}}</b>{{else}}<em>{{localize "ELARIA.Craft.noProfession"}}</em>{{/if}}</span>
+    <span class="hint">{{localize "ELARIA.Craft.hint"}}</span>
+  </div>
+
+  <table class="materials-table">
+    <thead>
+      <tr><th class="label">{{localize "ELARIA.Craft.materials"}}</th>
+        {{#each crafting.tiers}}<th>{{localize "ELARIA.Craft.tierShort" n=this}}</th>{{/each}}</tr>
+    </thead>
+    <tbody>
+      {{#each crafting.materials}}
+      <tr>
+        <td class="label">{{label}}</td>
+        {{#each tiers}}<td><input type="number" name="{{name}}" value="{{value}}" min="0" step="1" class="{{#if value}}has{{/if}}"></td>{{/each}}
+      </tr>
+      {{/each}}
+    </tbody>
+  </table>
+
+  {{#if crafting.profession}}
+  <div class="recipe-filters">
+    <i class="fa-solid fa-magnifying-glass"></i>
+    <input type="search" data-craft-filter="text" placeholder="{{localize 'ELARIA.Craft.search'}}" autocomplete="off">
+    <label><input type="checkbox" data-craft-filter="ready"> {{localize "ELARIA.Craft.onlyReady"}}</label>
+    <label><input type="checkbox" data-craft-filter="locked"> {{localize "ELARIA.Craft.showLocked" n=crafting.level}}</label>
+    <span class="recipe-count"></span>
+    <a data-action="refreshRecipes" data-tooltip="ELARIA.Craft.refresh"><i class="fa-solid fa-rotate"></i></a>
+  </div>
+  <ol class="recipe-list">
+    {{#each crafting.recipes}}
+    <li class="recipe {{#if locked}}locked{{/if}} {{#if ok}}ready{{/if}}" data-recipe="{{index}}" data-search="{{search}}"
+      data-ok="{{ok}}" data-locked="{{locked}}">
+      <img src="{{img}}" alt="">
+      <div class="recipe-main">
+        <a class="recipe-name" data-action="viewRecipe">{{name}}</a>
+        <span class="recipe-meta">{{localize "ELARIA.Mastery.lvl"}} {{reqLevel}} · {{localize "ELARIA.Craft.tierN" n=tier}}{{#if kindLabel}} · {{kindLabel}}{{/if}}{{#if family}} · {{family}}{{/if}}{{#if evolvesFrom}} · {{localize "ELARIA.Craft.evolvesFrom" name=evolvesFrom}}{{/if}}</span>
+        <div class="recipe-cost">
+          {{#each costParts}}<span class="mat {{#if ok}}ok{{else}}short{{/if}}" data-tooltip="{{localize 'ELARIA.Craft.have' n=have}}">{{text}}</span>{{/each}}
+          {{#if noMaterials}}<span class="mat">{{localize "ELARIA.Craft.noMaterials"}}</span>{{/if}}
+        </div>
+        {{#if short}}<p class="recipe-text" data-tooltip="{{text}}">{{short}}</p>{{/if}}
+      </div>
+      {{#if ../crafting.editable}}
+      <div class="recipe-buttons">
+        <button type="button" data-action="craft" class="{{#unless ok}}short{{/unless}}"
+          data-tooltip="{{#if locked}}{{localize 'ELARIA.Craft.lockedHint' n=reqLevel}}{{else}}{{#unless ok}}{{localize 'ELARIA.Craft.shortHint'}}{{/unless}}{{/if}}">
+          <i class="fa-solid fa-hammer"></i> {{localize "ELARIA.Craft.craft"}}</button>
+        {{#if canEvolve}}<button type="button" data-action="craft" data-evolve="true" class="evolve {{#unless ok}}short{{/unless}}"
+          data-tooltip="{{localize 'ELARIA.Craft.evolveHint' name=evolvesFrom}}"><i class="fa-solid fa-arrow-up-right-dots"></i> {{localize "ELARIA.Craft.evolve"}}</button>{{/if}}
+      </div>
+      {{/if}}
+    </li>
+    {{else}}
+    <li class="empty">{{localize "ELARIA.Craft.noRecipes"}}</li>
+    {{/each}}
+  </ol>
+  {{/if}}
+</section>
