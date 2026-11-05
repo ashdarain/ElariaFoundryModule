@@ -9,14 +9,8 @@ const html = () => new f.HTMLField({ required: true, blank: true, initial: "" })
 /** Defence and combat numbers a monster works out from its modifiers (plus a typed bonus). */
 export const MONSTER_SUBSTATS = ["nar", "nmar", "aar", "ar", "mar", "critChance", "critDamage", "mv", "reacts", "passiveAwareness"];
 
-/** The formula part of each, from the stat modifiers (AR / MAR are built from the others afterwards). */
-function monsterBase(m) {
-  return {
-    nar: m.stf ?? 0, nmar: m.wis ?? 0, aar: 0, ar: (m.stf ?? 0), mar: (m.wis ?? 0),
-    critChance: R.critChance(m.lck ?? 0), critDamage: R.critDamage(m.ins ?? 0),
-    mv: R.movement(m.fin ?? 0), reacts: R.reactsPerRound(m.awa ?? 0), passiveAwareness: R.passiveAwareness(m.awa ?? 0)
-  };
-}
+/** The formula part of each (shared with the bestiary importer). */
+const monsterBase = R.monsterSubstatBase;
 
 /** A monster resource: everything typed in by the GM (no formulas). Temp is spent first, like characters. */
 const resourceField = (max = 10) => new f.SchemaField({

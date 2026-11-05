@@ -1,0 +1,31 @@
+<section class="picker">
+  <div class="filters">
+    <div class="search-row">
+      <i class="fa-solid fa-magnifying-glass"></i>
+      <input type="search" data-filter="text" value="{{filters.text}}" placeholder="{{localize 'ELARIA.Bestiary.search'}}" autocomplete="off">
+      <a class="clear" data-action="refresh" data-tooltip="ELARIA.Bestiary.refresh"><i class="fa-solid fa-rotate"></i></a>
+      <a class="clear" data-action="clear" data-tooltip="ELARIA.Picker.clear"><i class="fa-solid fa-filter-circle-xmark"></i></a>
+    </div>
+    <div class="filter-grid">
+      <label><span>{{localize "ELARIA.Bestiary.power"}}</span>
+        <span class="range">
+          <select data-filter="powerMin">{{selectOptions powerMinChoices selected=filters.powerMin}}</select>
+          –
+          <select data-filter="powerMax">{{selectOptions powerMaxChoices selected=filters.powerMax}}</select>
+        </span></label>
+      <label><span>{{localize "ELARIA.Monster.type"}}</span>
+        <select data-filter="type">{{selectOptions typeChoices selected=filters.type}}</select></label>
+      <label><span>{{localize "ELARIA.Damage.element"}}</span>
+        <select data-filter="element">{{selectOptions elementChoices selected=filters.element}}</select></label>
+      <label><span>{{localize "ELARIA.Monster.size"}}</span>
+        <select data-filter="size">{{selectOptions sizeChoices selected=filters.size}}</select></label>
+      <label><span>{{localize "ELARIA.Bestiary.source"}}</span>
+        <select data-filter="source">{{selectOptions sourceChoices selected=filters.source}}</select></label>
+      <label><span>{{localize "ELARIA.Bestiary.sort"}}</span>
+        <select data-filter="sort">{{selectOptions sortChoices selected=filters.sort}}</select></label>
+    </div>
+    <div class="check-row"><span class="count"></span></div>
+  </div>
+  <ol class="results"></ol>
+  <p class="hint">{{localize "ELARIA.Bestiary.browseHint"}}</p>
+</section>

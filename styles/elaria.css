@@ -1159,3 +1159,20 @@
 .elaria.gm-tools .unit-effects img { width: 20px; height: 20px; border: none; cursor: pointer; background: rgba(0, 0, 0, 0.6); border-radius: 3px; }
 .elaria.gm-tools .unit-row select { width: 44px; height: 20px; font-size: 11px; padding: 0; }
 .elaria.gm-tools .gm-section-head label input[name=combatAmount] { width: 50px; height: 24px; text-align: center; }
+
+/* Bestiary */
+.elaria.monster-importer .folder-row { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
+.elaria.monster-importer .folder-row input { flex: 1; }
+.elaria.monster-importer .remove-row { display: flex; align-items: center; gap: 6px; font-size: 12px; margin-top: 6px; flex-wrap: wrap; }
+.elaria.monster-importer .warnings { margin-top: 6px; font-size: 12px; }
+.elaria.monster-importer .warnings ul { max-height: 160px; overflow-y: auto; margin: 4px 0; padding-left: 18px; }
+.elaria.monster-importer .import-row { display: flex; justify-content: flex-end; margin-top: 8px; }
+.elaria.monster-importer .import-row button { width: auto; padding: 0 14px; }
+.elaria.monster-importer td.hot { font-weight: bold; color: var(--el-accent); }
+.elaria.monster-browser .monster-row { cursor: grab; }
+.elaria.monster-browser .monster-row .power { border-color: var(--el-accent); color: var(--el-accent); font-weight: bold; }
+.elaria.monster-browser .drag-hint { color: var(--el-muted); padding: 0 4px; align-self: center; }
+.elaria.monster-browser .filter-grid { margin: 0; }
+.elaria.monster-browser .filter-grid .range select { width: 64px; flex: none; }
+.elaria.monster .power-guide { margin: 2px 0; font-size: 11px; color: var(--el-muted); }
+.elaria.monster .power-guide i { color: var(--el-accent); }

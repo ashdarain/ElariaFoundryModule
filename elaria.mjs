@@ -19,6 +19,9 @@ import { ElariaGearSheet } from "./module/sheets/gear-sheet.mjs";
 import { ElariaDataImporter } from "./module/apps/data-importer.mjs";
 import { addCompendiumBrowseButtons } from "./module/apps/compendium-buttons.mjs";
 import { ElariaGMTools, onActorChangeForGMTools } from "./module/apps/gm-tools.mjs";
+import { ElariaMonsterImporter } from "./module/apps/monster-importer.mjs";
+import { ElariaMonsterBrowser, refreshMonsterBrowser } from "./module/apps/monster-browser.mjs";
+import { addBestiaryButtons } from "./module/apps/bestiary-buttons.mjs";
 import { addCompendiumTypeChoices, onPreCreateItem, patchCreateCompendium } from "./module/apps/compendium-types.mjs";
 import { applyPackBanners, patchBannersInSidebar } from "./module/apps/compendium-banners.mjs";
 import { ElariaRollDialog } from "./module/apps/roll-dialog.mjs";
@@ -36,7 +39,7 @@ Hooks.once("init", () => {
   console.log("Elaria | Initializing system");
 
   CONFIG.ELARIA = ELARIA;
-  game.elaria = { config: ELARIA, rules, DataImporter: ElariaDataImporter, RollDialog: ElariaRollDialog, ReactDialog: ElariaReactDialog, ReactionPicker: ElariaReactionPicker, GMTools: ElariaGMTools, rollReaction, roll3d6, rollDice, rollD20, useMastery };
+  game.elaria = { config: ELARIA, rules, DataImporter: ElariaDataImporter, RollDialog: ElariaRollDialog, ReactDialog: ElariaReactDialog, ReactionPicker: ElariaReactionPicker, GMTools: ElariaGMTools, MonsterImporter: ElariaMonsterImporter, MonsterBrowser: ElariaMonsterBrowser, rollReaction, roll3d6, rollDice, rollD20, useMastery };
 
   // GM importer: Google Sheet → world compendiums
   ElariaDataImporter.registerSettings();
@@ -122,6 +125,11 @@ Hooks.once("init", () => patchCreateCompendium());
 Hooks.on("renderDialogV2", addCompendiumTypeChoices);
 Hooks.on("renderApplicationV2", addCompendiumTypeChoices);
 Hooks.on("preCreateItem", onPreCreateItem);
+
+// Bestiary: monster importer and monster search (Actors tab, GM)
+Hooks.once("init", () => ElariaMonsterImporter.registerSettings());
+Hooks.on("renderActorDirectory", addBestiaryButtons);
+for (const hook of ["createActor", "updateActor", "deleteActor"]) Hooks.on(hook, refreshMonsterBrowser);
 
 // GM Tools (button left of React)
 Hooks.once("init", () => ElariaGMTools.registerSettings());

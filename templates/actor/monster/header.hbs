@@ -12,7 +12,9 @@
     </div>
     <div class="id-grid">
       <label><span>{{localize "ELARIA.Monster.type"}}</span>
-        <input type="text" name="system.details.type" value="{{system.details.type}}" placeholder="{{localize 'ELARIA.Monster.typeHint'}}"></label>
+        <input type="text" name="system.details.type" value="{{system.details.type}}" placeholder="{{localize 'ELARIA.Monster.typeHint'}}"
+          list="elaria-monster-types-{{actor.id}}">
+        <datalist id="elaria-monster-types-{{actor.id}}">{{#each monsterTypes}}<option value="{{this}}"></option>{{/each}}</datalist></label>
       <label><span>{{localize "ELARIA.Monster.power"}}</span>
         <input type="number" name="system.details.power" value="{{system.details.power}}" step="1"></label>
       <label><span>{{localize "ELARIA.Monster.size"}}</span>
@@ -20,6 +22,10 @@
       <label><span>{{localize "ELARIA.Monster.elements"}}</span>
         <input type="text" name="system.details.elements" value="{{system.details.elements}}" placeholder="{{localize 'ELARIA.Monster.elementsHint'}}"></label>
     </div>
+    {{#if powerGuide}}
+    <p class="power-guide" data-tooltip="ELARIA.Monster.powerGuideHint"><i class="fa-solid fa-scale-balanced"></i>
+      {{localize "ELARIA.Monster.powerGuide" power=system.details.power levels=powerGuide.levels hp=powerGuide.hp damage=powerGuide.damage armour=powerGuide.armour mod=powerGuide.monsterMod}}</p>
+    {{/if}}
     <div class="monster-vitals">
       {{#each resourceList}}
       <div class="m-resource {{key}}">

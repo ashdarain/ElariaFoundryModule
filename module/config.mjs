@@ -270,6 +270,24 @@ ELARIA.inventory = { beltSlots: 2, armourSlots: 1, trinketSlots: 5, classTrinket
 /** Coins (Shops and Inventory): 1 pp = 10 gp = 100 sp = 1 000 cp = 10 000 ironne. */
 /** Each coin's worth in silver (1 pp = 10 gp = 100 sp = 1 000 cp = 10 000 ironne). */
 ELARIA.coinValueSp = { pp: 100, gp: 10, sp: 1, cp: 0.1, ironne: 0.01 };
+/** Monster types (Monster stat block / Monster Calculator). The type box also takes anything else. */
+ELARIA.monsterTypes = ["Mob", "Minion", "Elite", "Boss"];
+
+/**
+ * What a monster of each power is built to face (Notes tab, "Elaria 2.1" table): the players' level range,
+ * their average HP, damage range, AR / MAR, the top player modifier, and the highest monster modifier.
+ */
+ELARIA.powerGuide = {
+  1: { levels: "1–2", hp: "8–13", damage: "4–15 (1–2d6)", armour: "0–3", topMod: "2–3", monsterMod: 2 },
+  2: { levels: "3–4", hp: "14–29", damage: "4–16 (1–3d6)", armour: "1–4", topMod: "4–6", monsterMod: 4 },
+  3: { levels: "5–6", hp: "20–35", damage: "14–24 (4–6d6)", armour: "1–5", topMod: "6–7", monsterMod: 6 },
+  4: { levels: "7–9", hp: "34–49", damage: "15–25 (4–6d6)", armour: "1–8", topMod: "8–11", monsterMod: 8 },
+  5: { levels: "10–11", hp: "43–63", damage: "25–38 (7–9d6)", armour: "2–9", topMod: "12–13", monsterMod: 12 },
+  6: { levels: "12–14", hp: "49–74", damage: "25–38 (7–9d6)", armour: "2–11", topMod: "14–17", monsterMod: 15 },
+  7: { levels: "15–17", hp: "63–88", damage: "37–56 (10–14d6)", armour: "3–13", topMod: "18–19", monsterMod: 18 },
+  8: { levels: "18–20", hp: "72–107", damage: "37–58 (10–14d6)", armour: "4–15", topMod: "20–22", monsterMod: 20 }
+};
+
 ELARIA.coins = {
   pp: "ELARIA.Coins.pp", gp: "ELARIA.Coins.gp", sp: "ELARIA.Coins.sp", cp: "ELARIA.Coins.cp", ironne: "ELARIA.Coins.ironne"
 };

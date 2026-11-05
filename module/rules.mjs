@@ -148,7 +148,22 @@ export function elementResistances(elements, affinity) {
 /** Element keys named in free text ("Fire, Dark" → ["fire", "dark"]). */
 export function elementsInText(text, elementKeys) {
   const words = String(text ?? "").toLowerCase();
-  return elementKeys.filter(k => new RegExp(`\\b${k}\\b`).test(words));
+  // Word starts, so "Darkness" counts as Dark.
+  return elementKeys.filter(k => new RegExp(`\\b${k}`).test(words));
+}
+
+/**
+ * A monster's defence and combat numbers from its stat modifiers, the same formulas as a character's
+ * (NAR = Stf, NMAR = Wis, AR / MAR start from NAR / NMAR (+ AAR, which has no formula), crit chance = Lck × 5,
+ * crit damage = Ins × 10, Mv = Fin + 4, reactions from Awa, passive awareness = Awa + 10).
+ * @param {Record<string, number>} m  stat modifiers
+ */
+export function monsterSubstatBase(m) {
+  return {
+    nar: m.stf ?? 0, nmar: m.wis ?? 0, aar: 0, ar: (m.stf ?? 0), mar: (m.wis ?? 0),
+    critChance: critChance(m.lck ?? 0), critDamage: critDamage(m.ins ?? 0),
+    mv: movement(m.fin ?? 0), reacts: reactsPerRound(m.awa ?? 0), passiveAwareness: passiveAwareness(m.awa ?? 0)
+  };
 }
 
 export function formResistances(form) {

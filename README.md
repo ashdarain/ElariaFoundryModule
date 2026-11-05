@@ -142,6 +142,20 @@ A simple **Monster** actor following the *Monster stat block* tab. When a GM cre
 - **Hidden rolls:** players who don't own a monster see only the results of its rolls (totals, per-hit values, crit or not) and its ability descriptions. The dice, formula, modifiers, crit chance, crit multiplier and an ability's skill mod / damage / cost are shown to the GM (and the monster's owners) only. Foundry's own roll messages for monsters, such as initiative, hide their formula and dice the same way.
 - **Token tab:** token name, image, disposition, size and linking, plus a button for every other token setting. New monsters' tokens default to hostile and unlinked (each token has its own HP), with HP and FTG bars.
 
+## Bestiary (monster importer and monster search)
+
+GMs get two buttons at the top of the **Actors** tab:
+
+- **Import monsters** reads the Bestiary sheet (link, or a downloaded .xlsx from this computer or Foundry's files, like the other importer; read-only). It doesn't go by tab names: **every tab is searched for the monster stat block pattern** (the name, then a `Type:` cell with `Power:` beside it, the Elements / Creature Size / description, Hp / Ftg / Mp, the stat modifiers, AR … Mv, Elemental Res, Unique Loot / Loot Tables and the Name | Skill mod | Cost | Description | Dmg | Tags abilities table). New tabs and monsters are picked up by themselves; the empty template is skipped.
+  - Each monster becomes a Monster actor in the **Bestiary** folder (name changeable in the window), in a sub-folder per **power** (from the stat block's Power, not the tab): Power 1, Power 2 …. Abilities become its ability items.
+  - The stat block's numbers are kept exactly: the monster sheet works defence and combat numbers out from the modifiers, so the difference goes into its Bonus column; Elemental Res likewise (the elements and form give the built-in part). Divine / Demonic in the type or elements sets the form. Crit cells formatted as % are read correctly.
+  - **Check** shows how many per power are new / changed / the same, and lists anything odd in the sheet. **Import** creates and updates; ticking *Remove …* deletes imported monsters no longer in the sheet. Re-importing keeps each monster's picture and token settings. Monsters you make yourself are never touched.
+- **Monsters** opens a search window over every monster in the world and in Actor compendiums: search (name, type, element, size), power range, type, element, size, where it's from, and sort by power / name / HP. **Drag a row onto the map** to place a token (or onto the combat tracker); click a name to open the sheet.
+
+`node tools/test-bestiary.mjs path/to/bestiary.xlsx` lists what the importer finds and checks every monster's numbers come out as in the sheet.
+
+**Monster sheet:** the Type box suggests Mob / Minion / Elite / Boss, and the GM sees a power guide under the header from the Notes tab (e.g. *Power 4 is built for party level 7–9: players have 34–49 HP, deal 15–25 (4–6d6), AR/MAR 1–8; highest monster mod about 8*).
+
 ## Token bars
 
 Tokens show **HP in red at the bottom**, and **MP in blue with FTG in green stacked under it at the top**. New characters and monsters default to HP as bar 1 and MP as bar 2; FTG is added automatically as a third bar (unless one of the two bars already shows it). A resource with a max of 0 (a monster with no mana) isn't drawn and the next bar moves up. When bars are shown (always, on hover, owner only …) is still Foundry's token setting.

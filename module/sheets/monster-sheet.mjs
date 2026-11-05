@@ -53,6 +53,9 @@ export class ElariaMonsterSheet extends HandlebarsApplicationMixin(ActorSheetV2)
     Object.assign(context, {
       actor, system,
       isGM: game.user.isGM,
+      monsterTypes: ELARIA.monsterTypes,
+      // GM only: what this power is built to face (Notes tab).
+      powerGuide: game.user.isGM ? ELARIA.powerGuide[system.details.power] ?? null : null,
       initiativeLabel: (() => { const fin = system.stats?.fin?.mod ?? 0; return `3d6 ${fin < 0 ? "−" : "+"} ${Math.abs(fin)}`; })(),
       tabs: this._prepareTabs("primary"),
       resourceList: ["hp", "ftg", "mp"].map(key => {

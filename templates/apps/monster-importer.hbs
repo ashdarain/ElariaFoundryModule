@@ -1,0 +1,73 @@
+<section class="importer">
+  <p class="intro">{{localize "ELARIA.Bestiary.intro"}}</p>
+
+  <fieldset>
+    <legend>{{localize "ELARIA.Importer.sheet"}}</legend>
+    <div class="path-row">
+      <input type="text" name="link" value="{{link}}" placeholder="https://docs.google.com/spreadsheets/d/…"
+        spellcheck="false" autocomplete="off" {{#if busy}}disabled{{/if}}>
+      <button type="button" data-action="check" {{#if busy}}disabled{{/if}}>
+        <i class="fa-solid fa-cloud-arrow-down"></i> {{localize "ELARIA.Importer.check"}}</button>
+    </div>
+    {{#unless linkValid}}<p class="error small">{{localize "ELARIA.Importer.badLinkInline"}}</p>{{/unless}}
+    <p class="hint"><i class="fa-solid fa-lock"></i> {{localize "ELARIA.Importer.linkHint"}}</p>
+    <div class="or-file">
+      <span class="or">{{localize "ELARIA.Importer.orFile"}}</span>
+      <button type="button" data-action="pickLocalFile" {{#if busy}}disabled{{/if}}>
+        <i class="fa-solid fa-file-arrow-up"></i> {{localize "ELARIA.Importer.pickLocal"}}</button>
+      <button type="button" data-action="pickFoundryFile" {{#if busy}}disabled{{/if}}>
+        <i class="fa-solid fa-folder-open"></i> {{localize "ELARIA.Importer.pickFoundry"}}</button>
+      <input type="file" class="xlsx-input" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" hidden>
+    </div>
+    {{#if file}}
+    <p class="chosen-file"><i class="fa-solid fa-file-excel"></i> <b>{{file.name}}</b>
+      <a data-action="clearFile" data-tooltip="ELARIA.Importer.clearFile"><i class="fa-solid fa-xmark"></i></a></p>
+    {{/if}}
+    <label class="folder-row"><span>{{localize "ELARIA.Bestiary.folder"}}</span>
+      <input type="text" name="folder" value="{{folder}}" data-tooltip="ELARIA.Bestiary.folderHint"></label>
+  </fieldset>
+
+  {{#if busy}}
+  <div class="importer-progress">
+    <div class="bar"><div class="fill" style="width: {{progress.pct}}%"></div></div>
+    <span class="label">{{progress.label}}</span>
+  </div>
+  {{/if}}
+
+  {{#if error}}<p class="error"><i class="fa-solid fa-triangle-exclamation"></i> {{error}}</p>{{/if}}
+
+  {{#if checked}}
+  <fieldset>
+    <legend>{{localize "ELARIA.Importer.preview"}}</legend>
+    <p class="meta">{{localize "ELARIA.Bestiary.found" n=count}} <small>{{tabs}}</small></p>
+    <table class="diff">
+      <thead><tr><th class="l">{{localize "ELARIA.Bestiary.power"}}</th><th>{{localize "ELARIA.Importer.total"}}</th>
+        <th>{{localize "ELARIA.Importer.new"}}</th><th>{{localize "ELARIA.Importer.changed"}}</th><th>{{localize "ELARIA.Importer.unchanged"}}</th></tr></thead>
+      <tbody>
+        {{#each rows}}
+        <tr data-tooltip="{{names}}"><td class="l">{{localize "ELARIA.Bestiary.powerFolder" n=power}}</td><td>{{total}}</td>
+          <td class="{{#if new}}hot{{/if}}">{{new}}</td><td class="{{#if changed}}hot{{/if}}">{{changed}}</td><td>{{same}}</td></tr>
+        {{/each}}
+      </tbody>
+    </table>
+    {{#if removedCount}}
+    <label class="remove-row"><input type="checkbox" name="removeMissing" {{checked removeMissing}}>
+      {{localize "ELARIA.Bestiary.removeMissing" n=removedCount}} <small>{{removed}}</small></label>
+    {{/if}}
+    {{#if warnings.length}}
+    <details class="warnings"><summary>{{localize "ELARIA.Bestiary.warnings" n=warnings.length}}</summary>
+      <ul>{{#each warnings}}<li>{{this}}</li>{{/each}}</ul></details>
+    {{/if}}
+    <div class="import-row">
+      <button type="button" data-action="runImport" {{#unless ready}}disabled{{/unless}}>
+        <i class="fa-solid fa-dragon"></i> {{localize "ELARIA.Bestiary.import"}}</button>
+    </div>
+  </fieldset>
+  {{/if}}
+
+  {{#if summary}}
+  <p class="done"><i class="fa-solid fa-circle-check"></i> {{localize "ELARIA.Bestiary.done"}}
+    {{summary.created}} {{localize "ELARIA.Importer.new"}} · {{summary.updated}} {{localize "ELARIA.Importer.changed"}} ·
+    {{summary.unchanged}} {{localize "ELARIA.Importer.unchanged"}} · {{summary.removed}} {{localize "ELARIA.Importer.removed"}}</p>
+  {{/if}}
+</section>

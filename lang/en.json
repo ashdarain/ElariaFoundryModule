@@ -589,7 +589,9 @@
       "noElements": "(type its elements in the header, e.g. \"Fire, Dark\", to add their built-in values)",
       "elementalResOld": "Old resistance note (move it into the grid, then clear this)",
       "aarHint": "Armour AAR. Monsters wear no armour items, so type it in Bonus; it's added to AR and MAR.",
-      "formulaHint": "Worked out from the stat modifiers, as for characters: NAR = Stf, NMAR = Wis, AR = NAR + AAR, MAR = NMAR + AAR, crit chance = Lck × 5 %, crit damage = Ins × 10 %, Mv = Fin + 4, reactions from Awa, passive awareness = Awa + 10."
+      "formulaHint": "Worked out from the stat modifiers, as for characters: NAR = Stf, NMAR = Wis, AR = NAR + AAR, MAR = NMAR + AAR, crit chance = Lck × 5 %, crit damage = Ins × 10 %, Mv = Fin + 4, reactions from Awa, passive awareness = Awa + 10.",
+      "powerGuide": "Power {power} is built for party level {levels}: players have {hp} HP, deal {damage}, AR/MAR {armour}; highest monster mod about {mod}.",
+      "powerGuideHint": "From the Notes tab's power table (GM only)."
     },
     "Ability": {
       "new": "New Ability",
@@ -904,6 +906,42 @@
       "addStatusHint": "Add a status effect",
       "noCombatants": "No combatants yet.",
       "noCombat": "No active combat. Start one from the Combat Tracker."
+    },
+    "Bestiary": {
+      "importTitle": "Import monsters",
+      "importShort": "Import monsters",
+      "browseTitle": "Monsters",
+      "browseShort": "Monsters",
+      "intro": "Paste the link to the Bestiary sheet (or choose a downloaded .xlsx) and press Check. Every tab is searched for monster stat blocks (Name, Type: …, Power: …, stats, abilities table), so new tabs and monsters are found by themselves. Monsters become actors in the Bestiary folder, one sub-folder per power. Run it again whenever the sheet changes: imported monsters are updated in place (their picture and token settings are kept); monsters you made yourself are never touched.",
+      "folder": "Folder",
+      "folderHint": "Name of the Actors folder the monsters go in (sub-folders: Power 1, Power 2 …)",
+      "needSource": "Paste the Bestiary sheet's link, or choose an .xlsx file.",
+      "reading": "Finding monster stat blocks…",
+      "noneFound": "No monster stat blocks found (a 'Type:' cell with 'Power:' next to it and the monster's name above).",
+      "found": "{n} monsters found in:",
+      "power": "Power",
+      "powerFolder": "Power {n}",
+      "powerN": "Power {n}",
+      "removeMissing": "Remove the {n} imported monsters no longer in the sheet:",
+      "warnings": "Things to check in the sheet ({n})",
+      "import": "Import",
+      "done": "Done:",
+      "doneNote": "Monsters: {created} new, {updated} updated, {unchanged} unchanged, {removed} removed.",
+      "world": "World",
+      "anyType": "Any type",
+      "anySize": "Any size",
+      "anyElement": "Any element",
+      "anySource": "Anywhere",
+      "sortPower": "Sort: power",
+      "sortHp": "Sort: HP",
+      "sort": "Sort",
+      "source": "From",
+      "search": "Search name, type, element or size…",
+      "refresh": "Read the monsters again",
+      "dragHint": "Drag onto the map to place a token",
+      "count": "{n} monsters",
+      "noResults": "No monsters match.",
+      "browseHint": "Drag a monster onto the map to place a token (or onto the combat tracker). Click a name to open its sheet."
     }
   }
 }
