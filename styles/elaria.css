@@ -1119,3 +1119,43 @@
 .elaria.gm-grant-dialog .coin input { width: 64px; text-align: center; }
 .elaria.gm-grant-dialog table.materials-table input { width: 52px; }
 .elaria.chat-card.gm-grant ul, .elaria.chat-card.gm-party ul { margin: 4px 0 0; padding-left: 18px; font-size: 12px; }
+
+/* GM Tools: Combat tab */
+.elaria.gm-tools .tab.gm-tools-combat.active { display: flex; flex-direction: column; flex: 1; min-height: 0; padding: 8px 12px; gap: 8px; }
+.elaria.gm-tools .combat-grid { flex: 1; min-height: 0; overflow-y: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 8px; align-content: start; }
+.elaria.gm-tools .combat-unit { border: 2px solid #8b1e2b; border-radius: 6px; padding: 5px 7px; background: rgba(255, 255, 255, 0.35); display: flex; flex-direction: column; gap: 4px; }
+.elaria.gm-tools .combat-unit.pc { border-color: #2f5f9e; background: rgba(47, 95, 158, 0.07); }
+.elaria.gm-tools .combat-unit.current { box-shadow: 0 0 0 2px #c9a46a, 0 0 10px rgba(201, 164, 106, 0.8); }
+.elaria.gm-tools .combat-unit.defeated { opacity: 0.55; filter: grayscale(0.7); }
+.elaria.gm-tools .combat-unit.is-hidden header img { opacity: 0.5; }
+.elaria.gm-tools .combat-unit header { display: flex; align-items: center; gap: 6px; }
+.elaria.gm-tools .combat-unit header img { width: 38px; height: 38px; border: 1px solid var(--el-line); border-radius: 4px; cursor: pointer; }
+.elaria.gm-tools .combat-unit .who { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.elaria.gm-tools .combat-unit .name { font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.elaria.gm-tools .combat-unit .sub { font-size: 10px; color: var(--el-muted); }
+.elaria.gm-tools .combat-unit .toggle { color: var(--el-muted); padding: 0 2px; }
+.elaria.gm-tools .combat-unit .toggle.on { color: var(--el-accent); }
+.elaria.gm-tools .combat-unit .toggle.dead { color: var(--el-bad); }
+.elaria.gm-tools .unit-resources { display: flex; flex-direction: column; gap: 2px; }
+.elaria.gm-tools .unit-res { display: grid; grid-template-columns: 30px 16px 44px 1fr 16px; align-items: center; gap: 2px; font-size: 11px; position: relative; }
+.elaria.gm-tools .unit-res .res-label { font-weight: bold; }
+.elaria.gm-tools .unit-res input { height: 20px; padding: 0 2px; text-align: center; font-size: 12px; }
+.elaria.gm-tools .unit-res .of { color: var(--el-muted); }
+.elaria.gm-tools .unit-res .step { text-align: center; color: var(--el-muted); }
+.elaria.gm-tools .unit-res .step:hover { color: var(--el-accent); }
+.elaria.gm-tools .unit-res .bar { grid-column: 1 / -1; height: 4px; background: rgba(0, 0, 0, 0.12); border-radius: 2px; overflow: hidden; }
+.elaria.gm-tools .unit-res .fill { height: 100%; }
+.elaria.gm-tools .unit-res.hp .fill { background: #b3261e; }
+.elaria.gm-tools .unit-res.mp .fill { background: #2f5f9e; }
+.elaria.gm-tools .unit-res.ftg .fill { background: #3f6b3a; }
+.elaria.gm-tools .unit-conditions { font-size: 10px; color: var(--el-muted); }
+.elaria.gm-tools .unit-row { display: flex; align-items: center; gap: 4px; font-size: 11px; }
+.elaria.gm-tools .unit-row .row-label { color: var(--el-muted); min-width: 52px; }
+.elaria.gm-tools .unit-pips { display: flex; gap: 3px; }
+.elaria.gm-tools .unit-pips .pip { width: 12px; height: 12px; border-radius: 50%; border: 1px solid var(--el-ink); background: transparent; }
+.elaria.gm-tools .unit-pips .pip.pass { background: #3f9e3a; border-color: #2f6b2a; }
+.elaria.gm-tools .unit-pips .pip.fail { background: #c0392b; border-color: #8b1e2b; }
+.elaria.gm-tools .unit-effects { flex: 1; display: flex; flex-wrap: wrap; gap: 2px; }
+.elaria.gm-tools .unit-effects img { width: 20px; height: 20px; border: none; cursor: pointer; background: rgba(0, 0, 0, 0.6); border-radius: 3px; }
+.elaria.gm-tools .unit-row select { width: 44px; height: 20px; font-size: 11px; padding: 0; }
+.elaria.gm-tools .gm-section-head label input[name=combatAmount] { width: 50px; height: 24px; text-align: center; }

@@ -125,7 +125,10 @@ Hooks.on("preCreateItem", onPreCreateItem);
 
 // GM Tools (button left of React)
 Hooks.once("init", () => ElariaGMTools.registerSettings());
-Hooks.on("updateActor", onActorChangeForGMTools);
+for (const hook of ["updateActor", "updateCombat", "createCombatant", "updateCombatant", "deleteCombatant", "createCombat",
+  "deleteCombat", "updateToken", "createActiveEffect", "deleteActiveEffect", "updateActiveEffect"]) {
+  Hooks.on(hook, onActorChangeForGMTools);
+}
 
 Hooks.on("renderCompendiumDirectory", (app, html) => {
   patchBannersInSidebar(app, html);

@@ -2,6 +2,7 @@ import { ELARIA } from "../config.mjs";
 import { addGearToActor, addMasteriesToActor } from "../helpers/masteries.mjs";
 import { materialLabel } from "../helpers/crafting.mjs";
 import { ElariaMasteryPicker } from "./mastery-picker.mjs";
+import { reactionCount, reactionStates } from "../combat/reactions.mjs";
 
 const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api;
 const L = k => game.i18n.localize(k);
@@ -20,6 +21,10 @@ const blankCoins = () => Object.fromEntries(Object.keys(ELARIA.coins).map(k => [
  *
  * Party: level up, long rest (full HP / MP / FTG, +1 life point, −1 exhaustion, −1 injury), add exhaustion or
  * injuries, take life points; for the whole party (every character a player owns) or the ticked players above.
+ *
+ * Combat tab: every combatant of the current combat in turn order, as cards: portrait, name, initiative,
+ * HP / MP / FTG with − / + buttons (by the Amount box) and typed values, status effects (add from Foundry's list,
+ * click one to remove), reaction pips, hidden and defeated toggles. Player characters have a different border.
  */
 export class ElariaGMTools extends HandlebarsApplicationMixin(ApplicationV2) {
 
@@ -40,17 +45,27 @@ export class ElariaGMTools extends HandlebarsApplicationMixin(ApplicationV2) {
       clearPending: ElariaGMTools.#onClearPending,
       give: ElariaGMTools.#onGive,
       giveAll: ElariaGMTools.#onGiveAll,
-      party: ElariaGMTools.#onParty
+      party: ElariaGMTools.#onParty,
+      // Combat tab
+      unitResource: ElariaGMTools.#onUnitResource,
+      unitHidden: ElariaGMTools.#onUnitHidden,
+      unitDefeated: ElariaGMTools.#onUnitDefeated,
+      unitSheet: ElariaGMTools.#onUnitSheet,
+      unitPan: ElariaGMTools.#onUnitPan,
+      unitPip: ElariaGMTools.#onUnitPip,
+      unitRemoveEffect: ElariaGMTools.#onUnitRemoveEffect
     }
   };
 
   static PARTS = {
     tabs: { template: "templates/generic/tab-navigation.hbs" },
-    players: { template: "systems/elaria/templates/apps/gm-tools.hbs", scrollable: [".gm-players", ".party-table-wrap"] }
+    players: { template: "systems/elaria/templates/apps/gm-tools.hbs", scrollable: [".gm-players", ".party-table-wrap"] },
+    combat: { template: "systems/elaria/templates/apps/gm-tools-combat.hbs", scrollable: [".combat-grid"] }
   };
 
   static TABS = {
-    primary: { tabs: [{ id: "players", icon: "fa-solid fa-users" }], initial: "players", labelPrefix: "ELARIA.GMTools.tab" }
+    primary: { tabs: [{ id: "players", icon: "fa-solid fa-users" }, { id: "combat", icon: "fa-solid fa-khanda" }],
+      initial: "players", labelPrefix: "ELARIA.GMTools.tab" }
   };
 
   static registerSettings() {
@@ -108,8 +123,9 @@ export class ElariaGMTools extends HandlebarsApplicationMixin(ApplicationV2) {
 
   async _preparePartContext(partId, context, options) {
     context = await super._preparePartContext(partId, context, options);
+    context.tab = context.tabs?.[partId];
+    if (partId === "combat") return this.#prepareCombat(context);
     if (partId !== "players") return context;
-    context.tab = context.tabs.players;
     const added = new Set(this.state.players.map(p => p.actorUuid));
     const owners = a => game.users.filter(u => !u.isGM && a.testUserPermission(u, "OWNER"));
     // Characters with an active owner first.
@@ -149,9 +165,139 @@ export class ElariaGMTools extends HandlebarsApplicationMixin(ApplicationV2) {
     return context;
   }
 
+  /* -------------------------------------------- */
+  /*  Combat tab                                  */
+  /* -------------------------------------------- */
+
+  #prepareCombat(context) {
+    const combat = game.combat;
+    context.combatAmount = this._combatAmount ?? 1;
+    context.hasCombat = !!combat;
+    if (!combat) return context;
+    context.round = combat.round;
+    context.statusChoices = (CONFIG.statusEffects ?? []).map(s => ({ id: s.id, name: game.i18n.localize(s.name ?? s.label ?? s.id) }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+    const current = combat.combatant?.id;
+    context.units = combat.turns.map(c => {
+      const actor = c.actor;
+      const token = c.token;
+      const res = actor?.system?.resources ?? {};
+      const resources = ["hp", "mp", "ftg"].filter(k => res[k]).map(k => {
+        const r = res[k];
+        return { key: k, label: L(`ELARIA.Resource.${k}`), value: r.value ?? 0, max: r.max ?? 0, temp: r.temp ?? 0,
+          pct: r.max ? Math.clamp(Math.round((r.value ?? 0) / r.max * 100), 0, 100) : 0 };
+      });
+      const count = reactionCount(c);
+      const states = reactionStates(c);
+      return {
+        id: c.id, name: c.name, img: c.img ?? token?.texture?.src ?? actor?.img,
+        initiative: c.initiative ?? "—", isCurrent: c.id === current,
+        pc: !!actor?.hasPlayerOwner, type: actor?.type ?? "",
+        hidden: !!(c.hidden || token?.hidden), defeated: !!c.isDefeated,
+        resources,
+        effects: (actor?.temporaryEffects ?? []).map(e => ({ id: e.id, name: e.name, img: e.img ?? e.icon,
+          statuses: [...(e.statuses ?? [])].join(",") })),
+        pips: Array.from({ length: count }, (_, i) => ({ index: i, state: states[i] ?? "" })),
+        level: actor?.type === "character" ? actor.system.level : actor?.system?.details?.power ?? "",
+        levelLabel: actor?.type === "character" ? L("ELARIA.Level") : L("ELARIA.Monster.power"),
+        conditions: actor?.type === "character"
+          ? [actor.system.conditions.injuries ? `${actor.system.conditions.injuries} ${L("ELARIA.GMTools.injuries")}` : "",
+            actor.system.conditions.exhaustion ? `${L("ELARIA.GMTools.exhaustion")} ${actor.system.conditions.exhaustion}` : "",
+            `LP ${res.lifePoints?.value ?? 0}/${res.lifePoints?.max ?? 0}`].filter(Boolean).join(" · ")
+          : ""
+      };
+    });
+    return context;
+  }
+
+  /** The combatant (and actor) for a card. */
+  #unit(target) {
+    const c = game.combat?.combatants.get(target.closest("[data-combatant]")?.dataset.combatant);
+    return { combatant: c, actor: c?.actor ?? null, token: c?.token ?? null };
+  }
+
+  /** − / + on HP, MP or FTG by the Amount box (− uses temp first, like taking damage). */
+  static async #onUnitResource(event, target) {
+    const { actor } = this.#unit(target);
+    if (!actor) return;
+    const n = Math.max(1, Math.round(Number(this.element.querySelector("input[name=combatAmount]")?.value) || 1));
+    this._combatAmount = n;
+    const sign = target.dataset.dir === "down" ? 1 : -1;
+    return actor.modifyResource(target.dataset.res, sign * n);
+  }
+
+  /** Hidden: the token (canvas) and the combatant (tracker) together. */
+  static async #onUnitHidden(event, target) {
+    const { combatant, token } = this.#unit(target);
+    if (!combatant) return;
+    const hide = !(combatant.hidden || token?.hidden);
+    await combatant.update({ hidden: hide });
+    if (token) await token.update({ hidden: hide });
+  }
+
+  static async #onUnitDefeated(event, target) {
+    const { combatant, actor } = this.#unit(target);
+    if (!combatant) return;
+    const defeated = !combatant.isDefeated;
+    await combatant.update({ defeated });
+    const id = CONFIG.specialStatusEffects.DEFEATED;
+    if (id && actor) await actor.toggleStatusEffect(id, { active: defeated, overlay: true });
+  }
+
+  static #onUnitSheet(event, target) {
+    this.#unit(target).actor?.sheet.render({ force: true });
+  }
+
+  static #onUnitPan(event, target) {
+    const { token } = this.#unit(target);
+    const obj = token?.object;
+    if (!obj) return;
+    obj.control({ releaseOthers: true });
+    return canvas.animatePan({ x: obj.center.x, y: obj.center.y });
+  }
+
+  /** Reaction pip: empty → pass → fail → empty (as in the tracker). */
+  static async #onUnitPip(event, target) {
+    const { combatant } = this.#unit(target);
+    if (!combatant) return;
+    const count = reactionCount(combatant);
+    const states = Array.from({ length: count }, (_, i) => reactionStates(combatant)[i] ?? "");
+    const i = Number(target.dataset.index);
+    const order = ["", "pass", "fail"];
+    states[i] = order[(order.indexOf(states[i] ?? "") + 1) % order.length];
+    return combatant.setFlag("elaria", "reactions", states);
+  }
+
+  /** Click a status icon to remove it. */
+  static async #onUnitRemoveEffect(event, target) {
+    const { actor } = this.#unit(target);
+    if (!actor) return;
+    const statuses = (target.dataset.statuses || "").split(",").filter(Boolean);
+    if (statuses.length) for (const s of statuses) await actor.toggleStatusEffect(s, { active: false });
+    else await actor.effects.get(target.dataset.effect)?.delete();
+  }
+
   _onRender(context, options) {
     super._onRender(context, options);
     const el = this.element;
+    // Combat tab: typed resource values, the Amount box, and adding a status effect.
+    for (const input of el.querySelectorAll(".combat-unit input[data-res]")) {
+      input.addEventListener("change", () => {
+        const { actor } = this.#unit(input);
+        const value = Math.max(0, Math.round(Number(input.value) || 0));
+        actor?.update({ [`system.resources.${input.dataset.res}.value`]: value });
+      });
+    }
+    el.querySelector("input[name=combatAmount]")?.addEventListener("change", ev => {
+      this._combatAmount = Math.max(1, Math.round(Number(ev.target.value) || 1));
+    });
+    for (const select of el.querySelectorAll(".combat-unit select[name=addStatus]")) {
+      select.addEventListener("change", async () => {
+        const { actor } = this.#unit(select);
+        if (actor && select.value) await actor.toggleStatusEffect(select.value, { active: true });
+        select.value = "";
+      });
+    }
     // Ticks on the player cards (who the party actions apply to when not the whole party).
     for (const box of el.querySelectorAll("input[name=selected]")) {
       box.addEventListener("change", () => {
@@ -429,9 +575,15 @@ export class ElariaGMTools extends HandlebarsApplicationMixin(ApplicationV2) {
   }
 }
 
-/** Re-draw the window when a party member changes (HP, level …). */
-export function onActorChangeForGMTools(actor) {
-  if (actor.type !== "character") return;
+/** Re-draw the window when a party member or a combatant changes (HP, level, statuses, turn …). */
+export function onActorChangeForGMTools() {
   const app = foundry.applications.instances.get("elaria-gm-tools");
-  if (app?.rendered) app.render();
+  if (app?.rendered) refreshSoon(app);
+}
+
+let pending = null;
+/** Several changes in a row (e.g. a party action) redraw once. */
+function refreshSoon(app) {
+  clearTimeout(pending);
+  pending = setTimeout(() => app.render(), 80);
 }

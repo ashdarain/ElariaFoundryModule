@@ -829,7 +829,8 @@
       "buttonHint": "Give players items, materials and coins; level up, long rest …",
       "title": "GM Tools",
       "tab": {
-        "players": "Players"
+        "players": "Players",
+        "combat": "Combat"
       },
       "players": "Players",
       "pickCharacter": "— pick a character —",
@@ -886,7 +887,23 @@
         "exhaustion": "+{n} exhaustion",
         "injury": "+{n} injury",
         "lifePoint": "−{n} life point"
-      }
+      },
+      "combatRound": "Combat · round {n}",
+      "amount": "Amount",
+      "amountHint": "How much the − / + buttons change",
+      "init": "Init",
+      "pc": "PC",
+      "panHint": "Select and pan to the token",
+      "hiddenOn": "Hidden from players (click to show)",
+      "hiddenOff": "Visible (click to hide)",
+      "defeatedOn": "Defeated (click to undo)",
+      "defeatedOff": "Mark defeated",
+      "reactions": "Reactions",
+      "statuses": "Status",
+      "clickRemove": "click to remove",
+      "addStatusHint": "Add a status effect",
+      "noCombatants": "No combatants yet.",
+      "noCombat": "No active combat. Start one from the Combat Tracker."
     }
   }
 }

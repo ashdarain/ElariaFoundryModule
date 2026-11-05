@@ -156,6 +156,16 @@ GMs get a **GM Tools** button left of *React* at the bottom left of the hotbar. 
   - Nothing changes until **Give** (one card) or **Give to everyone**: then the items go into the character's sheet (masteries unequipped, gear in the bag; known masteries are skipped), materials and coins are added, and a chat card lists what they received. × on a chip removes it; **Clear** empties the card. What's lined up is kept until given, even after a reload.
 - **Party** (bottom): **Level up**, **Long rest** (full HP / MP / FTG, +1 life point, −1 exhaustion, −1 injury), **+ Exhaustion**, **+ Injury**, **− Life point**; the × box sets how many (levels, exhaustion, injuries, life points). They apply to the **Whole party** (every player-owned character) or only the **Ticked players** (the tick on each card above). A table shows each party member's level, HP, life points, exhaustion and injuries, and each action posts a chat card.
 
+The **Combat** tab shows every combatant of the current combat in turn order, as a grid of cards (player characters with a blue border, everything else red; the current turn glows):
+
+- portrait (click to select and pan to the token), name, initiative, level / power; characters also show injuries, exhaustion and life points;
+- **HP / MP / FTG** with bars: type a value, or use − / + (by the **Amount** box at the top; − takes temp first, like damage);
+- **Reactions**: the same pips as the combat tracker (click to cycle);
+- **Status**: the token's status effects (click one to remove it) and a + list of Foundry's status effects to add one (Elaria's own status effects come later);
+- 👁 hide / show (token and tracker entry together) and ☠ defeated.
+
+It updates by itself as HP, statuses, turns and combatants change.
+
 ## Crafting
 
 The character sheet's **Crafting** tab:
