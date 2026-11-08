@@ -6,7 +6,7 @@
   {{else}}<span class="equip none"></span>{{/if}}
   <img src="{{img}}" alt="">
   <div class="gear-main">
-    <a class="gear-name" data-action="useItem" data-tooltip="{{#if canRoll}}ELARIA.Gear.rollAttack{{else}}ELARIA.Mastery.postHint{{/if}}">
+    <a class="gear-name" data-action="useItem" data-tooltip="{{#if canRoll}}ELARIA.Gear.rollAttack{{else}}ELARIA.Mastery.openHint{{/if}}">
       {{#if canRoll}}<i class="fa-solid fa-dice-six roll-icon"></i> {{/if}}{{name}}</a>
     <div class="gear-meta">
       <span class="kind">{{kindLabel}}{{#if system.classTrinket}} · {{localize "ELARIA.Gear.classTrinket"}}{{/if}}</span>

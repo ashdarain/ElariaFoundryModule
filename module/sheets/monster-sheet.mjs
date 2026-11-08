@@ -182,7 +182,9 @@ export class ElariaMonsterSheet extends HandlebarsApplicationMixin(ActorSheetV2)
   }
 
   static #onUseItem(event, target) {
-    return this.#item(target)?.use();
+    const item = this.#item(target);
+    if (!item) return;
+    return item.canRoll ? item.use() : item.sheet.render({ force: true });
   }
 
   static #onPostItem(event, target) {

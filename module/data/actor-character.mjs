@@ -1,5 +1,6 @@
 import { ELARIA } from "../config.mjs";
 import * as R from "../rules.mjs";
+import { hasJackOfAllTrades, JOAT_SOURCES } from "./item-mastery.mjs";
 import { findHeritage, findRace, heritageMods } from "../helpers/ancestry.mjs";
 
 const f = foundry.data.fields;
@@ -246,7 +247,28 @@ export class CharacterData extends foundry.abstract.TypeDataModel {
     }
     for (const c of Object.values(categories)) c.over = c.used > c.cap;
     const max = R.maxOutput(lvl, plusOutput) + this.effectBonuses.output;
-    return { categories, output: { used, max, over: used > max } };
+    return { categories, output: { used, max, over: used > max }, joat: this.#prepareJoat(lvl) };
+  }
+
+  /**
+   * Jack of all Trades: equipped output from any single discipline or element may not exceed lvl/2 (rounded down, min 1).
+   * A mastery listed under several disciplines counts toward whichever of them has the least so far.
+   * @returns {{cap:number, groups:{name:string, used:number, over:boolean}[], over:object[]}|null}
+   */
+  #prepareJoat(lvl) {
+    if (!hasJackOfAllTrades(this.parent)) return null;
+    const cap = Math.max(1, Math.floor((lvl ?? 0) / 2));
+    const used = new Map();
+    const items = this.parent.items.filter(i => i.type === "mastery" && i.system.equipped && (i.system.value ?? 0) > 0
+      && !/jack of all trades|\bjoat\b/i.test(i.name));
+    for (const item of items) {
+      const names = [...new Set(item.system.sources.filter(s => JOAT_SOURCES.has(s.type) && s.name).map(s => s.name))];
+      if (!names.length) continue;
+      const pick = names.reduce((a, b) => ((used.get(b) ?? 0) < (used.get(a) ?? 0) ? b : a));
+      used.set(pick, (used.get(pick) ?? 0) + item.system.value);
+    }
+    const groups = [...used].map(([name, n]) => ({ name, used: n, over: n > cap })).sort((a, b) => a.name.localeCompare(b.name));
+    return { cap, groups, over: groups.filter(g => g.over) };
   }
 
   /** Shortcuts for roll formulas: @str … @lck are modifiers, @lvl is level. */

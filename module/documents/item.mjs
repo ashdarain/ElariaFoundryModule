@@ -54,6 +54,11 @@ export class ElariaItem extends Item {
     return this.isUsable ? readSkillMod(this.system.skillMod) : null;
   }
 
+  /** Does using this item roll anything (damage or a skill mod)? Others just open their sheet when clicked. */
+  get canRoll() {
+    return this.hasDamage || !!this.skillInfo;
+  }
+
   /** Does this mastery have the AOE tag (one shared damage roll, one shared skill mod roll)? */
   get isAoe() {
     return this.isUsable && this.system.tagList.some(t => /^aoe$/i.test(t.trim()) || /area of effect/i.test(t));

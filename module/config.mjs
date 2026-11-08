@@ -67,7 +67,7 @@ ELARIA.forms = {
 ELARIA.elements = ["Fire", "Ice", "Lightning", "Wind", "Water", "Earth", "Light", "Dark", "Poison", "Nature"];
 
 ELARIA.disciplines = [
-  "Rogue", "Skirmisher", "Ranger", "Assassin", "Samurai", "Warrior", "Guardian", "Cavalier", "Ninja",
+  "Rogue", "Skirmisher", "Ranger", "Assassin", "Saboteur", "Samurai", "Warrior", "Guardian", "Cavalier", "Ninja",
   "Monk", "Brawler", "Dragon Mage", "Spellblade", "Space Mage", "Summoner", "Meta Mage", "Scholar",
   "Minstrel", "Psychic", "Shapeshifter", "Occultist", "Merchant", "Warpriest", "Divine", "Sword Saint",
   "Shaman", "Demonic Lineage", "Crow", "Raven"

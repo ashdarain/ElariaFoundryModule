@@ -245,6 +245,10 @@
   background: var(--el-panel); border: 1px solid var(--el-line); border-radius: var(--el-radius);
 }
 .elaria .output-bar .create { margin-left: auto; }
+.elaria .joat-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; margin: 4px 0; font-size: 12px; color: var(--el-muted); }
+.elaria .joat-bar .chip { padding: 0 6px; border: 1px solid var(--el-line); border-radius: 8px; color: var(--el-ink); }
+.elaria .joat-bar .chip.over { border-color: var(--el-bad); color: var(--el-bad); font-weight: bold; background: #fbe4dc; }
+.elaria .joat-bar.over > span:first-child { color: var(--el-bad); }
 .elaria .sources { margin-bottom: 8px; }
 .elaria .sources .label { color: var(--el-muted); margin-right: 6px; }
 .elaria .category { margin-bottom: 10px; }
@@ -795,6 +799,9 @@
 /* ---------------- Inventory tab ---------------- */
 
 .elaria .inventory { display: flex; flex-direction: column; gap: 10px; }
+/* Keep sections at their natural height so the tab scrolls instead of squashing them. */
+.elaria section.tab.active { min-height: 0; }
+.elaria .inventory > *, .elaria .tab.crafting > * { flex-shrink: 0; }
 .elaria .inventory-top { display: flex; align-items: flex-end; gap: 10px; flex-wrap: wrap; }
 .elaria .coins { display: flex; gap: 6px; flex: 1; }
 .elaria .coin { display: flex; flex-direction: column; align-items: center; gap: 1px; font-size: 11px; color: var(--el-muted); }

@@ -119,8 +119,18 @@ export class MasteryData extends foundry.abstract.TypeDataModel {
     // A "Reaction" tag gives the mastery rxn (A: masteries tagged Reaction count as reactions).
     if (!this.isReaction && this.tags?.some(t => /^(reactions?|rxn)$/i.test(String(t).trim()))) this.isReaction = true;
     const actor = this.parent.actor;
-    this.levelTooHigh = !!actor && this.reqLevel !== null && (actor.system.level ?? 0) < this.reqLevel;
+    // Jack of all Trades lets the character pick any discipline or elemental mastery, so those aren't flagged.
+    const joatFree = !!actor && this.sources.some(s => JOAT_SOURCES.has(s.type)) && hasJackOfAllTrades(actor);
+    this.levelTooHigh = !!actor && !joatFree && this.reqLevel !== null && (actor.system.level ?? 0) < this.reqLevel;
   }
+}
+
+/** Source types Jack of all Trades opens up (it does nothing for General, Deity, Profession, Heroic or Racial masteries). */
+export const JOAT_SOURCES = new Set(["discipline", "elemental"]);
+
+/** Does this actor own the Jack of all Trades mastery ("Jack of all Trades, Master of All", or "Joat")? */
+export function hasJackOfAllTrades(actor) {
+  return !!actor?.items?.some(i => i.type === "mastery" && /jack of all trades|\bjoat\b/i.test(i.name));
 }
 
 /** "Discipline: Rogue, Ninja · Deity: Hecate" label from a sources array (also used on compendium index entries). */

@@ -1,5 +1,5 @@
 import { ELARIA } from "../config.mjs";
-import { sourceLabelFor } from "../data/item-mastery.mjs";
+import { sourceLabelFor, hasJackOfAllTrades, JOAT_SOURCES } from "../data/item-mastery.mjs";
 import { actorHasMastery, addMasteriesToActor, addGearToActor } from "../helpers/masteries.mjs";
 import { DAMAGE_TYPES, profileFromText } from "../combat/damage.mjs";
 
@@ -325,6 +325,7 @@ export class ElariaMasteryPicker extends HandlebarsApplicationMixin(ApplicationV
     const f = this.#filters;
     const words = f.text.toLowerCase().split(/\s+/).filter(w => w);
     const mine = f.mine && !this.isGear && this.actor?.type === "character" ? this.#characterSources() : null;
+    const joat = !!mine && hasJackOfAllTrades(this.actor);
     const level = this.actor?.system?.level;
     const num = v => (v === "" || v === null || v === undefined || !Number.isFinite(Number(v)) ? null : Number(v));
     const lvMin = num(f.levelMin), lvMax = num(f.levelMax), tMin = num(f.tierMin), tMax = num(f.tierMax);
@@ -362,7 +363,8 @@ export class ElariaMasteryPicker extends HandlebarsApplicationMixin(ApplicationV
         if (f.cost && !e.costs[f.cost]) return false;
         if (f.aoe && !e.isAoe) return false;
         if (f.multi && !e.isMulti) return false;
-        if (mine && !e.sources.some(src => ["bond", "general"].includes(src.type) || mine.has(String(src.name).toLowerCase()))) {
+        if (mine && !e.sources.some(src => ["bond", "general"].includes(src.type) || (joat && JOAT_SOURCES.has(src.type))
+          || mine.has(String(src.name).toLowerCase()))) {
           return false;
         }
         if (f.hideOwned && this.actor && actorHasMastery(this.actor, e)) return false;

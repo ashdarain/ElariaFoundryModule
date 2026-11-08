@@ -6,6 +6,14 @@
     <a class="create" data-action="createMastery"><i class="fa-solid fa-plus"></i> {{localize "ELARIA.Mastery.create"}}</a>
   </div>
 
+  {{#if system.mastery.joat}}
+  <div class="joat-bar {{#if system.mastery.joat.over.length}}over{{/if}}" data-tooltip="ELARIA.Mastery.joatHint">
+    <span>{{localize "ELARIA.Mastery.joatCap" n=system.mastery.joat.cap}}</span>
+    {{#each system.mastery.joat.groups}}<span class="chip {{#if over}}over{{/if}}">{{name}} {{used}}/{{../system.mastery.joat.cap}}</span>{{/each}}
+    {{#if system.mastery.joat.over.length}}<em>{{localize "ELARIA.Over"}}</em>{{/if}}
+  </div>
+  {{/if}}
+
   <div class="sources">
     <span class="label">{{localize "ELARIA.Mastery.sources"}}</span>
     {{#each sources}}<span class="chip">{{this}}</span>{{/each}}

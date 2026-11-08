@@ -204,6 +204,10 @@
       "levelTooHigh": "Requires a higher level than this character has.",
       "anyCategoryHint": "Deity and ancestry masteries can go in any category.",
       "postHint": "Post to chat",
+      "joatOver": "Jack of all Trades: over the per-discipline / element cap ({list}).",
+      "joatCap": "Jack of all Trades: max {n} output per discipline / element",
+      "joatHint": "Equipped mastery output from any single discipline or element can't exceed your level / 2 (rounded down, min 1). General, Deity, Profession, Heroic and Racial masteries don't count.",
+      "openHint": "Show the description (the speech-bubble button posts it to chat)",
       "FIELDS": {
         "reqLevel": "Req. level",
         "value": "Value",

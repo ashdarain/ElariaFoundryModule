@@ -631,9 +631,18 @@ export class ElariaCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV
     return this.document.items.get(target.closest("[data-item-id]").dataset.itemId)?.deleteDialog();
   }
 
-  static #onToggleEquip(event, target) {
+  static async #onToggleEquip(event, target) {
     const item = this.document.items.get(target.closest("[data-item-id]").dataset.itemId);
-    return item?.update({ "system.equipped": !item.system.equipped });
+    if (!item) return;
+    const equipping = !item.system.equipped;
+    await item.update({ "system.equipped": equipping });
+    // Jack of all Trades: warn when this pushes a discipline / element past lvl/2.
+    const joat = item.type === "mastery" && equipping ? this.document.system.mastery?.joat : null;
+    const names = new Set(item.system.sources?.map(s => s.name) ?? []);
+    const over = joat?.over.filter(g => names.has(g.name)) ?? [];
+    if (over.length) ui.notifications.warn(game.i18n.format("ELARIA.Mastery.joatOver", {
+      list: over.map(g => `${g.name} ${g.used}/${joat.cap}`).join(", ")
+    }));
   }
 
   /** Crafting tab: craft a recipe (or evolve the owned item it evolves from). */
@@ -659,9 +668,11 @@ export class ElariaCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV
     return this.render({ parts: ["crafting"] });
   }
 
-  /** Click a mastery's name: damage masteries open the roll window, others go to chat. */
+  /** Click a mastery's / gear's name: things that roll open the roll window, others open their sheet (description). */
   static #onUseItem(event, target) {
-    return this.document.items.get(target.closest("[data-item-id]").dataset.itemId)?.use();
+    const item = this.document.items.get(target.closest("[data-item-id]").dataset.itemId);
+    if (!item) return;
+    return item.canRoll ? item.use() : item.sheet.render({ force: true });
   }
 
   /** "Add item": a blank item, or pick gear from the compendiums. */

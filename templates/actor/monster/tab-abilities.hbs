@@ -9,7 +9,7 @@
     <li class="ability draggable" data-item-id="{{id}}">
       <img src="{{img}}" alt="">
       <div class="ability-main">
-        <a class="ability-name" data-action="useItem" data-tooltip="{{#if canRoll}}ELARIA.Mastery.useHint{{else}}ELARIA.Mastery.postHint{{/if}}">
+        <a class="ability-name" data-action="useItem" data-tooltip="{{#if canRoll}}ELARIA.Mastery.useHint{{else}}ELARIA.Mastery.openHint{{/if}}">
           {{#if canRoll}}<i class="fa-solid fa-dice-six roll-icon"></i> {{/if}}{{name}}{{#if isReaction}} <em>(rxn)</em>{{/if}}
         </a>
         <div class="ability-meta">
