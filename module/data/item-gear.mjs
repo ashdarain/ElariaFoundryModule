@@ -65,6 +65,20 @@ export class GearData extends foundry.abstract.TypeDataModel {
     return this.baseAttack;
   }
 
+  /**
+   * Weapon attacks roll a skill mod first, like masteries: Finesse in melee, Precision for ranged and thrown
+   * weapons (from the Melee / Ranged / … throwing tags; no such tag counts as melee). A weapon that is both
+   * (daggers, javelins) starts on Finesse; pick Precision in the roll window when it's thrown.
+   */
+  get skillMod() {
+    if (!/\d\s*d\s*\d/i.test(this.baseAttack?.raw ?? "")) return { raw: "", stats: [], bonus: null };
+    const tags = this.tagList.map(t => String(t).toLowerCase());
+    const ranged = tags.some(t => /\branged?\b|throw/.test(t));
+    const melee = tags.some(t => /\bmelee\b/.test(t));
+    if (ranged && melee) return { raw: game.i18n.localize("ELARIA.Gear.skillBoth"), stats: ["fin"], bonus: 0, fixed: true };
+    return ranged ? { raw: "Pre", stats: ["pre"], bonus: 0, fixed: true } : { raw: "Fin", stats: ["fin"], bonus: 0, fixed: true };
+  }
+
   /** Where it can go when equipped: weapons on the belt, armour and trinkets worn. */
   get equipSlot() {
     return this.kind === "weapon" ? "belt" : ["armour", "trinket"].includes(this.kind) ? "worn" : null;

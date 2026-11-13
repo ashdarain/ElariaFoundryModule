@@ -1,3 +1,4 @@
+import { spendItemCosts, spentHTML } from "../combat/costs.mjs";
 import { ELARIA } from "../config.mjs";
 import { postRolls } from "../dice/check.mjs";
 import { bonusIsValid, parseBonus } from "../dice/bonus.mjs";
@@ -217,6 +218,9 @@ export async function rollReaction({ actor, combatant = null, type = "towards", 
   const sign = x => (x < 0 ? `− ${Math.abs(x)}` : `+ ${x}`);
   const n = reactionSummary(combatant, actor).n;
 
+  // A reaction mastery's FTG / MP is paid on this roll, pass or fail.
+  const paid = item ? await spendItemCosts(item, actor) : [];
+
   const modeLabel = mode === "normal" ? "" : L(`ELARIA.Dice.${mode}`);
   const content = `
     <div class="elaria roll-card react-card pending">
@@ -243,6 +247,7 @@ export async function rollReaction({ actor, combatant = null, type = "towards", 
         <button type="button" class="pass" data-elaria-action="reactPass"><i class="fa-solid fa-check"></i> ${L("ELARIA.React.markPass")}</button>
         <button type="button" class="fail" data-elaria-action="reactFail"><i class="fa-solid fa-xmark"></i> ${L("ELARIA.React.markFail")}</button>
       </div>
+      ${spentHTML(paid)}
       <p class="react-foot">${L("ELARIA.React.pendingNote")}</p>
     </div>`;
   return postRolls([roll, ...bonusParts.filter(p => p.roll.dice.length).map(p => p.roll)], { actor, content, flags: { react: {

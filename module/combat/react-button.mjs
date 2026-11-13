@@ -1,5 +1,6 @@
 import { ElariaReactionPicker } from "../apps/reaction-picker.mjs";
 import { ElariaGMTools } from "../apps/gm-tools.mjs";
+import { ElariaTurnPanel } from "../apps/turn-panel.mjs";
 
 /**
  * "React" button at the bottom left of the hotbar. Lists the selected token's (or the player's character's)
@@ -7,6 +8,22 @@ import { ElariaGMTools } from "../apps/gm-tools.mjs";
  */
 let button = null;
 let gmButton = null;
+let turnButton = null;
+
+/** "Turn", right of React: the action window panel. */
+function buildTurn() {
+  const el = document.createElement("button");
+  el.type = "button";
+  el.className = "elaria-react-button elaria-turn-button";
+  el.dataset.tooltip = game.i18n.localize("ELARIA.Turn.buttonHint");
+  el.innerHTML = `<i class="fa-solid fa-hourglass-half"></i><span>${game.i18n.localize("ELARIA.Turn.button")}</span>`;
+  el.addEventListener("click", ev => {
+    ev.preventDefault();
+    ev.stopPropagation();
+    ElariaTurnPanel.open();
+  });
+  return el;
+}
 let observer = null;
 
 /** "GM Tools", left of React, GM only. */
@@ -24,10 +41,11 @@ function buildGM() {
   return el;
 }
 
-/** Are the buttons first in the hotbar, in order (GM Tools, React)? */
+/** Are the buttons first in the hotbar, in order (GM Tools, React, Turn)? */
 function inPlace(hotbar) {
-  if (game.user.isGM) return hotbar.firstElementChild === gmButton && gmButton.nextElementSibling === button;
-  return hotbar.firstElementChild === button;
+  const ok = button.nextElementSibling === turnButton;
+  if (game.user.isGM) return ok && hotbar.firstElementChild === gmButton && gmButton.nextElementSibling === button;
+  return ok && hotbar.firstElementChild === button;
 }
 
 function build() {
@@ -48,8 +66,9 @@ export function placeReactButton() {
   const hotbar = document.getElementById("hotbar");
   if (!hotbar) return;
   button ??= build();
+  turnButton ??= buildTurn();
   if (game.user.isGM) gmButton ??= buildGM();
-  if (!inPlace(hotbar)) hotbar.prepend(...(game.user.isGM ? [gmButton, button] : [button]));
+  if (!inPlace(hotbar)) hotbar.prepend(...(game.user.isGM ? [gmButton, button, turnButton] : [button, turnButton]));
 }
 
 export function initReactButton() {

@@ -118,6 +118,7 @@
   <p class="done"><i class="fa-solid fa-circle-check"></i>
     {{localize "ELARIA.Importer.summary" created=summary.created updated=summary.updated removed=summary.removed}}
     {{#if summary.backgrounds}}<br>{{localize "ELARIA.Importer.backgroundsSaved" n=summary.backgrounds}}{{/if}}
+    {{#if summary.bursts}}<br>{{localize "ELARIA.Importer.burstsSaved" n=summary.bursts}}{{/if}}
     {{#if summary.savedTo}}<br><span class="hint">{{localize "ELARIA.Importer.savedTo" path=summary.savedTo}}</span>{{/if}}</p>
   {{/if}}
 

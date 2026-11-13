@@ -82,16 +82,16 @@
           <input type="number" name="system.conditions.exhaustion" value="{{system.conditions.exhaustion}}" min="0" max="7" step="1">
           <span class="of">/7</span>
         </label>
-        <label>
-          <span>{{localize "ELARIA.Condition.burst"}}</span>
-          <input type="number" name="system.conditions.burst.value" value="{{system.conditions.burst.value}}" min="0" step="1">
-          <span class="of">/</span>
-          <span class="of burst-max" data-tooltip="{{localize 'ELARIA.Burst.maxFromMood' mood=system.conditions.burst.mood}}">{{system.conditions.burst.max}}</span>
-        </label>
         <label class="checkbox">
           <input type="checkbox" name="system.conditions.secondWindUsed" {{checked system.conditions.secondWindUsed}}>
           <span>{{localize "ELARIA.Condition.secondWindUsed"}}</span>
         </label>
+        {{#if editMode}}
+        <label class="checkbox editing" data-tooltip="ELARIA.Cost.autoSpendHint">
+          <input type="checkbox" name="system.autoSpend" {{checked system.autoSpend}}>
+          <span>{{localize "ELARIA.Cost.autoSpend"}}</span>
+        </label>
+        {{/if}}
       </div>
     </div>
 
@@ -108,6 +108,19 @@
           <i class="fa-solid fa-dice"></i> <span class="label">{{localize "ELARIA.Combat.initiative"}}</span> <b>{{initiativeLabel}}</b>
         </a>
       </div>
+    </div>
+
+    <div class="burst-row">
+      <span class="label" data-tooltip="ELARIA.Burst.rules"><i class="fa-solid fa-burst"></i> {{localize "ELARIA.Burst.title"}}</span>
+      <span class="burst-name">{{#if burst.name}}{{burst.name}}{{else}}<em>{{localize "ELARIA.Burst.none"}}</em>{{/if}}</span>
+      <span class="burst-gauge {{#if burst.full}}full{{/if}}" data-tooltip="{{localize 'ELARIA.Burst.gaugeHint' mood=system.conditions.burst.mood}}">
+        <span class="bar"><span class="fill" style="width: {{burst.pct}}%"></span></span>
+        <b>{{system.conditions.burst.value}}</b> / {{system.conditions.burst.max}}
+      </span>
+      <span class="burst-buttons">
+        {{#if editable}}<button type="button" class="add" data-action="addBurstGauge" data-tooltip="ELARIA.Burst.addHint"><i class="fa-solid fa-plus"></i> {{localize "ELARIA.Burst.add"}}</button>{{/if}}
+        <button type="button" class="use" data-action="useBurst" {{#unless burst.canUse}}disabled{{/unless}} data-tooltip="{{burst.useHint}}"><i class="fa-solid fa-burst"></i> {{localize "ELARIA.Burst.useButton"}}</button>
+      </span>
     </div>
   </div>
 </header>

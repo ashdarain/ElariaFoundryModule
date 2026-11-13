@@ -12,6 +12,7 @@
       "name": "Ash"
     }
   ],
+  "socket": true,
   "esmodules": [
     "elaria.mjs"
   ],

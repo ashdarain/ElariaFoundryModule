@@ -1,0 +1,58 @@
+<section class="turn-panel-body">
+  {{#if active}}
+  {{#if current}}
+  <div class="now elaria-side-{{current.side}} {{#if current.mine}}mine{{/if}}">
+    <img src="{{current.img}}" alt="">
+    <div class="who">
+      <span class="label">{{localize "ELARIA.Turn.roundWindow" round=round window=current.windowLabel init=current.initiative}}</span>
+      <b>{{current.name}}</b>
+      {{#if current.pickedBy}}<small>{{localize "ELARIA.Turn.pickedBy" name=current.pickedBy}}</small>{{/if}}
+    </div>
+  </div>
+  {{/if}}
+  {{#if canEnd}}
+  <div class="turn-buttons">
+    <button type="button" data-action="endTurn"><i class="fa-solid fa-forward-step"></i> {{localize "ELARIA.Turn.endTurn"}}</button>
+    {{#if canDelay}}<button type="button" data-action="delay" data-tooltip="ELARIA.Turn.delayHint"><i class="fa-solid fa-hourglass-half"></i> {{localize "ELARIA.Turn.delay"}}</button>{{/if}}
+  </div>
+  {{/if}}
+  {{#if actNow.length}}
+  <div class="act-now">
+    <span class="row-label" data-tooltip="ELARIA.Turn.actNowHint">{{localize "ELARIA.Turn.actNowLabel"}}</span>
+    <div class="chips">{{#each actNow}}<a class="chip" data-action="actNow" data-id="{{id}}" data-tooltip="{{name}}"><img src="{{img}}" alt=""></a>{{/each}}</div>
+  </div>
+  {{/if}}
+
+  {{#each sides}}
+  <div class="side elaria-side-{{key}}">
+    <h4>{{label}}
+      {{#if window}}<small>{{localize "ELARIA.Turn.nextWindow" init=window.initiative}}{{#if window.nextRound}} · {{localize "ELARIA.Turn.nextRound"}}{{/if}}</small>
+      {{else}}<small>{{localize "ELARIA.Turn.noWindowsLeft"}}</small>{{/if}}</h4>
+    {{#if window}}
+    {{#if canPick}}
+    <p class="hint">{{localize "ELARIA.Turn.youPick"}}</p>
+    <div class="chips">
+      {{#each choices}}
+      <a class="chip pick {{#if selected}}selected{{/if}}" data-action="pick" data-side="{{../key}}" data-id="{{id}}" data-tooltip="{{name}}">
+        <img src="{{img}}" alt=""><span>{{name}}</span></a>
+      {{else}}<em class="hint">{{localize "ELARIA.Turn.nobodyLeft"}}</em>{{/each}}
+    </div>
+    {{#unless plannedName}}<p class="hint small">{{localize "ELARIA.Turn.noPick"}}</p>{{/unless}}
+    {{else}}
+    <p class="hint">{{#if plannedName}}{{localize "ELARIA.Turn.planned" name=plannedName}}{{else}}{{#if pickerName}}{{localize "ELARIA.Turn.picks" name=pickerName}}{{else}}{{localize "ELARIA.Turn.noPick"}}{{/if}}{{/if}}</p>
+    {{/if}}
+    {{/if}}
+    {{#if members.length}}
+    <div class="members" data-tooltip="ELARIA.Turn.toggleActedHint">
+      {{#each members}}
+      <a class="chip member {{#if acted}}acted{{/if}} {{#if defeated}}defeated{{/if}} {{#if reserved}}reserved{{/if}}" data-action="toggleActed" data-id="{{id}}">
+        <img src="{{img}}" alt=""><span>{{name}}</span>{{#if acted}}<i class="fa-solid fa-check"></i>{{/if}}{{#if reserved}}<i class="fa-solid fa-hourglass-half"></i>{{/if}}</a>
+      {{/each}}
+    </div>
+    {{/if}}
+  </div>
+  {{/each}}
+  {{else}}
+  <p class="hint">{{message}}</p>
+  {{/if}}
+</section>

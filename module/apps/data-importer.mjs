@@ -49,6 +49,8 @@ export class ElariaDataImporter extends HandlebarsApplicationMixin(ApplicationV2
       scope: "world", config: false, type: Object, default: null,
       onChange: () => { for (const app of foundry.applications.instances.values()) if (app.document?.type === "character") app.render(); }
     });
+    // Pre-made bursts (Bursts/Alignment tab); null = the built-in copy. Read by the character sheet's burst picker.
+    game.settings.register("elaria", "bursts", { scope: "world", config: false, type: Object, default: null });
     // Ancestry tab: races → heritages → heritage stat modifiers (Bio tab choices). null = the built-in copy.
     game.settings.register("elaria", "ancestries", {
       scope: "world", config: false, type: Array, default: null,
@@ -361,6 +363,13 @@ export class ElariaDataImporter extends HandlebarsApplicationMixin(ApplicationV2
       if (backgrounds && this.#importConfig?.compendiums?.backgrounds !== false) {
         await game.settings.set("elaria", "backgrounds", backgrounds);
         summary.backgrounds = backgrounds.scales.reduce((n, sc) => n + sc.tiers.length, 0);
+      }
+
+      // Pre-made bursts: also a world setting.
+      const bursts = this.#conversion?.docs.get("bursts.json");
+      if (bursts?.bursts.length && this.#importConfig?.compendiums?.bursts !== false) {
+        await game.settings.set("elaria", "bursts", bursts);
+        summary.bursts = bursts.bursts.length;
       }
 
       // Ancestries (races, heritages, heritage stat mods) for the Bio tab.

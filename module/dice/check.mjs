@@ -1,6 +1,7 @@
 import { ELARIA } from "../config.mjs";
 import { labelDamageProfile, profileLabel } from "../combat/damage.mjs";
 import { parseBonus } from "./bonus.mjs";
+import { spendItemCosts, spentHTML } from "../combat/costs.mjs";
 
 /**
  * Elaria rolls.
@@ -56,12 +57,14 @@ export function roll3d6(options = {}) {
  * @param {object} [options.skill]         A mastery's skill mod ({stats, bonus, raw}): adds a "Roll skill mod" button
  * @param {object} [options.damage]        Damage profile (type, element, form, pierce): the card can apply the damage
  * @param {string[]} [options.targetTokens] Token UUIDs of the targets (same order as targetNames)
+ * @param {object} [options.spend]         This is the first roll of using an item ({itemUuid, messageId?}): its
+ *                                         FTG / MP cost is taken off the actor and shown on the card
  */
 export async function rollDice({ actor = null, stat = "", bonus = "", bonusPerHit = false, penalty = 0,
   critChance = 0, critDamage = 0, mode = "normal", dice: diceSpec = "3d6", hits = 1, targets = 1, targetNames = [],
   aoe = false, label = "", note = "", img = "", skill = null, next = null,
   critChanceBonus = 0, critDamageBonus = 0, fixedCrit = false, damage = null, targetTokens = [], bonusTarget = 0,
-  verdictTargets = null } = {}) {
+  verdictTargets = null, spend = null } = {}) {
   diceSpec = DICE_RE.test(String(diceSpec).trim().toLowerCase()) ? String(diceSpec).trim().toLowerCase() : "3d6";
   const mod = stat && actor ? actor.system.stats?.[stat]?.mod ?? 0 : 0;
   const statLabel = stat ? L(ELARIA.stats[stat]?.label ?? stat) : "";
@@ -256,6 +259,10 @@ export async function rollDice({ actor = null, stat = "", bonus = "", bonusPerHi
     damage ? `<span class="tag damage-type">${esc(profileLabel(damage))}</span>` : ""
   ].join("");
 
+  // First roll of using a mastery / ability / attack: pay its FTG / MP.
+  const spendItem = spend?.itemUuid ? await fromUuid(spend.itemUuid) : null;
+  const paid = spendItem ? await spendItemCosts(spendItem, actor ?? spendItem.actor, { messageId: spend.messageId }) : [];
+
   const anyCrit = results.some(r => r.crit?.hit);
   const content = `
     <div class="elaria roll-card ${anyCrit ? "is-crit" : ""}">
@@ -267,6 +274,7 @@ export async function rollDice({ actor = null, stat = "", bonus = "", bonusPerHi
       </header>
       ${tagsHTML ? `<div class="roll-tags">${tagsHTML}</div>` : ""}
       ${body}
+      ${spentHTML(paid)}
       ${verdictTargets?.length ? `<div class="skill-verdicts"></div>` : ""}
       ${damage ? `<div class="damage-apply"></div>` : ""}
       ${skill ? skillButton(skill) : ""}
@@ -333,7 +341,7 @@ export function skillButton(skill) {
  * monsters: players who don't own the monster only see the results. Those parts get the class "roll-detail",
  * which onRenderChatMessage removes for them.
  */
-export const ROLL_DETAIL = ".sets, .breakdown, .hit-math .part, .crit-check, .titles .note, .roll-tags, .crit-x, .by-type";
+export const ROLL_DETAIL = ".sets, .breakdown, .hit-math .part, .crit-check, .titles .note, .roll-tags, .crit-x, .by-type, .spent";
 
 export function markRollDetails(content, selectors = ROLL_DETAIL) {
   const doc = new DOMParser().parseFromString(`<div>${content}</div>`, "text/html");

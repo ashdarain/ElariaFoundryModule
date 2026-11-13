@@ -188,7 +188,8 @@ export class ElariaMonsterSheet extends HandlebarsApplicationMixin(ActorSheetV2)
   }
 
   static #onPostItem(event, target) {
-    return this.#item(target)?.toChat();
+    const item = this.#item(target);
+    return item?.toChat({ spend: !item.canRoll });   // nothing to roll: posting it is using it
   }
 
   static #onEditItem(event, target) {

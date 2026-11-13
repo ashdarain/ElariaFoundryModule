@@ -1,4 +1,4 @@
-import { statCode } from "../importer/convert.mjs";
+import { parseSkillText } from "./formula.mjs";
 
 /**
  * Skill mod rolls (the "hit chance" when the target reacts):
@@ -15,15 +15,15 @@ import { statCode } from "../importer/convert.mjs";
 export function readSkillMod(skillMod) {
   const raw = String(skillMod?.raw ?? "").trim();
   if (!raw) return null;
-  let stats = Array.isArray(skillMod.stats) ? [...skillMod.stats] : [];
-  let bonus = Number.isFinite(skillMod.bonus) ? skillMod.bonus : null;
-  if (!stats.length || bonus === null) {
-    const m = /(\d+)?\s*\+?\s*([A-Za-z]+)(?:\s*(?:or|\/)\s*([A-Za-z]+))?/i.exec(raw);
-    const found = [m?.[2], m?.[3]].map(w => (w ? statCode(w) : null)).filter(s => s);
-    if (!stats.length) stats = found;
-    if (bonus === null) bonus = parseInt(/^\s*(\d+)/.exec(raw)?.[1] ?? "0", 10);
-  }
-  return { raw, stats, bonus: bonus ?? 0 };
+  if (/^(n\/?a|none|-|—)$/i.test(raw)) return null;
+  // Worked out by the system (weapon attacks), not typed: use as given.
+  if (skillMod.fixed) return { raw, stats: [...(skillMod.stats ?? [])], bonus: skillMod.bonus ?? 0 };
+  // The text as written decides (it may have been edited by hand: "Fin+1", "2+Fin+1"); the importer's reading
+  // is only used when the text can't be read.
+  const read = parseSkillText(raw);
+  const stats = read?.stats.length ? read.stats : (Array.isArray(skillMod.stats) ? [...skillMod.stats] : []);
+  const bonus = read ? read.bonus : (Number.isFinite(skillMod.bonus) ? skillMod.bonus : 0);
+  return { raw, stats, bonus };
 }
 
 /** Roll window preset for a skill mod roll. With "Pre or Smrts" the character's better stat is chosen. */

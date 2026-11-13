@@ -4,6 +4,8 @@ import { defaultRollActor, hidesRollDetails, skillButton } from "../dice/check.m
 import { itemDamageProfile } from "../combat/damage.mjs";
 import { itemTypesFor } from "../apps/compendium-types.mjs";
 import { readSkillMod, skillRollPreset } from "../dice/skill.mjs";
+import { parseDamageText } from "../dice/formula.mjs";
+import { spendItemCosts, spentHTML } from "../combat/costs.mjs";
 
 /**
  * Item types that can be "used" (skill mod → damage → chat): character masteries, monster abilities and gear
@@ -85,22 +87,21 @@ export class ElariaItem extends Item {
    */
   damageRollPreset(actor = this.actor, { targets = null } = {}) {
     const d = this.system.damage ?? {};
-    let dice = d.count && d.sides ? `${d.count}d${d.sides}` : "";
-    let stat = statCode(d.stat || "") || d.stat || "";
-    // Fill whatever the importer left blank from the text ("3d6+Str x2" → 3d6, Strength).
-    const m = /(\d+)\s*d\s*(\d+)(?:\s*\+\s*([A-Za-z]+))?/i.exec(d.raw ?? "");
-    if (m) {
-      dice ||= `${m[1]}d${m[2]}`;
-      stat ||= (m[3] && statCode(m[3])) || "";
-    }
+    // The text as written decides ("3d6+Str+1", "3d6+1+Str x2": dice, stat, and the rest goes in the bonus), so
+    // hand-edited damage works; the importer's reading only fills in what the text doesn't give.
+    const read = parseDamageText(d.raw);
+    const dice = read.dice || (d.count && d.sides ? `${d.count}d${d.sides}` : "");
+    let stat = read.dice ? read.stat : (statCode(d.stat || "") || d.stat || "");
     if (stat && !ELARIA.stats[stat]) stat = "";
     const note = [
       `${game.i18n.localize("ELARIA.Mastery.FIELDS.damage")}: ${d.raw}`,
       this.system.cost ? `${game.i18n.localize("ELARIA.Mastery.FIELDS.cost")}: ${this.system.cost}` : ""
     ].filter(x => x).join(" · ");
     // "x3" = 3 hits on each target; an AOE tag = one shared damage roll for every target.
-    const hits = /^\d+$/.test(String(d.hits ?? "")) ? Number(d.hits) : (Number(/x\s*(\d+)/i.exec(d.raw ?? "")?.[1] ?? /^\s*(\d+)\s*x\s/i.exec(d.raw ?? "")?.[1]) || 1);
-    return { actor: actor ?? null, dice: dice || "3d6", stat, bonus: "", label: this.name, note, img: this.img, penalty: 0,
+    const hits = read.dice ? read.hits : (/^\d+$/.test(String(d.hits ?? "")) ? Number(d.hits) : 1);
+    // Flat numbers and extra dice in the formula are part of every hit on every target.
+    return { actor: actor ?? null, dice: dice || "3d6", stat, bonus: read.bonus, bonusPerHit: !!read.bonus,
+      label: this.name, note, img: this.img, penalty: 0,
       hits, aoe: this.isAoe, targets, damage: itemDamageProfile(this, actor ?? this.actor) };
   }
 
@@ -115,8 +116,12 @@ export class ElariaItem extends Item {
    * @param {object} [options]
    * @param {boolean} [options.skipSkill]  Go straight to damage (the target didn't react).
    * @param {boolean} [options.normal]     For reaction (rxn) masteries: skip the "react or use normally?" question.
+   * @param {string} [options.messageId]   The chat card the use started from (its cost is only paid once).
+   *
+   * The FTG / MP cost is paid on the first roll (skill mod, or damage when there's no skill mod roll), or when the
+   * card is posted if there's nothing to roll (see combat/costs.mjs).
    */
-  async use({ skipSkill = false, normal = false, targets = null } = {}) {
+  async use({ skipSkill = false, normal = false, targets = null, messageId = "" } = {}) {
     const actor = this.actor ?? defaultRollActor();
     const L = k => game.i18n.localize(k);
 
@@ -136,28 +141,31 @@ export class ElariaItem extends Item {
       if (choice !== "normal") return;
     }
 
+    const spend = { itemUuid: this.uuid, messageId };
     if (this.skillInfo && !skipSkill) {
       return game.elaria.RollDialog.open({
         ...this.skillRollPreset(actor),
+        spend,
         skip: {
           label: this.hasDamage ? L("ELARIA.Dice.noReactionDamage") : L("ELARIA.Dice.noReactionPost"),
           hint: L("ELARIA.Dice.noReactionHint"),
           // Keeps the number of targets typed in the skill mod window.
-          action: ({ targets } = {}) => this.use({ skipSkill: true, targets })
+          action: ({ targets } = {}) => this.use({ skipSkill: true, targets, messageId })
         }
       });
     }
-    if (this.hasDamage) return game.elaria.RollDialog.open(this.damageRollPreset(actor, { targets }));
-    // Nothing (left) to roll: post the card. Coming from the skill mod step, it doesn't offer the skill mod again.
-    return this.toChat({ skillButton: !skipSkill && !this.skillInfo });
+    if (this.hasDamage) return game.elaria.RollDialog.open({ ...this.damageRollPreset(actor, { targets }), spend });
+    // Nothing (left) to roll: post the card (and pay). Coming from the skill mod step, it doesn't offer the skill mod again.
+    return this.toChat({ skillButton: !skipSkill && !this.skillInfo, spend: !messageId, actor });
   }
 
   /**
    * Post a mastery card to chat.
    * @param {object} [options]
    * @param {boolean} [options.skillButton=true]  Add the "Roll skill mod" button (off once the skill mod is done).
+   * @param {boolean} [options.spend=false]       Posting it is using it (nothing to roll): pay its FTG / MP.
    */
-  async toChat({ skillButton: withSkill = true } = {}) {
+  async toChat({ skillButton: withSkill = true, spend = false, actor: user = null } = {}) {
     const s = this.system;
     const rows = [];
     if (this.type === "mastery") {
@@ -181,6 +189,7 @@ export class ElariaItem extends Item {
       if (s.family) rows.push([L("ELARIA.Gear.family"), s.tier ? `${s.family} · ${game.i18n.format("ELARIA.Gear.tierN", { n: s.tier })}` : s.family]);
       if (s.reqLevel !== null) rows.push([L("ELARIA.Mastery.FIELDS.reqLevel"), s.reqLevel]);
       if (s.baseAttack?.raw) rows.push([L("ELARIA.Gear.baseAttack"), s.baseAttack.raw + (s.damageType ? ` (${s.damageType})` : "")]);
+      if (s.skillMod?.raw) rows.push([L("ELARIA.Mastery.FIELDS.skillMod"), s.skillMod.raw]);
       if (s.armourRating !== null) rows.push(["AAR", s.armourRating + (s.weight ? ` (${s.weight})` : "")]);
       if (s.affinity) rows.push([L("ELARIA.Gear.affinity"), s.affinity]);
       if (s.equipLoad !== null) rows.push([L("ELARIA.Gear.equipLoad"), s.equipLoad]);
@@ -205,7 +214,7 @@ export class ElariaItem extends Item {
         + `<i class="fa-solid fa-dice"></i> ${game.i18n.format("ELARIA.Dice.rollDamage", { dmg: esc(s.damage.raw) })}</button>`);
     }
     if (skill && withSkill) buttons.push(skillButton(skill));
-    const content = `
+    let content = `
       <div class="elaria chat-card">
         <header><img src="${this.img}" alt=""><h3>${esc(this.name)}${s.isReaction ? " <em>(rxn)</em>" : ""}</h3></header>
         <dl class="${hidesRollDetails(this.actor) ? "roll-detail" : ""}">${rows.map(([k, v]) => `<dt>${esc(String(k))}</dt><dd>${esc(String(v))}</dd>`).join("")}</dl>
@@ -214,10 +223,13 @@ export class ElariaItem extends Item {
         ${buttons.length ? `<div class="card-buttons">${buttons.join("")}</div>` : ""}
       </div>`;
     const actor = this.actor ?? null;
+    const paid = spend ? await spendItemCosts(this, user ?? actor) : [];
+    if (paid.length) content = content.replace(/<\/div>\s*$/, `${spentHTML(paid, { hidden: hidesRollDetails(user ?? actor) })}</div>`);
     return ChatMessage.create({
       speaker: ChatMessage.getSpeaker({ actor }),
       content,
       flags: { elaria: {
+        ...(paid.length ? { paid: true } : {}),
         mastery: { itemUuid: this.uuid, actorUuid: actor?.uuid ?? "" },
         ...(skill ? { skill: { ...skill, name: this.name, img: this.img, actorUuid: actor?.uuid ?? "" } } : {})
       } }

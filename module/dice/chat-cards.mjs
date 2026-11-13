@@ -71,7 +71,10 @@ async function onCardButton(message, action) {
       // Mastery cards: go through the mastery so the skill card can carry on to damage.
       const item = flags.mastery?.itemUuid ? await fromUuid(flags.mastery.itemUuid) : null;
       const s = flags.skill;
-      if (item) return ElariaRollDialog.open(item.skillRollPreset(actorFrom(flags.mastery.actorUuid) ?? item.actor ?? undefined));
+      if (item) return ElariaRollDialog.open({
+        ...item.skillRollPreset(actorFrom(flags.mastery.actorUuid) ?? item.actor ?? undefined),
+        spend: { itemUuid: item.uuid, messageId: message.id }      // paid once per card, whichever button is first
+      });
       if (!s) return;
       return ElariaRollDialog.open(skillRollPreset({
         actor: actorFrom(s.actorUuid), skill: s, name: s.name, img: s.img, targets: s.targets, aoe: !!s.aoe
@@ -107,7 +110,7 @@ async function onCardButton(message, action) {
     case "damage": {
       const item = flags.mastery?.itemUuid ? await fromUuid(flags.mastery.itemUuid) : null;
       if (!item) return ui.notifications.warn(game.i18n.localize("ELARIA.Mastery.macroMissing"));
-      return item.use({ skipSkill: true });
+      return item.use({ skipSkill: true, messageId: message.id });
     }
   }
 }

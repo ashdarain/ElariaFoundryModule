@@ -14,7 +14,8 @@
     "trinkets": true,
     "uniques": true,
     "backgrounds": true,
-    "crafting": true
+    "crafting": true,
+    "bursts": true
   },
   "tabs": {
     "general": "General Masteries",
@@ -71,7 +72,8 @@
     ],
     "tags": "Tags",
     "gear": "Gear",
-    "backgrounds": "Backgrounds"
+    "backgrounds": "Backgrounds",
+    "bursts": "Bursts/Alignment"
   },
   "ignoredTabs": [
     "Set Masteries (Discontinued)",

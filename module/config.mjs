@@ -223,14 +223,15 @@ ELARIA.alignmentBurst = {
   Ambitious: "When attempting to enact one’s specific ambitious goal."
 };
 
-/** What fills the burst gauge (Bursts/Alignment tab). */
+/** What fills the burst gauge (Bursts/Alignment tab), besides the alignment wheel (+2 per alignment, below). */
+ELARIA.alignmentBurstGauge = 2;
 ELARIA.burstGaugeSources = [
-  ["Your alignment wheel trigger", 2],
-  ["Deal a finishing blow", 1],
-  ["Heal someone at 25% HP or less", 1],
-  ["Someone you buffed deals a finishing blow", 1],
-  ["Someone you debuffed is KO'd by an ally", 1],
-  ["An ally is KO'd", 2],
+  ["Deal a finishing Blow", 1],
+  ["Heal someone at 25% hp or less", 1],
+  ["Someone currently buffed from you deals a finishing blow", 1],
+  ["Someone currently debuffed from you is KO'd by an ally", 1],
+  ["You take damage equal to 50% or more of your HP in 1 round", 2],
+  ["An Ally is KO'd", 2],
   ["You are KO'd", 3]
 ];
 

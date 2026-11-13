@@ -7,12 +7,12 @@
   </div>
   <div class="combat-grid">
     {{#each units}}
-    <div class="combat-unit {{#if pc}}pc{{else}}npc{{/if}} {{#if isCurrent}}current{{/if}} {{#if defeated}}defeated{{/if}} {{#if hidden}}is-hidden{{/if}}" data-combatant="{{id}}">
+    <div class="combat-unit {{#if pc}}pc{{else}}npc{{/if}} {{#if isCurrent}}current{{/if}} {{#if acted}}acted{{/if}} {{#if defeated}}defeated{{/if}} {{#if hidden}}is-hidden{{/if}}" data-combatant="{{id}}">
       <header>
         <img src="{{img}}" alt="" data-action="unitPan" data-tooltip="ELARIA.GMTools.panHint">
         <div class="who">
           <a class="name" data-action="unitSheet">{{name}}</a>
-          <span class="sub">{{localize "ELARIA.GMTools.init"}} {{initiative}}{{#if level}} · {{levelLabel}} {{level}}{{/if}}{{#if pc}} · {{localize "ELARIA.GMTools.pc"}}{{/if}}</span>
+          <span class="sub">{{localize "ELARIA.GMTools.init"}} {{initiative}}{{#if level}} · {{levelLabel}} {{level}}{{/if}}{{#if pc}} · {{localize "ELARIA.GMTools.pc"}}{{/if}}{{#if acted}} · <i class="fa-solid fa-check"></i> {{localize "ELARIA.Turn.acted"}}{{/if}}</span>
         </div>
         <a class="toggle {{#if hidden}}on{{/if}}" data-action="unitHidden" data-tooltip="{{#if hidden}}ELARIA.GMTools.hiddenOn{{else}}ELARIA.GMTools.hiddenOff{{/if}}">
           <i class="fa-solid {{#if hidden}}fa-eye-slash{{else}}fa-eye{{/if}}"></i></a>

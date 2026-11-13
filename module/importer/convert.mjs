@@ -37,7 +37,8 @@ export const DEFAULT_CONFIG = {
     ],
     tags: "Tags",
     gear: "Gear",
-    backgrounds: "Backgrounds"
+    backgrounds: "Backgrounds",
+    bursts: "Bursts/Alignment"
   },
   // Tabs that look like mastery tabs but are old copies or helper tables.
   ignoredSheets: [
@@ -2031,6 +2032,51 @@ function convertBackgrounds(ctx, sheetName) {
   return doc;
 }
 
+/* ================================================================== */
+/*  Bursts/Alignment tab: the pre-made bursts list                     */
+/* ================================================================== */
+
+/** "Stalwart Sentinel: Create a field…" / "Bone Armour, Spend 50%…" → { name, text } */
+export function splitBurst(raw) {
+  const text = cleanText(raw);
+  const m = /^([^:,.\n]{2,48})[:,]\s+([\s\S]+)$/.exec(text);
+  return m ? { name: m[1].trim(), text: m[2].trim() } : { name: "", text };
+}
+
+/**
+ * The list under "Class specific bursts": one row per discipline / element, its name in one column and the burst
+ * ("Name: what it does") in the next. Rows without a burst yet are skipped. Found by its heading, not its position.
+ */
+function convertBursts(ctx, sheetName) {
+  const isHead = v => /^class specific bursts?$/i.test(v);
+  // The tab is found by its name or, if it was renamed (Google drops the "/" on export), by the heading itself.
+  const grid = ctx.sheets.get(sheetName) ?? ctx.sheets.get(xlsxSheetName(sheetName))
+    ?? [...ctx.sheets.values()].find(g => g.find(isHead).length);
+  if (!grid) { ctx.warn(sheetName, "no tab with a \"Class specific bursts\" list found; pre-made bursts not read"); return null; }
+  const doc = fileHeader("bursts", "bursts", "Bursts", grid);
+  doc.bursts = [];
+  const head = grid.find(isHead)[0];
+  if (!head) { ctx.warn(grid.name, "no \"Class specific bursts\" heading found; pre-made bursts not read"); return doc; }
+  const [hr, hc] = head;
+  grid.take(hr, hc);
+  let blanks = 0;
+  for (let r = hr + 1; r < grid.length && blanks < 3; r++) {
+    const cells = grid.nonempty(r).filter(([c]) => c >= hc);
+    if (!cells.length) { blanks++; continue; }
+    blanks = 0;
+    const [c0, source] = cells[0];
+    if (c0 !== hc || source.length > 40) continue;      // notes beside the list, not a row of it
+    grid.take(r, c0);
+    for (const [c] of cells.slice(1)) {
+      const b = splitBurst(grid.takeRaw(r, c));
+      if (!b.text) continue;
+      if (!b.name) b.name = `${source} burst`;
+      doc.bursts.push({ id: slugify(`${source}-${b.name}`), source, ...b });
+    }
+  }
+  return doc;
+}
+
 function dedupeFileIds(ctx, out) {
   for (const key of ["disciplines", "elements", "deities", "ancestries", "professions", "gear"]) {
     const seen = new Map();
@@ -2047,13 +2093,14 @@ function dedupeFileIds(ctx, out) {
 
 const SUBDIRS = { discipline: "disciplines", elemental: "elements", deity: "deities", ancestry: "ancestries", profession: "professions", gear: "gear" };
 const SINGLE = { "set-masteries": "set-masteries.json", "bond-masteries": "bond-masteries.json",
-  "class-trinkets": "class-trinkets.json", "gear-overview": "gear-overview.json", backgrounds: "backgrounds.json" };
+  "class-trinkets": "class-trinkets.json", "gear-overview": "gear-overview.json", backgrounds: "backgrounds.json", bursts: "bursts.json" };
 
 /** Masteries in the file, or items for gear files. */
 const masteryCount = doc => {
   if (doc.type === "gear") return doc.items.length;
   if (doc.type === "class-trinkets") return doc.groups.reduce((n, g) => n + g.items.length, 0);
   if (doc.type === "backgrounds") return doc.scales.reduce((n, sc) => n + sc.tiers.length, 0);
+  if (doc.type === "bursts") return doc.bursts.length;
   return (doc.masteries?.length ?? 0) + (doc.heritages ?? []).reduce((n, h) => n + h.abilities.length, 0);
 };
 
@@ -2091,7 +2138,7 @@ export function convertWorkbook(workbook, { config = DEFAULT_CONFIG, source = {}
 
   const index = readDisciplineIndex(ctx);
   const out = { disciplines: [], elements: [], set: null, bond: null, deities: [], ancestries: [], professions: [],
-    gear: [], classTrinkets: null, gearOverview: null, backgrounds: null };
+    gear: [], classTrinkets: null, gearOverview: null, backgrounds: null, bursts: null };
   if (sc.general) { const d = convertDiscipline(ctx, sc.general, index, true); if (d) out.disciplines.push(d); }
   for (const name of disciplineSheets) { const d = convertDiscipline(ctx, name, index); if (d) out.disciplines.push(d); }
   if (sc.elemental) out.elements = convertElemental(ctx, sc.elemental);
@@ -2105,12 +2152,13 @@ export function convertWorkbook(workbook, { config = DEFAULT_CONFIG, source = {}
   }
   if (sc.gear) [out.gear, out.classTrinkets, out.gearOverview] = convertGear(ctx, sc.gear);
   if (sc.backgrounds) out.backgrounds = convertBackgrounds(ctx, sc.backgrounds);
+  if (sc.bursts) out.bursts = convertBursts(ctx, sc.bursts);
 
   dedupeFileIds(ctx, out);
   linkAll(ctx, out);
 
   const all = [...out.disciplines, ...out.elements, ...out.deities, ...out.ancestries, ...out.professions,
-    ...out.gear, ...[out.set, out.bond, out.classTrinkets, out.gearOverview, out.backgrounds].filter(d => d)];
+    ...out.gear, ...[out.set, out.bond, out.classTrinkets, out.gearOverview, out.backgrounds, out.bursts].filter(d => d)];
   const docs = new Map();
   const files = [];
   const totals = {};

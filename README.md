@@ -38,7 +38,7 @@ Foundry checks the same link for updates, so new releases show up under *Update*
 1. Clone this repository into your Foundry data folder as `Data/systems/elaria`, or symlink it there. The folder name must be `elaria` to match the system id, whatever the repository is called. On Windows, from an admin prompt:
    `mklink /D "%LOCALAPPDATA%\FoundryVTT\Data\systems\elaria" "C:\path\to\this\repository"`
    (adjust the first path if your user data lives elsewhere). A symlink means edits show up after a browser refresh.
-2. Optional: `node tools/test-rules.mjs` and `node tools/test-build.mjs <sheet link or .xlsx>` check the maths and the importer outside Foundry (Node 18+). Players and GMs never need these.
+2. Optional: `node tools/test-rules.mjs`, `node tools/test-formula.mjs`, `node tools/test-turns.mjs` (turn order and action windows) and `node tools/test-build.mjs <sheet link or .xlsx>` check the maths and the importer outside Foundry (Node 18+). Players and GMs never need these.
 
 ## Publishing a release
 
@@ -68,8 +68,8 @@ It creates up to twelve world compendiums (eleven listed here, plus **Elaria: Cr
 | Setting | What it does |
 |---|---|
 | `defaultSheetLink` | A link to prefill the importer with in new worlds. Leave `""` to paste it in Foundry instead (the link is then saved in the world only). |
-| `compendiums` | Set any of `discipline`, `elemental`, `deity`, `ancestry`, `profession`, `set`, `bond`, `weapons`, `armour`, `trinkets`, `uniques`, `crafting`, `backgrounds` to `false` to skip it. Skipped compendiums are left exactly as they are. |
-| `tabs` | The tab names the importer reads: `general`, `disciplines` (list), `disciplineIndex`, `elemental`, `set`, `bond`, `deity`, `ancestry`, `professions` (list), `tags`, `gear`, `backgrounds`. Rename here if a tab is renamed in the sheet; set one to `""` to skip that tab. |
+| `compendiums` | Set any of `discipline`, `elemental`, `deity`, `ancestry`, `profession`, `set`, `bond`, `weapons`, `armour`, `trinkets`, `uniques`, `crafting`, `backgrounds`, `bursts` to `false` to skip it. Skipped compendiums are left exactly as they are. |
+| `tabs` | The tab names the importer reads: `general`, `disciplines` (list), `disciplineIndex`, `elemental`, `set`, `bond`, `deity`, `ancestry`, `professions` (list), `tags`, `gear`, `backgrounds`, `bursts`. Rename here if a tab is renamed in the sheet; set one to `""` to skip that tab. |
 | `ignoredTabs` | Tabs that look like mastery tabs but should be skipped (old copies, helper tables). |
 | `autoDetectDisciplines` | `true`: any new "… Masteries" tab not listed is converted as a discipline. |
 | `gearBaseAliases` | Names in the Gear tab's "Base Weapons" table that differ from their evolution tree (e.g. `"fist": "cestus"`). |
@@ -111,7 +111,9 @@ Under the chat box are **Roll 3d6** and **Roll d20**.
   - **AoE**: one damage roll and **one crit roll** shared by every target; the card shows a single result and who it hits. Applying it still uses each target's own armour and resistance.
   - Targets default to the number of tokens you have targeted (and use their names on the card), else 1. Masteries fill in hits from `x3` and tick AoE when they have the AOE tag.
   - The skill mod roll from a multi-target card rolls one to-hit per target. For an AoE it rolls once (the skill window opens with AoE ticked and the number of targets), and that one roll is judged against every target: each still gets its own Pass / Fail.
-- Damage the importer couldn't fully read (`3d6+Wis/5d6+Wis`, `6d6+Sword Stacks Consumed`) still gets its first dice and stat; adjust the rest by hand.
+- **Damage and skill mod text** is read as written, in any order, so hand-edited ones work: `3d6+Str+1` and `3d6+1+Str` both roll 3d6 + Str with **1** in "Add to roll" (ticked *each hit*, since it's part of the formula); extra dice or a second stat (`2d6+Str+1d4+Fin`) go there too; `Fin+1`, `1+Fin` and `2+Fin+1` are all valid skill mods. Words that aren't dice, a stat or a whole number are left out: `3d6+Wis/5d6+Wis` uses the first alternative and `6d6+Sword Stacks Consumed` gets its dice only, so adjust those by hand.
+- **Weapon attacks** roll a skill mod first, like masteries: **Finesse** for weapons tagged Melee (or with neither tag), **Precision** for Ranged or throwing tags. A weapon that is both (daggers, javelins) starts on Finesse; pick Precision in the roll window when you throw it. *No reaction* skips to the damage.
+- **Costs are paid automatically.** The FTG / MP in an item's Cost (`3 ftg`, `5 mana, 1 ftg`) comes off whoever uses it, on the **first roll** of using it (the skill mod or reaction roll, or the damage roll when there's no skill mod roll or you pressed *No reaction*); the later rolls and re-rolls are free. Something with nothing to roll pays when it's posted to chat (its speech-bubble button or hotbar macro). The card shows what was paid (`−3 FTG (4 → 1)`); temporary FTG / MP is used first, and going short still rolls but warns you. Characters can turn it off in edit mode (the lock → **Spend FTG / MP automatically**, on by default); monsters always pay (players don't see what a monster paid). HP, AP and other costs, and variable ones (`X mp`), are left to you.
 - The window has a **Dice** field (3d6 unless a mastery sets it). Advantage rolls those dice twice and keeps the higher.
 - Drag a mastery (from a sheet, the compendium or the Items sidebar) onto the hotbar to make a macro that uses it. Dropping a compendium mastery uses the selected token's character, else your assigned one.
 - The mastery card has a dice button for damage masteries too.
@@ -125,6 +127,17 @@ Under the chat box are **Roll 3d6** and **Roll d20**.
 **Max HP, Mana and Fatigue.** With the sheet unlocked (lock icon), a small bonus box appears next to each resource's maximum. The bonus (negative to lower it) is added to the formula, so the maximum still updates when Con / Wis / Res, level or exhaustion change. A max with a bonus shows in the accent colour; its tooltip gives the formula value and the bonus.
 
 **Background** (Bio tab, beside Burst). Choose the type (Nobility, Military, Civilian, Criminal), then press **d20** to roll social standing (posted to chat and filled in) or type the number yourself; you may move the roll by Demeanor or Speechcraft mod ×2 (minimum 1). The matching background's **Description**, **Perk** and **Starting inventory** are shown below it, and its name is stored on the character. The data comes from the sheet's Backgrounds tab, saved when the GM imports; until then there's a plain text box. **Biography** is the large box under both.
+
+## Bursts
+
+A character's burst is written on the **Bio** tab (Burst section): its name and effect, the mood (which sets the gauge's maximum), the gauge itself (editable by hand there) and "Burst used today". Most bursts are custom, made with the GM and typed in. **Choose** beside the name lists the pre-made example bursts from the sheet's *Bursts/Alignment* tab ("Class specific bursts"; the character's own disciplines and elements first, with a search box) and copies one in; it asks before replacing or removing a burst that is already written.
+
+The sheet header always shows the burst line: the burst's name, the gauge, and two buttons.
+
+- **+ Gauge** opens a list of tick boxes: one **Alignment Wheel +2** for each alignment the character has (with its trigger), then Deal a finishing Blow +1, Heal someone at 25% hp or less +1, Someone currently buffed from you deals a finishing blow +1, Someone currently debuffed from you is KO'd by an ally +1, You take damage equal to 50% or more of your HP in 1 round +2, An Ally is KO'd +2 and You are KO'd +3. Tick everything that happened (the window shows the total) and **Add to gauge**: the gauge goes up, never past its maximum, and chat lists the reasons.
+- **Burst!** is greyed out until the gauge is full (also when the burst was already used today or no life point is left; its tooltip says which). It asks to confirm, posts the burst's name and effect to chat, and marks the burst as used today. A ticked box in the confirmation also does what bursting does: spends 1 life point, heals half max HP (reviving from 0) and refills FTG and MP; untick it to only post.
+
+GM Tools' long rest empties the gauge and clears "used today". The system ships with the pre-made bursts written so far; importing the sheet again picks up new ones.
 
 ## Ancestry and heritage
 
@@ -214,6 +227,19 @@ On the card, each targeted token gets **Apply n to <name>**, with n worked out f
 - Not automatic yet: hit locations (head, arms, legs), bleed from Slashing, Frozen's half damage, Scorch, blocking into a breakpoint, healing and lifesteal. Change the amount in the confirm window for those.
 
 `node tools/test-damage.mjs` checks the maths.
+
+## Initiative: action windows
+
+Elaria 2.2's initiative: every combatant rolls 3d6 + Finesse as usual, but a roll isn't that combatant's turn. It is an **action window for its side** (the party, the enemies), and anyone on that side who hasn't acted yet this round can act in it.
+
+- **Who acts:** the last member of a side to act picks who acts in the side's next window (in round one, the side's highest roller). If nobody picks, whoever sits in the window acts, or else the first who hasn't acted. Everyone still acts once a round, in whichever window. Enemies work the same way, and the GM picks for them.
+- **How it shows:** the one acting is always Foundry's current combatant (turn highlight, token pan, "your turn" all work as usual). Behind the scenes the picked unit swaps initiative with whoever sat in the window, so each side keeps exactly the same windows.
+- **Combat tracker:** a coloured edge marks each side; a ✓ marks units that have acted this round; the acting row says who picked them. Rows still to come read **Party window** / **Enemy window** with the planned pick, and players can't see (or hover to find) which enemy is behind an enemy window; the GM sees everything. A **Still to act** strip above the list shows the party's portraits and how many of the others are left.
+- **Turn panel:** the **Turn** button right of React (it also opens by itself on your turn, with a notification and sound). It shows the open window and who's acting, **End turn** and **Delay** for the acting unit, and for your side who acts in its next window: the one who picks clicks a portrait (again to clear it); everyone else sees the pick. The GM sees every side, can click **Act now instead** to put someone else in the current window, and can click any unit to mark it as acted / not acted (stunned, or a mistake).
+- **Delay:** the acting unit moves its side's window to just after a later window of its choice. The window stays there in later rounds, and the unit acts in it when it comes up this round. If the window sliding into its place is the party's, the delayer picks who acts in it.
+- **Death:** when a combatant is marked defeated, its owner (or the GM, for monsters) picks one of the side's windows to remove; it goes when the current turn ends. A unit that is no longer defeated rolls a new window.
+- **Empty windows** (nobody on that side left to act) are skipped with a line in chat. **Previous turn** undoes the last change (the GM's arrow); **Next round** jumps to the next round's first window.
+- Stealth no longer acts before everyone else. Requests from players go through the GM's client, so a GM has to be connected. Turn it off in the game settings (**Action windows**) for Foundry's normal initiative.
 
 ## Combat tracker: reactions
 

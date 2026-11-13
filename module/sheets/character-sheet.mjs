@@ -1,6 +1,7 @@
 import { ELARIA } from "../config.mjs";
 import { ElariaMasteryPicker } from "../apps/mastery-picker.mjs";
 import { addMasteriesToActor, addGearToActor } from "../helpers/masteries.mjs";
+import { chooseBurst } from "../helpers/bursts.mjs";
 import { backgroundData, findBackground, standingAdjustment } from "../helpers/backgrounds.mjs";
 import { ancestryData, findHeritage, findRace } from "../helpers/ancestry.mjs";
 import { checkCost, clearRecipeCache, craftRecipe, materialLabel, recipesFor } from "../helpers/crafting.mjs";
@@ -38,7 +39,10 @@ export class ElariaCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV
       useItem: ElariaCharacterSheet.#onUseItem,
       craft: ElariaCharacterSheet.#onCraft,
       viewRecipe: ElariaCharacterSheet.#onViewRecipe,
-      refreshRecipes: ElariaCharacterSheet.#onRefreshRecipes
+      refreshRecipes: ElariaCharacterSheet.#onRefreshRecipes,
+      chooseBurst: ElariaCharacterSheet.#onChooseBurst,
+      addBurstGauge: ElariaCharacterSheet.#onAddBurstGauge,
+      useBurst: ElariaCharacterSheet.#onUseBurst
     }
   };
 
@@ -107,6 +111,24 @@ export class ElariaCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV
       identityLine: [system.identity.race, system.identity.heritage].filter(s => s).join(" · "),
       disciplineLine: system.disciplineList.join(" · ")
     });
+    // The burst (written on the Bio tab) has its name, gauge and buttons in the header, always visible.
+    const burstText = system.identity.burstEffect ?? "";
+    const hasText = !!burstText.replace(/<[^>]+>/g, "").trim();
+    context.burstEffectHTML = await foundry.applications.ux.TextEditor.implementation.enrichHTML(burstText, {
+      secrets: actor.isOwner, relativeTo: actor
+    });
+    const gauge = system.conditions.burst;
+    const full = gauge.value >= gauge.max;
+    const lp = system.resources.lifePoints.value;
+    const why = !full ? game.i18n.format("ELARIA.Burst.needGauge", { value: gauge.value, max: gauge.max })
+      : gauge.usedToday ? game.i18n.localize("ELARIA.Burst.alreadyUsed")
+        : lp < 1 ? game.i18n.localize("ELARIA.Burst.noLifePoints") : "";
+    context.burst = {
+      name: system.identity.burstName || (hasText ? game.i18n.localize("ELARIA.Burst.custom") : ""),
+      hasText, full, pct: Math.round(100 * Math.min(1, gauge.max ? gauge.value / gauge.max : 0)),
+      canUse: !why && this.isEditable,
+      useHint: why || game.i18n.localize("ELARIA.Burst.useHint")
+    };
     return context;
   }
 
@@ -349,10 +371,10 @@ export class ElariaCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV
       ? game.i18n.format("ELARIA.Burst.opposing", { a: id.alignment, b: id.alignment2 }) : "";
     context.moodChoices = Object.fromEntries(Object.entries(ELARIA.moods)
       .map(([mood, max]) => [mood, game.i18n.format("ELARIA.Burst.moodOption", { mood, max })]));
-    context.burstSources = ELARIA.burstGaugeSources.map(([label, n]) => ({ label, n }));
-    context.burstEffectHTML = await foundry.applications.ux.TextEditor.implementation.enrichHTML(id.burstEffect, {
-      secrets: this.document.isOwner, relativeTo: this.document
-    });
+    context.burstSources = [
+      { label: game.i18n.localize("ELARIA.Burst.alignmentSource"), n: ELARIA.alignmentBurstGauge },
+      ...ELARIA.burstGaugeSources.map(([label, n]) => ({ label, n }))
+    ];
     // Background: scale, social standing, and the matching background's description / perk / inventory.
     const bgData = backgroundData();
     const bg = findBackground(id.backgroundScale, id.backgroundRoll, bgData);
@@ -705,8 +727,156 @@ export class ElariaCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV
     return item.update({ "system.location": item.system.location === "bag" ? item.system.equipSlot : "bag" });
   }
 
+  /**
+   * Bio: fill the burst's name and text from one of the pre-made bursts (or empty them). Asks first when that
+   * would replace something already written there.
+   */
+  static async #onChooseBurst() {
+    const actor = this.document;
+    const picked = await chooseBurst(actor);
+    if (!picked) return;
+    const id = actor.system.identity;
+    const written = !!(id.burstName.trim() || (id.burstEffect ?? "").replace(/<[^>]+>/g, "").trim());
+    if (written) {
+      const esc = foundry.utils.escapeHTML;
+      const ok = await foundry.applications.api.DialogV2.confirm({
+        window: { title: game.i18n.localize("ELARIA.Burst.replaceTitle") },
+        content: `<p>${picked === "clear"
+          ? game.i18n.format("ELARIA.Burst.clearConfirm", { old: esc(id.burstName || game.i18n.localize("ELARIA.Burst.custom")) })
+          : game.i18n.format("ELARIA.Burst.replaceConfirm", { old: esc(id.burstName || game.i18n.localize("ELARIA.Burst.custom")), name: esc(picked.name) })}</p>`,
+        rejectClose: false
+      });
+      if (!ok) return;
+    }
+    if (picked === "clear") return actor.update({ "system.identity.burstName": "", "system.identity.burstEffect": "" });
+    const html = picked.text.split(/\n+/).map(p => `<p>${foundry.utils.escapeHTML(p)}</p>`).join("");
+    return actor.update({ "system.identity.burstName": picked.name, "system.identity.burstEffect": html });
+  }
+
+  /**
+   * Header: add to the burst gauge (Bursts/Alignment). A window of tick boxes: one per alignment the character
+   * has (+2 each, with its trigger), then the general reasons. Everything ticked is added at once, never past
+   * the gauge's maximum, with a line in chat saying why.
+   */
+  static async #onAddBurstGauge() {
+    const actor = this.document;
+    const esc = foundry.utils.escapeHTML;
+    const L = k => game.i18n.localize(k);
+    const id = actor.system.identity;
+    const gauge = actor.system.conditions.burst;
+    const alignments = [...new Set([id.alignment, id.alignment2].filter(a => a))];
+    const options = [
+      ...alignments.map(a => ({
+        label: game.i18n.format("ELARIA.Burst.alignmentOption", { alignment: a }), n: ELARIA.alignmentBurstGauge,
+        hint: ELARIA.alignmentBurst[a] ?? ""
+      })),
+      ...ELARIA.burstGaugeSources.map(([label, n]) => ({ label, n, hint: "" }))
+    ];
+    const row = (o, i) => `
+      <label class="burst-source">
+        <input type="checkbox" name="src" value="${i}">
+        <span>${esc(o.label)}${o.hint ? `<small>${esc(o.hint)}</small>` : ""}</span>
+        <b>+${o.n}</b>
+      </label>`;
+    const alignmentRows = alignments.length ? options.slice(0, alignments.length).map(row).join("")
+      : `<p class="hint">${L("ELARIA.Burst.noAlignmentPicked")}</p>`;
+    const content = `
+      <p class="hint">${game.i18n.format("ELARIA.Burst.addIntro", { value: gauge.value, max: gauge.max })}</p>
+      <div class="burst-sources-list">
+        <h4>${L("ELARIA.Burst.alignmentHeading")}</h4>
+        ${alignmentRows}
+        <h4>${L("ELARIA.Burst.otherHeading")}</h4>
+        ${options.slice(alignments.length).map((o, i) => row(o, i + alignments.length)).join("")}
+      </div>
+      <p class="burst-total">${L("ELARIA.Burst.total")} <b class="sum">+0</b> → <b class="result">${gauge.value}</b> / ${gauge.max}</p>`;
+    const picked = await foundry.applications.api.DialogV2.wait({
+      window: { title: game.i18n.format("ELARIA.Burst.addTitle", { name: actor.name }), icon: "fa-solid fa-burst" },
+      classes: ["elaria", "burst-dialog"],
+      position: { width: 460 },
+      content,
+      buttons: [
+        { action: "add", label: L("ELARIA.Burst.addButton"), icon: "fa-solid fa-plus", default: true,
+          callback: (event, button) => [...button.form.querySelectorAll("input[name=src]:checked")].map(el => Number(el.value)) },
+        { action: "cancel", label: L("Cancel"), icon: "fa-solid fa-xmark" }
+      ],
+      render: (event, dialog) => {
+        const root = dialog.element ?? dialog;
+        const update = () => {
+          const sum = [...root.querySelectorAll("input[name=src]:checked")].reduce((t, el) => t + options[Number(el.value)].n, 0);
+          root.querySelector(".burst-total .sum").textContent = `+${sum}`;
+          root.querySelector(".burst-total .result").textContent = Math.min(gauge.max, gauge.value + sum);
+        };
+        root.querySelectorAll("input[name=src]").forEach(el => el.addEventListener("change", update));
+      },
+      rejectClose: false
+    });
+    if (!Array.isArray(picked) || !picked.length) return;
+    const chosen = picked.map(i => options[i]).filter(o => o);
+    const n = chosen.reduce((t, o) => t + o.n, 0);
+    const now = actor.system.conditions.burst;
+    const to = Math.min(now.max, now.value + n);
+    await actor.update({ "system.conditions.burst.value": to });
+    return ChatMessage.create({
+      speaker: ChatMessage.getSpeaker({ actor }),
+      content: `<div class="elaria chat-card burst-card"><p><i class="fa-solid fa-burst"></i> `
+        + `${game.i18n.format("ELARIA.Burst.gained", { n, value: to, max: now.max })}`
+        + `${to >= now.max ? ` <b>${L("ELARIA.Burst.gaugeFull")}</b>` : ""}</p>`
+        + `<ul class="burst-reasons">${chosen.map(o => `<li>${esc(o.label)} <b>+${o.n}</b></li>`).join("")}</ul></div>`
+    });
+  }
+
+  /**
+   * Header: burst! (Only with a full gauge, a life point left and no burst yet today.) Posts the burst's name and
+   * effect to chat and, unless unticked, does what bursting does: spends a life point, heals half max HP (reviving
+   * from 0), and refills FTG and MP. Marks the burst as used today.
+   */
+  static async #onUseBurst() {
+    const actor = this.document;
+    const sys = actor.system;
+    const gauge = sys.conditions.burst;
+    if (gauge.value < gauge.max || gauge.usedToday || sys.resources.lifePoints.value < 1) return;
+    const esc = foundry.utils.escapeHTML;
+    const id = sys.identity;
+    const name = id.burstName || game.i18n.localize("ELARIA.Burst.custom");
+    const answer = await foundry.applications.api.DialogV2.wait({
+      window: { title: game.i18n.format("ELARIA.Burst.useTitle", { name: actor.name }), icon: "fa-solid fa-burst" },
+      content: `<p>${game.i18n.format("ELARIA.Burst.useConfirm", { name: esc(name) })}</p>
+        <label class="checkbox"><input type="checkbox" name="apply" checked> ${game.i18n.localize("ELARIA.Burst.applyEffects")}</label>`,
+      buttons: [
+        { action: "burst", label: game.i18n.localize("ELARIA.Burst.useButton"), icon: "fa-solid fa-burst", default: true,
+          callback: (event, button) => (button.form.elements.apply.checked ? "apply" : "post") },
+        { action: "cancel", label: game.i18n.localize("Cancel"), icon: "fa-solid fa-xmark" }
+      ],
+      rejectClose: false
+    });
+    if (answer !== "apply" && answer !== "post") return;
+
+    const update = { "system.conditions.burst.usedToday": true };
+    const notes = [];
+    if (answer === "apply") {
+      const res = sys.resources;
+      const heal = Math.floor(res.hp.max / 2);
+      const hp = Math.min(res.hp.max, Math.max(0, res.hp.value) + heal);
+      update["system.resources.hp.value"] = hp;
+      update["system.resources.mp.value"] = res.mp.max;
+      update["system.resources.ftg.value"] = res.ftg.max;
+      update["system.resources.lifePoints.value"] = res.lifePoints.value - 1;
+      if (res.hp.value <= 0) notes.push(game.i18n.localize("ELARIA.Burst.revived"));
+      notes.push(game.i18n.format("ELARIA.Burst.applied", { heal, hp, max: res.hp.max, lp: res.lifePoints.value - 1 }));
+    }
+    await actor.update(update);
+    const text = await foundry.applications.ux.TextEditor.implementation.enrichHTML(id.burstEffect, { relativeTo: actor });
+    return ChatMessage.create({
+      speaker: ChatMessage.getSpeaker({ actor }),
+      content: `<div class="elaria chat-card burst-card"><header><h3><i class="fa-solid fa-burst"></i> `
+        + `${game.i18n.localize("ELARIA.Burst.title")}: ${esc(name)}</h3></header>`
+        + `<div class="details">${text || `<p><em>${game.i18n.localize("ELARIA.Burst.noEffect")}</em></p>`}</div>`
+        + `${notes.length ? `<p class="burst-applied">${notes.join(" ")}</p>` : ""}</div>`
+    });
+  }
+
   static #onPostItem(event, target) {
     const item = this.document.items.get(target.closest("[data-item-id]").dataset.itemId);
-    return item?.toChat();
+    return item?.toChat({ spend: !item.canRoll });   // nothing to roll: posting it is using it
   }
 }

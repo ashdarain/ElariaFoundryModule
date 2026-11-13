@@ -89,7 +89,7 @@ export class ElariaMasterySheet extends HandlebarsApplicationMixin(ItemSheetV2) 
   }
 
   static #onPostToChat() {
-    return this.document.toChat();
+    return this.document.toChat({ spend: !this.document.canRoll });
   }
 
   /** Turn the helper inputs (comma-separated tags, first source) back into the stored arrays. */

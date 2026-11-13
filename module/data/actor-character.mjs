@@ -74,6 +74,7 @@ export class CharacterData extends foundry.abstract.TypeDataModel {
         background: new f.StringField({ required: true, blank: true, initial: "" }),   // name (or free text if no background data)
         backgroundScale: new f.StringField({ required: true, blank: true, initial: "" }),  // nobility / military / civilian / criminal
         backgroundRoll: new f.NumberField({ required: true, nullable: true, integer: true, initial: null }),  // social standing
+        burstName: new f.StringField({ required: true, blank: true, initial: "" }),   // the chosen burst's name
         burstEffect: new f.HTMLField({ required: true, blank: true, initial: "" }),   // the ability a burst grants
         biography: new f.HTMLField({ required: true, blank: true, initial: "" })
       }),
@@ -91,7 +92,9 @@ export class CharacterData extends foundry.abstract.TypeDataModel {
       materials: new f.SchemaField(Object.fromEntries(Object.keys(ELARIA.materials).map(k => [k, new f.SchemaField(
         Object.fromEntries(ELARIA.materialTiers.map(t => [`t${t}`, int(0, { min: 0 })])))]))),
       // Inventory: show the total of all coins in silver beside them (toggle in edit mode).
-      showCoinTotal: new f.BooleanField({ initial: true })
+      showCoinTotal: new f.BooleanField({ initial: true }),
+      // Take FTG / MP costs off automatically when a mastery, ability or attack is used (toggle in edit mode).
+      autoSpend: new f.BooleanField({ initial: true })
     };
   }
 

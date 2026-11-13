@@ -30,6 +30,9 @@ import { onHotbarDrop, useMastery } from "./module/helpers/hotbar.mjs";
 import { onRenderChatMessage } from "./module/dice/chat-cards.mjs";
 import { onUpdateActorDamage } from "./module/dice/damage-card.mjs";
 import { onRenderCombatTracker, onUpdateCombat } from "./module/combat/reactions.mjs";
+import { ElariaCombat, initTurnOrder, registerTurnSettings, onUpdateCombatantWindows } from "./module/combat/turn-order.mjs";
+import { decorateTracker } from "./module/combat/turn-tracker.mjs";
+import { ElariaTurnPanel, onWindowOpened } from "./module/apps/turn-panel.mjs";
 import { initReactButton } from "./module/combat/react-button.mjs";
 import { ElariaReactDialog, rollReaction } from "./module/apps/react-dialog.mjs";
 import { ElariaReactionPicker } from "./module/apps/reaction-picker.mjs";
@@ -47,6 +50,7 @@ Hooks.once("init", () => {
   // Documents and data models
   CONFIG.Actor.documentClass = ElariaActor;
   CONFIG.Item.documentClass = ElariaItem;
+  CONFIG.Combat.documentClass = ElariaCombat;   // turn order ties can be set, so turns can be swapped
   CONFIG.Token.objectClass = ElariaToken;   // HP red at the bottom, MP blue + FTG green at the top
   CONFIG.Actor.dataModels.character = CharacterData;
   CONFIG.Item.dataModels.mastery = MasteryData;
@@ -101,6 +105,15 @@ Hooks.on("updateActor", onUpdateActorDamage);
 
 // Reaction pips in the combat tracker; emptied every round
 Hooks.on("renderCombatTracker", onRenderCombatTracker);
+// Action windows (Elaria 2.2 initiative): tracker, Turn panel, defeat / return, players' requests to the GM
+Hooks.once("init", () => registerTurnSettings());
+Hooks.on("renderCombatTracker", decorateTracker);
+Hooks.once("ready", () => initTurnOrder());
+Hooks.on("updateCombat", onWindowOpened);
+Hooks.on("updateCombatant", onUpdateCombatantWindows);
+for (const hook of ["updateCombatant", "createCombatant", "deleteCombatant", "deleteCombat", "createCombat"]) {
+  Hooks.on(hook, () => ElariaTurnPanel.refresh());
+}
 Hooks.on("updateCombat", onUpdateCombat);
 
 // "React" button at the bottom left of the hotbar

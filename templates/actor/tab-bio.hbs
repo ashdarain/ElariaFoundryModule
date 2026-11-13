@@ -85,7 +85,9 @@
         <p class="hint">{{localize "ELARIA.Burst.rules"}}</p>
       </details>
 
-      <span class="label">{{localize "ELARIA.Burst.effect"}}</span>
+      <label class="burst-name-field"><span>{{localize "ELARIA.Burst.effect"}}</span>
+        <input type="text" name="system.identity.burstName" value="{{system.identity.burstName}}" placeholder="{{localize 'ELARIA.Burst.namePlaceholder'}}">
+        {{#if editable}}<a data-action="chooseBurst" data-tooltip="ELARIA.Burst.chooseHint"><i class="fa-solid fa-list"></i> {{localize "ELARIA.Burst.choose"}}</a>{{/if}}</label>
       <prose-mirror name="system.identity.burstEffect" value="{{system.identity.burstEffect}}" toggled
         {{#unless editable}}disabled{{/unless}}>{{{burstEffectHTML}}}</prose-mirror>
     </fieldset>

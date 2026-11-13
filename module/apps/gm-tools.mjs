@@ -19,7 +19,7 @@ const blankCoins = () => Object.fromEntries(Object.keys(ELARIA.coins).map(k => [
  * compendiums or dragged onto their card), materials and coins. Nothing changes until **Give** (one character)
  * or **Give to everyone**. What's lined up is kept (world setting) until given or removed.
  *
- * Party: level up, long rest (full HP / MP / FTG, +1 life point, −1 exhaustion, −1 injury), add exhaustion or
+ * Party: level up, long rest (full HP / MP / FTG, +1 life point, −1 exhaustion, −1 injury, burst gauge to 0), add exhaustion or
  * injuries, take life points; for the whole party (every character a player owns) or the ticked players above.
  *
  * Combat tab: every combatant of the current combat in turn order, as cards: portrait, name, initiative,
@@ -192,6 +192,7 @@ export class ElariaGMTools extends HandlebarsApplicationMixin(ApplicationV2) {
       return {
         id: c.id, name: c.name, img: c.img ?? token?.texture?.src ?? actor?.img,
         initiative: c.initiative ?? "—", isCurrent: c.id === current,
+        acted: combat.started && c.flags?.elaria?.acted === combat.round,
         pc: !!actor?.hasPlayerOwner, type: actor?.type ?? "",
         hidden: !!(c.hidden || token?.hidden), defeated: !!c.isDefeated,
         resources,
@@ -542,6 +543,9 @@ export class ElariaGMTools extends HandlebarsApplicationMixin(ApplicationV2) {
           update["system.resources.lifePoints.value"] = Math.min(res.lifePoints.max, res.lifePoints.value + 1);
           update["system.conditions.exhaustion"] = Math.max(0, con.exhaustion - 1);
           update["system.conditions.injuries"] = Math.max(0, con.injuries - 1);
+          // Bursts/Alignment: the burst gauge empties on a long rest, and the once-a-day burst is back.
+          update["system.conditions.burst.value"] = 0;
+          update["system.conditions.burst.usedToday"] = false;
           await a.update(update);
           lines.push(a.name);
           break;

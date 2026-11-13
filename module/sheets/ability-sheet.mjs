@@ -67,7 +67,7 @@ export class ElariaAbilitySheet extends HandlebarsApplicationMixin(ItemSheetV2) 
   }
 
   static #onPostToChat() {
-    return this.document.toChat();
+    return this.document.toChat({ spend: !this.document.canRoll });
   }
 
   static #onUse() {

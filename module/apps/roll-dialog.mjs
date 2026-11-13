@@ -52,6 +52,7 @@ export class ElariaRollDialog extends HandlebarsApplicationMixin(ApplicationV2) 
    * @param {boolean} [preset.aoe]          One shared damage roll for all targets.
    * @param {boolean} [preset.bonusPerHit]  Add the bonus to every hit.
    * @param {object|null} [preset.next]   After this roll, the card offers the mastery's damage ({itemUuid, actorUuid, targets}).
+   * @param {object|null} [preset.spend]  First roll of using an item ({itemUuid, messageId?}): pays its FTG / MP.
    * @param {object|null} [preset.skip]   Extra button that closes the window and runs skip.action (e.g. "No reaction").
    * @param {object|null} [preset.skill]   A mastery's skill mod: the chat card gets a "Roll skill mod" button.
    */
@@ -71,10 +72,10 @@ export class ElariaRollDialog extends HandlebarsApplicationMixin(ApplicationV2) 
   #setPreset({ actor = null, stat = "", dice = "3d6", bonus = "", label = "", note = "", img = "", penalty = null,
     critChanceBonus = 0, critDamageBonus = 0, fixedCrit = false, skill = null,
     hits = 1, targets = null, aoe = false, bonusPerHit = false, next = null, skip = null, damage = null,
-    isSkill = false, verdictCount = null, targetList = null } = {}) {
+    isSkill = false, verdictCount = null, targetList = null, spend = null } = {}) {
     this.#actorUuid = actor?.uuid ?? "";
     this.#preset = {
-      stat, dice: dice || "3d6", bonus: String(bonus ?? ""), label, note, img, skill, fixedCrit, next, skip,
+      stat, dice: dice || "3d6", bonus: String(bonus ?? ""), label, note, img, skill, fixedCrit, next, skip, spend,
       penaltyOverride: penalty, critChanceBonus: Number(critChanceBonus) || 0, critDamageBonus: Number(critDamageBonus) || 0,
       hits: Math.max(1, Number(hits) || 1),
       // Default: one target per token you have targeted.
@@ -258,7 +259,7 @@ export class ElariaRollDialog extends HandlebarsApplicationMixin(ApplicationV2) 
     const v = this.#values();
     const problem = this.#problem(v);
     if (problem) return ui.notifications.warn(problem);
-    const { label, note, img, skill, fixedCrit, next, isSkill, verdictCount, targetList } = this.#preset;
+    const { label, note, img, skill, fixedCrit, next, isSkill, verdictCount, targetList, spend } = this.#preset;
     // Name the targets: the ones carried over from the skill roll, else the tokens you have targeted, when the
     // counts match.
     const targeted = targetList ?? [...(game.user.targets ?? [])].map(t => ({ uuid: t.document.uuid, name: t.name }));
@@ -274,7 +275,7 @@ export class ElariaRollDialog extends HandlebarsApplicationMixin(ApplicationV2) 
         name: named[i]?.name ?? (n > 1 ? game.i18n.format("ELARIA.Dice.targetN", { n: i + 1 }) : "") }));
     }
     await rollDice({ actor: this.actor, ...v, targetNames, targetTokens, mode: target.dataset.mode ?? "normal", label, note, img, skill,
-      fixedCrit, next, verdictTargets });
+      fixedCrit, next, verdictTargets, spend });
     this.#setPreset({});
     return this.close();
   }

@@ -144,10 +144,13 @@
 .application.elaria.sheet nav.tabs {
   flex: 0 0 auto; display: flex; justify-content: flex-start; gap: 0; margin: 0; padding: 0 12px;
   height: auto; min-height: 0; border: none; border-bottom: 1px solid var(--el-line); background: var(--el-panel);
+  align-items: stretch; line-height: 1.2;
 }
+/* Kept thin: core gives sheet tabs a tall line height and minimum height. */
 .application.elaria.sheet nav.tabs > [data-tab] {
-  flex: 0 0 auto; padding: 6px 14px; margin: 0; height: auto; font-weight: bold; color: var(--el-muted);
-  border: none; border-bottom: 3px solid transparent; border-radius: 0; background: none; text-shadow: none;
+  flex: 0 0 auto; padding: 4px 12px 3px; margin: 0; height: auto; min-height: 0; line-height: 1.2; font-size: 13px;
+  font-weight: bold; color: var(--el-muted);
+  border: none; border-bottom: 2px solid transparent; border-radius: 0; background: none; text-shadow: none;
 }
 .application.elaria.sheet nav.tabs > [data-tab].active {
   color: var(--el-accent); border-bottom-color: var(--el-accent);
@@ -1183,3 +1186,111 @@
 .elaria.monster-browser .filter-grid .range select { width: 64px; flex: none; }
 .elaria.monster .power-guide { margin: 2px 0; font-size: 11px; color: var(--el-muted); }
 .elaria.monster .power-guide i { color: var(--el-accent); }
+
+/* Burst in the sheet header (always visible): name, gauge, add to gauge, burst */
+.elaria .burst-row { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 8px; padding-top: 4px; border-top: 1px dotted var(--el-line); font-size: 12px; }
+.elaria .burst-row > .label { color: var(--el-accent); font-weight: bold; text-transform: uppercase; font-size: 11px; letter-spacing: 0.04em; }
+.elaria .burst-row .burst-name { font-weight: bold; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 220px; }
+.elaria .burst-row .burst-name em { font-weight: normal; color: var(--el-muted); }
+.elaria .burst-row .burst-gauge { display: inline-flex; align-items: center; gap: 5px; color: var(--el-muted); }
+.elaria .burst-row .burst-gauge b { color: var(--el-ink); }
+.elaria .burst-row .burst-gauge .bar { width: 70px; height: 7px; border: 1px solid var(--el-line); border-radius: 4px; background: var(--el-panel); overflow: hidden; }
+.elaria .burst-row .burst-gauge .fill { display: block; height: 100%; background: #c9862b; }
+.elaria .burst-row .burst-gauge.full .fill { background: var(--el-accent); }
+.elaria .burst-row .burst-gauge.full b { color: var(--el-accent); }
+.elaria .burst-row .burst-buttons { margin-left: auto; display: flex; gap: 6px; }
+.elaria .burst-row .burst-buttons button { width: auto; height: 22px; min-height: 0; line-height: 1; padding: 0 9px; font-size: 12px;
+  border: 1px solid var(--el-line); border-radius: var(--el-radius); background: var(--el-panel); color: var(--el-ink); cursor: pointer; }
+.elaria .burst-row .burst-buttons button.use { border-color: var(--el-accent); color: var(--el-accent); font-weight: bold; }
+.elaria .burst-row .burst-buttons button:hover:not(:disabled) { background: var(--el-accent); color: #fff; }
+.elaria .burst-row .burst-buttons button:disabled { opacity: 0.45; cursor: not-allowed; border-color: var(--el-line); color: var(--el-muted); font-weight: normal; }
+.elaria .burst-name-field { display: flex; align-items: center; gap: 6px; margin-top: 4px; }
+.elaria .burst-name-field input { flex: 1; }
+.elaria .burst-name-field a { white-space: nowrap; }
+.elaria.burst-dialog .burst-search { width: 100%; margin-bottom: 6px; }
+.elaria.burst-dialog .burst-choices { max-height: 50vh; overflow-y: auto; display: flex; flex-direction: column; gap: 5px; padding: 2px; }
+.elaria.burst-dialog .burst-choice { flex: 0 0 auto; padding: 6px 9px; border: 1px solid #c9b99a; border-radius: 5px; cursor: pointer; background: rgba(255, 255, 255, 0.25); }
+.elaria.burst-dialog .burst-choice[hidden] { display: none; }
+.elaria.burst-dialog .burst-choice.own { border-color: #7a2e1f; }
+.elaria.burst-dialog .burst-choice:hover { background: rgba(255, 255, 255, 0.5); }
+.elaria.burst-dialog .burst-choice.selected { box-shadow: 0 0 0 2px #7a2e1f; background: rgba(122, 46, 31, 0.1); }
+.elaria.burst-dialog .burst-choice .source { font-size: 11px; opacity: 0.75; }
+.elaria.burst-dialog .burst-choice .text { margin-top: 2px; font-size: 12px; line-height: 1.35; }
+.elaria.burst-dialog .burst-sources-list { display: flex; flex-direction: column; gap: 3px; max-height: 55vh; overflow-y: auto; }
+.elaria.burst-dialog .burst-sources-list h4 { margin: 6px 0 2px; font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; opacity: 0.75; border: none; }
+.elaria.burst-dialog .burst-source { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 8px; padding: 4px 8px;
+  border: 1px solid #c9b99a; border-radius: 5px; cursor: pointer; line-height: 1.25; background: rgba(255, 255, 255, 0.25); }
+.elaria.burst-dialog .burst-source:hover { background: rgba(255, 255, 255, 0.5); }
+.elaria.burst-dialog .burst-source:has(input:checked) { border-color: #7a2e1f; background: rgba(122, 46, 31, 0.1); }
+.elaria.burst-dialog .burst-source input { margin: 0; flex: none; }
+.elaria.burst-dialog .burst-source small { display: block; font-size: 11px; opacity: 0.75; }
+.elaria.burst-dialog .burst-total { margin: 8px 0 0; text-align: right; }
+.elaria .burst-card .burst-reasons { margin: 3px 0 0; padding-left: 18px; font-size: 12px; }
+.elaria .burst-card .burst-applied { margin: 4px 0 0; font-size: 12px; font-style: italic; }
+
+/* FTG / MP paid, on chat cards */
+.elaria .spent { margin: 4px 0 0; font-size: 12px; color: #4b3b2a; }
+.elaria .spent .cost { font-weight: bold; margin-right: 6px; }
+.elaria .spent .cost.ftg { color: #3d7a2e; }
+.elaria .spent .cost.mp { color: #2a5aa8; }
+.elaria .spent .cost small { font-weight: normal; color: #6b5c4a; }
+.elaria .spent .cost.short, .elaria .spent .cost.short small { color: #b3261e; }
+
+/* Combat tracker: "Pass turn to…" on the current combatant */
+
+/* Action windows: combat tracker */
+.elaria-window { --el-side: #8a8a8a; box-shadow: inset 4px 0 0 var(--el-side); }
+.elaria-side-pc { --el-side: #3f7fd0; }
+.elaria-side-ally { --el-side: #4fa36b; }
+.elaria-side-neutral { --el-side: #c2a24a; }
+.elaria-side-enemy, .elaria-side-secret { --el-side: #c0453a; }
+.elaria-window.elaria-acted:not(.active) { opacity: 0.6; }
+.elaria-window.elaria-future .token-image { opacity: 0.75; }
+.elaria-window .elaria-acted-tick { margin-left: 4px; font-size: 10px; color: #5fae5f; }
+.elaria-window .elaria-window-note { display: block; font-size: 10px; line-height: 1.2; opacity: 0.8; font-style: italic; }
+.elaria-to-act { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; padding: 4px 8px; font-size: 11px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15); }
+.elaria-to-act .title { text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.7; }
+.elaria-to-act .side { display: inline-flex; align-items: center; gap: 2px; padding-left: 5px; border-left: 3px solid var(--el-side); }
+.elaria-to-act .side b { margin-right: 2px; }
+.elaria-to-act img { width: 20px; height: 20px; border: none; border-radius: 50%; object-fit: cover; }
+.elaria-to-act em { opacity: 0.8; }
+
+/* Action windows: Turn panel */
+.elaria-turn-button { background: #4f6f8f; }
+.elaria-turn-button:hover { background: #5f86ad; }
+.elaria.turn-panel .window-content { padding: 8px; }
+.elaria.turn-panel .now { display: flex; align-items: center; gap: 8px; padding: 6px; border-left: 4px solid var(--el-side); border-radius: 4px; background: rgba(0, 0, 0, 0.05); }
+.elaria.turn-panel .now.mine { background: #e1f0d9; }
+.elaria.turn-panel .now img { width: 40px; height: 40px; border: none; border-radius: 50%; object-fit: cover; }
+.elaria.turn-panel .now .who { display: flex; flex-direction: column; line-height: 1.25; }
+.elaria.turn-panel .now .label { font-size: 11px; opacity: 0.75; }
+.elaria.turn-panel .now b { font-size: 15px; }
+.elaria.turn-panel .now small { font-size: 11px; font-style: italic; }
+.elaria.turn-panel .turn-buttons { display: flex; gap: 6px; margin-top: 6px; }
+.elaria.turn-panel .turn-buttons button { flex: 1; height: 28px; line-height: 1; }
+.elaria.turn-panel .act-now { display: flex; align-items: center; gap: 6px; margin-top: 6px; font-size: 12px; }
+.elaria.turn-panel .side { margin-top: 8px; padding: 4px 0 2px 8px; border-left: 4px solid var(--el-side); }
+.elaria.turn-panel .side h4 { display: flex; align-items: baseline; gap: 6px; margin: 0 0 3px; border: none; font-size: 13px; }
+.elaria.turn-panel .side h4 small { font-weight: normal; opacity: 0.75; }
+.elaria.turn-panel .hint { margin: 2px 0; font-size: 12px; }
+.elaria.turn-panel .hint.small { font-size: 11px; opacity: 0.7; }
+.elaria.turn-panel .chips { display: flex; flex-wrap: wrap; gap: 4px; }
+.elaria.turn-panel .chip { display: inline-flex; align-items: center; gap: 4px; padding: 2px 6px 2px 2px; border: 1px solid #c9b99a; border-radius: 14px;
+  font-size: 12px; cursor: pointer; background: rgba(255, 255, 255, 0.35); }
+.elaria.turn-panel .chip img { width: 22px; height: 22px; border: none; border-radius: 50%; object-fit: cover; }
+.elaria.turn-panel .act-now .chip { padding: 2px; }
+.elaria.turn-panel .chip:hover { border-color: #7a2e1f; background: rgba(255, 255, 255, 0.6); }
+.elaria.turn-panel .chip.selected { border-color: #7a2e1f; box-shadow: 0 0 0 2px #7a2e1f; background: rgba(122, 46, 31, 0.12); font-weight: bold; }
+.elaria.turn-panel .members { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 4px; }
+.elaria.turn-panel .member { font-size: 11px; }
+.elaria.turn-panel .member.acted { opacity: 0.55; }
+.elaria.turn-panel .member.acted i { color: #3d7a2e; }
+.elaria.turn-panel .member.defeated { opacity: 0.35; text-decoration: line-through; }
+.elaria.turn-panel .member.reserved { border-style: dashed; }
+.elaria.turn-dialog .row { display: flex; align-items: center; gap: 8px; margin: 6px 0; }
+.elaria.turn-dialog .row select { flex: 1; }
+.elaria.turn-dialog .window-choices { display: flex; flex-direction: column; gap: 4px; }
+.elaria.turn-dialog .window-choice { display: flex; align-items: center; gap: 8px; }
+.elaria .turn-note p { margin: 0; }
+.elaria.gm-tools .combat-unit.acted { opacity: 0.75; }
