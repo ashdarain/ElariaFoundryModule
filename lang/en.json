@@ -1036,7 +1036,7 @@
       "actedHint": "Has acted this round",
       "stillToAct": "Still to act",
       "left": "{n} left",
-      "removedNote": "window removed",
+      "removedNote": "out: window removed",
       "notActedNote": "hasn't acted yet",
       "delayedNote": "{name} (delayed)",
       "plannedNote": "next: {name}",
@@ -1048,9 +1048,9 @@
       "nobody": "Nobody can act in any window: check initiative and who is defeated.",
       "needsGM": "A GM has to be connected for that.",
       "skipped": "The {side} window ({init}) is skipped: nobody on that side is left to act.",
-      "windowRemoved": "<b>{name}</b> has fallen: their side's window at {init} is removed.",
-      "removeTitle": "{name} has fallen",
-      "removeIntro": "<b>{name}</b> is out of the fight, so one of the {side}'s windows is removed. Which one? (It goes when the current turn ends.)",
+      "windowRemoved": "<b>{name}</b> is out of the fight: their side's window at {init} is removed.",
+      "removeTitle": "{name} is out of the fight",
+      "removeIntro": "<b>{name}</b> is KO'd or defeated, so one of the {side}'s windows is removed. Which one? (It goes when the current turn ends.)",
       "removeButton": "Remove this window",
       "ownWindow": "{name}'s own window"
     }

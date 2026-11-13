@@ -1,4 +1,4 @@
-import {
+import { isOut,
   windowsEnabled, windowState, sideOf, hasActed, flagsOf, pickChoices, canPickFor, request, promptDelay, SIDES
 } from "../combat/turn-order.mjs";
 
@@ -59,11 +59,11 @@ export class ElariaTurnPanel extends HandlebarsApplicationMixin(ApplicationV2) {
     const seeCurrent = current && (gm || !current.hidden);
     const by = combat.combatants.get(state.pickedBy);
     const canEnd = !!current && (gm || current.isOwner);
-    const unit = c => ({ id: c.id, name: c.name, img: c.img, acted: hasActed(combat, c), defeated: c.isDefeated,
+    const unit = c => ({ id: c.id, name: c.name, img: c.img, acted: hasActed(combat, c), defeated: isOut(c),
       reserved: flagsOf(c).reserved === combat.round, noWindow: !Number.isFinite(c.initiative) });
 
     const mine = c => c.actor?.testUserPermission(game.user, "OWNER");
-    const sides = SIDES.filter(s => combat.combatants.some(c => sideOf(c) === s && !c.isDefeated
+    const sides = SIDES.filter(s => combat.combatants.some(c => sideOf(c) === s && !isOut(c)
       && (gm || (s === "pc" && mine(c)))));
     const sideData = sides.map(side => {
       const { window: w, choices } = pickChoices(combat, side);
@@ -72,7 +72,7 @@ export class ElariaTurnPanel extends HandlebarsApplicationMixin(ApplicationV2) {
       const canPick = canPickFor(combat, side);
       return {
         key: side, label: sideLabel(side), window: w, canPick,
-        pickerName: picker && !picker.isDefeated ? picker.name : "",
+        pickerName: picker && !isOut(picker) ? picker.name : "",
         plannedName: planned?.name ?? "",
         choices: choices.map(t => combat.combatants.get(t.id)).filter(c => c)
           .map(c => ({ ...unit(c), selected: c.id === planned?.id })),
@@ -81,7 +81,7 @@ export class ElariaTurnPanel extends HandlebarsApplicationMixin(ApplicationV2) {
     });
 
     const actNow = gm && current
-      ? combat.turns.filter(c => c.id !== current.id && sideOf(c) === curSide && !c.isDefeated
+      ? combat.turns.filter(c => c.id !== current.id && sideOf(c) === curSide && !isOut(c)
         && Number.isFinite(c.initiative) && !hasActed(combat, c)).map(unit)
       : [];
     return {
@@ -91,7 +91,7 @@ export class ElariaTurnPanel extends HandlebarsApplicationMixin(ApplicationV2) {
         windowLabel: `${sideLabel(curSide)} ${L("ELARIA.Turn.window")}`, mine: current.isOwner && !gm,
         pickedBy: by && by.id !== current.id ? by.name : ""
       } : null,
-      canEnd, canDelay: canEnd && combat.turns.slice(combat.turn + 1).some(c => Number.isFinite(c.initiative) && !c.isDefeated),
+      canEnd, canDelay: canEnd && combat.turns.slice(combat.turn + 1).some(c => Number.isFinite(c.initiative) && !isOut(c)),
       actNow, sides: sideData
     };
   }

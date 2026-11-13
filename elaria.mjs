@@ -30,7 +30,7 @@ import { onHotbarDrop, useMastery } from "./module/helpers/hotbar.mjs";
 import { onRenderChatMessage } from "./module/dice/chat-cards.mjs";
 import { onUpdateActorDamage } from "./module/dice/damage-card.mjs";
 import { onRenderCombatTracker, onUpdateCombat } from "./module/combat/reactions.mjs";
-import { ElariaCombat, initTurnOrder, registerTurnSettings, onUpdateCombatantWindows } from "./module/combat/turn-order.mjs";
+import { ElariaCombat, initTurnOrder, registerTurnSettings, onUpdateCombatantWindows, onUnitChanged } from "./module/combat/turn-order.mjs";
 import { decorateTracker } from "./module/combat/turn-tracker.mjs";
 import { ElariaTurnPanel, onWindowOpened } from "./module/apps/turn-panel.mjs";
 import { initReactButton } from "./module/combat/react-button.mjs";
@@ -111,6 +111,8 @@ Hooks.on("renderCombatTracker", decorateTracker);
 Hooks.once("ready", () => initTurnOrder());
 Hooks.on("updateCombat", onWindowOpened);
 Hooks.on("updateCombatant", onUpdateCombatantWindows);
+Hooks.on("updateActor", onUnitChanged);              // KO'd at 0 HP / back up
+Hooks.on("updateToken", onUnitChanged);
 for (const hook of ["updateCombatant", "createCombatant", "deleteCombatant", "deleteCombat", "createCombat"]) {
   Hooks.on(hook, () => ElariaTurnPanel.refresh());
 }

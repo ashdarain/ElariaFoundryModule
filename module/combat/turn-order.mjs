@@ -13,6 +13,8 @@
  * Kept on the combat (flags.elaria):            Kept on each combatant (flags.elaria):
  *   next.<side>    picked for the side's next      acted        round in which it last acted
  *                  window (combatant id)           reserved     round of a delayed window it must act in
+ *                                                  out          KO'd or defeated: has no window
+ *                                                  tieRoll      the d6 for ties, rolled with initiative
  *   nextBy.<side>  who picked it                   order        tie-break for equal initiative (high first)
  *   picker.<side>  who picks next for the side     removeWindow (defeated) the window it chose to remove
  *   pickedBy       who picked the current actor
@@ -20,8 +22,12 @@
  *   history        the last turns, for Previous turn
  *
  * Delay: the acting unit moves its window to just after a later window; the window stays there in later rounds
- * and the unit acts in it this round. Death: the defeated unit's owner picks one of the side's windows to remove
- * (applied when the current turn ends). A unit that returns rolls a new window.
+ * and the unit acts in it this round. Out of the fight (KO'd at 0 HP, or marked defeated): the unit's owner picks
+ * one of the side's windows to remove (applied when the current turn ends). A unit that comes back rolls a new
+ * window and may act this round if one of its side's windows is still to come.
+ *
+ * Ties: higher Finesse first, then a d6 rolled for each when initiative is rolled (higher first), then player
+ * characters first. Windows moved by picks or delays keep their exact place (flags.elaria.order).
  *
  * Players can't change other combatants, so their requests go to the GM's client (socket "system.elaria").
  * The whole thing can be turned off (world setting "Action windows"), giving Foundry's normal initiative.
@@ -139,6 +145,13 @@ export function sideOf(combatant) {
 
 export const flagsOf = doc => doc?.flags?.elaria ?? {};
 
+/** Finesse modifier (ties) and "is a player character" (last tie rule). */
+const finOf = c => Number(c.actor?.system?.stats?.fin?.mod) || 0;
+const isPC = c => c.actor?.type === "character" || !!c.hasPlayerOwner;
+
+/** Out of the fight (KO'd or defeated): no window. */
+export const isOut = c => !!(c?.isDefeated || flagsOf(c).out);
+
 /** The combat's turn order as plain entries. */
 export function snapshot(combat) {
   return combat.turns.map(c => {
@@ -146,7 +159,7 @@ export function snapshot(combat) {
     return {
       id: c.id, side: sideOf(c), initiative: Number.isFinite(c.initiative) ? c.initiative : null,
       order: Number(f.order) || 0, acted: f.acted ?? null, reserved: f.reserved ?? null,
-      defeated: !!c.isDefeated, removeWindow: f.removeWindow ?? null
+      defeated: isOut(c), removeWindow: f.removeWindow ?? null
     };
   });
 }
@@ -167,8 +180,8 @@ export const hasActed = (combat, c) => flagsOf(c).acted === combat.round;
 export function canPickFor(combat, side, user = game.user) {
   if (user.isGM) return true;
   const picker = combat.combatants.get(windowState(combat).picker[side]);
-  if (picker && !picker.isDefeated) return !!picker.actor?.testUserPermission(user, "OWNER");
-  return combat.combatants.some(c => sideOf(c) === side && !c.isDefeated && c.actor?.testUserPermission(user, "OWNER"));
+  if (picker && !isOut(picker)) return !!picker.actor?.testUserPermission(user, "OWNER");
+  return combat.combatants.some(c => sideOf(c) === side && !isOut(c) && c.actor?.testUserPermission(user, "OWNER"));
 }
 
 /** Who may be picked for the side's next window: un-acted members, or everyone if that window is next round. */
@@ -186,14 +199,34 @@ export function pickChoices(combat, side) {
 /* ------------------------------------------------------------------ */
 
 export class ElariaCombat extends BaseCombat {
-  /** Initiative (high first), then our tie-break (high first), then core's id order. */
+  /**
+   * Initiative (high first); then a place set by a pick or delay (flags.elaria.order, high first); then the
+   * tie rules: higher Finesse, higher tie d6, player characters first; then core's id order.
+   */
   _sortCombatants(a, b) {
     const ia = Number.isFinite(a.initiative) ? a.initiative : -Infinity;
     const ib = Number.isFinite(b.initiative) ? b.initiative : -Infinity;
     if (ib !== ia) return ib - ia;
     const oa = Number(a.flags?.elaria?.order) || 0, ob = Number(b.flags?.elaria?.order) || 0;
     if (ob !== oa) return ob - oa;
+    const fa = finOf(a), fb = finOf(b);
+    if (fb !== fa) return fb - fa;
+    const ta = Number(a.flags?.elaria?.tieRoll) || 0, tb = Number(b.flags?.elaria?.tieRoll) || 0;
+    if (tb !== ta) return tb - ta;
+    const pa = isPC(a), pb = isPC(b);
+    if (pa !== pb) return pa ? -1 : 1;
     return a.id > b.id ? 1 : -1;
+  }
+
+  /** Rolling initiative also rolls the tie d6, and a fresh roll takes no place set earlier. */
+  async rollInitiative(ids, options = {}) {
+    const result = await super.rollInitiative(ids, options);
+    const list = (typeof ids === "string" ? [ids] : Array.from(ids ?? [])).filter(id => this.combatants.get(id)?.isOwner);
+    if (list.length) {
+      await this.updateEmbeddedDocuments("Combatant", list.map(id => ({ _id: id,
+        "flags.elaria.tieRoll": Math.ceil(CONFIG.Dice.randomUniform() * 6) || 1, "flags.elaria.order": 0 })));
+    }
+    return result;
   }
 
   async startCombat() {
@@ -207,7 +240,7 @@ export class ElariaCombat extends BaseCombat {
     const picker = {};
     for (const c of this.turns) {
       const side = sideOf(c);
-      if (!picker[side] && Number.isFinite(c.initiative) && !c.isDefeated) picker[side] = c.id;
+      if (!picker[side] && Number.isFinite(c.initiative) && !isOut(c)) picker[side] = c.id;
     }
     await this.update({ ...sideFlags("picker", picker), ...sideFlags("next", {}), ...sideFlags("nextBy", {}),
       "flags.elaria.history": [] });
@@ -419,7 +452,7 @@ function doDelay(combat, afterId, nextPick) {
 function doRemoveWindow(combat, deadId, targetId) {
   return serial(async () => {
     const dead = combat.combatants.get(deadId);
-    if (!dead?.isDefeated) return;
+    if (!isOut(dead)) return;
     await dead.update({ "flags.elaria.removeWindow": targetId === deadId ? null : targetId });
   });
 }
@@ -488,34 +521,55 @@ export function initTurnOrder() {
 }
 
 /**
- * updateCombatant: a unit marked defeated loses one of its side's windows (its owner picks which); one that comes
- * back rolls a new window.
+ * GM: keep flags.elaria.out in step with the unit: out when KO'd (0 HP) or marked defeated, back in when neither.
+ * Going out asks for a window to remove; coming back rolls a new window (see onUpdateCombatantWindows).
  */
+export function syncOut(combatant) {
+  const combat = combatant?.combat;
+  if (!windowsEnabled() || !combat?.started || !game.users.activeGM?.isSelf) return;
+  const hp = combatant.actor?.system?.resources?.hp;
+  const ko = !!hp && Number(hp.max) > 0 && Number(hp.value) <= 0;
+  const out = !!combatant.isDefeated || ko;
+  if (out === !!flagsOf(combatant).out) return;
+  return combatant.update(out ? { "flags.elaria.out": true }
+    : { "flags.elaria.out": false, "flags.elaria.acted": null, "flags.elaria.removeWindow": null, "flags.elaria.reserved": null });
+}
+
+/** updateActor / updateToken: a unit's HP changed (KO'd or back up). */
+export function onUnitChanged(doc) {
+  if (!game.users.activeGM?.isSelf) return;
+  const actor = doc.documentName === "Token" ? doc.actor : doc;
+  for (const combat of game.combats.filter(c => c.started)) {
+    for (const c of combat.combatants) {
+      if ((doc.documentName === "Token" ? c.tokenId === doc.id : (c.actor === actor || c.actor?.uuid === actor?.uuid))) syncOut(c);
+    }
+  }
+}
+
+/** updateCombatant: marked (not) defeated → sync; went out → pick a window to remove; came back → roll a window. */
 export function onUpdateCombatantWindows(combatant, changes) {
   const combat = combatant.combat;
-  if (!windowsEnabled() || !combat?.started || !("defeated" in changes)) return;
+  if (!windowsEnabled() || !combat?.started) return;
+  if ("defeated" in changes) syncOut(combatant);
+  const out = foundry.utils.getProperty(changes, "flags.elaria.out");
+  if (out === undefined) return;
   const owner = game.users.find(u => u.active && !u.isGM && combatant.actor?.testUserPermission(u, "OWNER"));
   const answerer = owner ?? game.users.activeGM;
-  if (changes.defeated) {
-    if (answerer?.isSelf) chooseWindowToRemove(combat, combatant);
-  } else {
-    // Back in the fight: it hasn't acted this round, and rolls a fresh window.
-    if (game.users.activeGM?.isSelf) {
-      combatant.update({ "flags.elaria.acted": null, "flags.elaria.removeWindow": null, "flags.elaria.reserved": null });
-    }
-    if (answerer?.isSelf) combat.rollInitiative([combatant.id]);
-  }
+  if (!answerer?.isSelf) return;
+  if (out) chooseWindowToRemove(combat, combatant);
+  else combat.rollInitiative([combatant.id]);
 }
 
 async function chooseWindowToRemove(combat, dead) {
   const side = sideOf(dead);
   const windows = combat.turns.filter(c => sideOf(c) === side && Number.isFinite(c.initiative)
-    && (c.id === dead.id || !c.isDefeated));
+    && (c.id === dead.id || !isOut(c)));
   if (windows.length < 2) return;
   const rows = windows.map(c => `<label class="window-choice"><input type="radio" name="window" value="${c.id}" ${c.id === dead.id ? "checked" : ""}>
     <b>${c.initiative}</b> <span>${c.id === dead.id ? game.i18n.format("ELARIA.Turn.ownWindow", { name: dead.name }) : `${sideLabel(side)} ${L("ELARIA.Turn.window")}`}</span></label>`).join("");
   const targetId = await foundry.applications.api.DialogV2.wait({
     window: { title: game.i18n.format("ELARIA.Turn.removeTitle", { name: dead.name }), icon: "fa-solid fa-skull" },
+    position: { width: 380 },
     classes: ["elaria", "turn-dialog"],
     content: `<p>${game.i18n.format("ELARIA.Turn.removeIntro", { name: esc(dead.name), side: sideLabel(side) })}</p>
       <div class="window-choices">${rows}</div>`,
@@ -531,7 +585,7 @@ export async function promptDelay(combat) {
   const current = combat?.combatant;
   if (!current) return;
   const side = sideOf(current);
-  const later = combat.turns.slice(combat.turn + 1).filter(c => Number.isFinite(c.initiative) && !c.isDefeated);
+  const later = combat.turns.slice(combat.turn + 1).filter(c => Number.isFinite(c.initiative) && !isOut(c));
   if (!later.length) return ui.notifications.warn(L("ELARIA.Turn.noLater"));
   const gm = game.user.isGM;
   const afterOptions = later.map(c => `<option value="${c.id}">${c.initiative}: ${esc(sideOf(c) === side || gm
@@ -539,7 +593,7 @@ export async function promptDelay(combat) {
   // If the window sliding into this place is the side's, the delayer picks who acts in it.
   const nextUp = later[0];
   const members = sideOf(nextUp) === side
-    ? combat.turns.filter(c => sideOf(c) === side && c.id !== current.id && !c.isDefeated && Number.isFinite(c.initiative)
+    ? combat.turns.filter(c => sideOf(c) === side && c.id !== current.id && !isOut(c) && Number.isFinite(c.initiative)
       && !hasActed(combat, c) && flagsOf(c).reserved !== combat.round) : [];
   const pickRow = members.length ? `<label class="row"><span>${L("ELARIA.Turn.delayNext")}</span>
     <select name="nextPick">${members.map(c => `<option value="${c.id}">${esc(c.name)}</option>`).join("")}</select></label>` : "";

@@ -1,4 +1,4 @@
-import { windowsEnabled, windowState, sideOf, hasActed, flagsOf, nextWindowOfSide, snapshot, SIDES } from "./turn-order.mjs";
+import { isOut, windowsEnabled, windowState, sideOf, hasActed, flagsOf, nextWindowOfSide, snapshot, SIDES } from "./turn-order.mjs";
 
 /**
  * Combat tracker with action windows (see turn-order.mjs).
@@ -45,7 +45,7 @@ export function decorateTracker(app, html) {
     const acted = hasActed(combat, c);
     const hasInit = Number.isFinite(c.initiative);
 
-    if (c.isDefeated) {
+    if (isOut(c)) {
       if (hasInit) note.textContent = L("ELARIA.Turn.removedNote");
     } else if (!hasInit) {
       // no window yet
@@ -76,7 +76,7 @@ export function decorateTracker(app, html) {
         }
       }
     }
-    if (acted && (gm || ownSide || i <= combat.turn) && !c.isDefeated) {
+    if (acted && (gm || ownSide || i <= combat.turn) && !isOut(c)) {
       const tick = document.createElement("i");
       tick.className = "fa-solid fa-check elaria-acted-tick";
       tick.dataset.tooltip = L("ELARIA.Turn.actedHint");
@@ -92,7 +92,7 @@ export function decorateTracker(app, html) {
   strip.className = "elaria-to-act";
   const groups = [];
   for (const side of SIDES) {
-    const members = combat.turns.filter(c => sideOf(c) === side && !c.isDefeated && Number.isFinite(c.initiative)
+    const members = combat.turns.filter(c => sideOf(c) === side && !isOut(c) && Number.isFinite(c.initiative)
       && (gm || !c.hidden));
     if (!members.length) continue;
     const left = members.filter(c => !hasActed(combat, c));

@@ -178,5 +178,17 @@ function makeCombat(units) {
   check("side's next window, next round", JSON.stringify(nextWindowOfSide(turns, 3, 1, "enemy")) === JSON.stringify({ index: 2, round: 2 }));
 }
 
+// Ties: higher Finesse, then the tie d6, then player characters first; a set place (order) beats all of them.
+{
+  const sorter = new ElariaCombat();
+  const unit = (id, fin, tieRoll, type = "monster", order = 0) =>
+    ({ id, initiative: 12, flags: { elaria: { tieRoll, order } }, actor: { type, system: { stats: { fin: { mod: fin } } } } });
+  const sorted = list => [...list].sort((a, b) => sorter._sortCombatants(a, b)).map(u => u.id).join("");
+  check("tie: finesse", sorted([unit("a", 1, 6), unit("b", 3, 1)]) === "ba");
+  check("tie: d6", sorted([unit("a", 2, 2), unit("b", 2, 5)]) === "ba");
+  check("tie: player first", sorted([unit("m", 2, 4), unit("p", 2, 4, "character")]) === "pm");
+  check("tie: placed first", sorted([unit("a", 5, 6), unit("b", 0, 1, "monster", 2)]) === "ba");
+}
+
 console.log(failed ? `${failed} check(s) failed` : `All turn order checks passed (${n} swaps)`);
 process.exit(failed ? 1 : 0);
