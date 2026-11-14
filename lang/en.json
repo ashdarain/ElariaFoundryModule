@@ -346,6 +346,8 @@
       "otherHeading": "Other",
       "noAlignmentPicked": "No alignment picked yet (Bio tab, Faith & outlook).",
       "addButton": "Add to gauge",
+      "reset": "Reset",
+      "resetHint": "Set the burst gauge back to 0",
       "total": "Total:",
       "gaugeFull": "The gauge is full!",
       "useButton": "Burst!",

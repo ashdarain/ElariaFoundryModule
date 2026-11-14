@@ -42,6 +42,7 @@ export class ElariaCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV
       refreshRecipes: ElariaCharacterSheet.#onRefreshRecipes,
       chooseBurst: ElariaCharacterSheet.#onChooseBurst,
       addBurstGauge: ElariaCharacterSheet.#onAddBurstGauge,
+      resetBurstGauge: ElariaCharacterSheet.#onResetBurstGauge,
       useBurst: ElariaCharacterSheet.#onUseBurst
     }
   };
@@ -751,6 +752,11 @@ export class ElariaCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV
     if (picked === "clear") return actor.update({ "system.identity.burstName": "", "system.identity.burstEffect": "" });
     const html = picked.text.split(/\n+/).map(p => `<p>${foundry.utils.escapeHTML(p)}</p>`).join("");
     return actor.update({ "system.identity.burstName": picked.name, "system.identity.burstEffect": html });
+  }
+
+  /** Header: empty the burst gauge. */
+  static #onResetBurstGauge() {
+    return this.document.update({ "system.conditions.burst.value": 0 });
   }
 
   /**

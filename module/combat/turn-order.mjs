@@ -556,8 +556,9 @@ export function onUpdateCombatantWindows(combatant, changes) {
   const owner = game.users.find(u => u.active && !u.isGM && combatant.actor?.testUserPermission(u, "OWNER"));
   const answerer = owner ?? game.users.activeGM;
   if (!answerer?.isSelf) return;
-  if (out) chooseWindowToRemove(combat, combatant);
-  else combat.rollInitiative([combatant.id]);
+  // Monsters and other GM units just lose their own window (no question); player units' owners choose.
+  if (out) return combatant.hasPlayerOwner ? chooseWindowToRemove(combat, combatant) : null;
+  return combat.rollInitiative([combatant.id]);
 }
 
 async function chooseWindowToRemove(combat, dead) {

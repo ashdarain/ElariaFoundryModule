@@ -118,6 +118,7 @@
         <b>{{system.conditions.burst.value}}</b> / {{system.conditions.burst.max}}
       </span>
       <span class="burst-buttons">
+        {{#if editable}}<button type="button" class="reset" data-action="resetBurstGauge" data-tooltip="ELARIA.Burst.resetHint" {{#unless system.conditions.burst.value}}disabled{{/unless}}><i class="fa-solid fa-rotate-left"></i> {{localize "ELARIA.Burst.reset"}}</button>{{/if}}
         {{#if editable}}<button type="button" class="add" data-action="addBurstGauge" data-tooltip="ELARIA.Burst.addHint"><i class="fa-solid fa-plus"></i> {{localize "ELARIA.Burst.add"}}</button>{{/if}}
         <button type="button" class="use" data-action="useBurst" {{#unless burst.canUse}}disabled{{/unless}} data-tooltip="{{burst.useHint}}"><i class="fa-solid fa-burst"></i> {{localize "ELARIA.Burst.useButton"}}</button>
       </span>
