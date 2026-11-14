@@ -14,6 +14,8 @@
  *   next.<side>    picked for the side's next      acted        round in which it last acted
  *                  window (combatant id)           reserved     round of a delayed window it must act in
  *                                                  out          KO'd or defeated: has no window
+ *                                                  keepWindow   window restored by hand: stays while still
+ *                                                               KO'd / defeated (cleared once back up)
  *                                                  tieRoll      the d6 for ties, rolled with initiative
  *   nextBy.<side>  who picked it                   order        tie-break for equal initiative (high first)
  *   picker.<side>  who picks next for the side     removeWindow (defeated) the window it chose to remove
@@ -457,6 +459,22 @@ function doRemoveWindow(combat, deadId, targetId) {
   });
 }
 
+/**
+ * Undo a removed window: the unit is back in the turn order where it sits now (no new roll), no longer marked
+ * defeated, and keeps the window even while still at 0 HP. Its "acted this round" mark is kept.
+ */
+function doRestoreWindow(combat, id) {
+  return serial(async () => {
+    const c = combat.combatants.get(id);
+    if (!c || !isOut(c) || !Number.isFinite(c.initiative)) return;
+    await c.update({ defeated: false, "flags.elaria.out": false, "flags.elaria.keepWindow": true,
+      "flags.elaria.removeWindow": null });
+    const status = CONFIG.specialStatusEffects?.DEFEATED;
+    if (status && c.actor?.statuses?.has(status)) await c.actor.toggleStatusEffect(status, { active: false, overlay: true });
+    await announce(combat, game.i18n.format("ELARIA.Turn.windowRestored", { name: esc(c.name), init: c.initiative }), sideOf(c));
+  });
+}
+
 /** A short line in chat about the turn order (whispered to GMs for sides players don't see). */
 async function announce(combat, html, side) {
   const gmOnly = side !== "pc";
@@ -487,6 +505,8 @@ const ACTIONS = {
   removeWindow: (combat, d, user) => (combat.combatants.get(d.deadId)?.actor?.testUserPermission(user, "OWNER")
     ? doRemoveWindow(combat, d.deadId, d.targetId) : null),
   actNow: (combat, d, user) => (user.isGM ? doActNow(combat, d.id) : null),
+  restoreWindow: (combat, d, user) => (combat.combatants.get(d.id)?.actor?.testUserPermission(user, "OWNER")
+    ? doRestoreWindow(combat, d.id) : null),
   toggleActed: (combat, d, user) => (user.isGM ? doToggleActed(combat, d.id) : null)
 };
 
@@ -529,7 +549,13 @@ export function syncOut(combatant) {
   if (!windowsEnabled() || !combat?.started || !game.users.activeGM?.isSelf) return;
   const hp = combatant.actor?.system?.resources?.hp;
   const ko = !!hp && Number(hp.max) > 0 && Number(hp.value) <= 0;
-  const out = !!combatant.isDefeated || ko;
+  const down = !!combatant.isDefeated || ko;
+  // A window restored by hand stays until the unit is back up; after that the usual rules apply again.
+  if (flagsOf(combatant).keepWindow) {
+    if (!down) return combatant.update({ "flags.elaria.keepWindow": false });
+    if (!flagsOf(combatant).out) return;
+  }
+  const out = down;
   if (out === !!flagsOf(combatant).out) return;
   return combatant.update(out ? { "flags.elaria.out": true }
     : { "flags.elaria.out": false, "flags.elaria.acted": null, "flags.elaria.removeWindow": null, "flags.elaria.reserved": null });
@@ -558,6 +584,8 @@ export function onUpdateCombatantWindows(combatant, changes) {
   if (!answerer?.isSelf) return;
   // Monsters and other GM units just lose their own window (no question); player units' owners choose.
   if (out) return combatant.hasPlayerOwner ? chooseWindowToRemove(combat, combatant) : null;
+  // Restored by hand keeps its place; coming back up rolls a new window.
+  if (foundry.utils.getProperty(changes, "flags.elaria.keepWindow")) return;
   return combat.rollInitiative([combatant.id]);
 }
 

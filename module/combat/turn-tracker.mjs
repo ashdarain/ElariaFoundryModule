@@ -1,4 +1,4 @@
-import { isOut, windowsEnabled, windowState, sideOf, hasActed, flagsOf, nextWindowOfSide, snapshot, SIDES } from "./turn-order.mjs";
+import { isOut, request, windowsEnabled, windowState, sideOf, hasActed, flagsOf, nextWindowOfSide, snapshot, SIDES } from "./turn-order.mjs";
 
 /**
  * Combat tracker with action windows (see turn-order.mjs).
@@ -46,7 +46,22 @@ export function decorateTracker(app, html) {
     const hasInit = Number.isFinite(c.initiative);
 
     if (isOut(c)) {
-      if (hasInit) note.textContent = L("ELARIA.Turn.removedNote");
+      if (hasInit) {
+        note.textContent = L("ELARIA.Turn.removedNote");
+        // Undo: bring the window back where it is (GM, or the unit's owner).
+        if (c.isOwner) {
+          const btn = document.createElement("a");
+          btn.className = "elaria-restore-window";
+          btn.innerHTML = `<i class="fa-solid fa-rotate-left"></i> ${L("ELARIA.Turn.restore")}`;
+          btn.dataset.tooltip = L("ELARIA.Turn.restoreHint");
+          for (const type of ["mousedown", "pointerdown", "dblclick"]) btn.addEventListener(type, stop);
+          btn.addEventListener("click", ev => {
+            stop(ev);
+            request("restoreWindow", combat, { id: c.id });
+          });
+          note.append(" ", btn);
+        }
+      }
     } else if (!hasInit) {
       // no window yet
     } else if (i === combat.turn) {
