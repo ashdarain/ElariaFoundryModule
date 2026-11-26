@@ -1296,3 +1296,5 @@
 .elaria.gm-tools .combat-unit.acted { opacity: 0.75; }
 .elaria-window .elaria-restore-window { font-style: normal; margin-left: 4px; padding: 0 4px; border: 1px solid currentColor; border-radius: 3px; cursor: pointer; }
 .elaria-window .elaria-restore-window:hover { text-shadow: 0 0 4px #fff; }
+.elaria.turn-panel .act-now { flex-wrap: wrap; }
+.elaria.turn-panel .act-now .chip { padding: 2px 6px 2px 2px; }

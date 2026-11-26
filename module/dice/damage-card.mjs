@@ -1,4 +1,4 @@
-import { applyDamage, appliedEntry, breakdownHTML, canApplyTo, computeDamage, undoDamage } from "../combat/damage.mjs";
+import { applyDamage, appliedEntry, breakdownHTML, canApplyTo, computeDamage, undoDamage, DAMAGE_RESOURCES } from "../combat/damage.mjs";
 import { hidesRollDetails } from "./check.mjs";
 
 const L = k => game.i18n.localize(k);
@@ -39,9 +39,10 @@ function targetRow({ message, data, entry, index, actor, showBreakdown }) {
   const done = appliedEntry(actor, message.id, index);
   if (done) {
     row.classList.add("done");
-    const text = done.amount < 0
+    const res = done.resource && done.resource !== "hp" ? ` ${L(DAMAGE_RESOURCES[done.resource] ?? "")}` : "";
+    const text = (done.amount < 0
       ? game.i18n.format("ELARIA.Damage.healedTo", { n: -done.hp, name: actor.name })
-      : game.i18n.format("ELARIA.Damage.appliedTo", { n: done.amount, name: actor.name });
+      : game.i18n.format("ELARIA.Damage.appliedTo", { n: done.amount, name: actor.name })) + (res ? ` (${res.trim()})` : "");
     row.innerHTML = `<span><i class="fa-solid fa-check"></i> ${esc(text)}</span>`
       + `<a class="undo" data-tooltip="${esc(L("ELARIA.Damage.undoHint"))}"><i class="fa-solid fa-rotate-left"></i> ${L("ELARIA.Damage.undo")}</a>`;
     row.querySelector(".undo").addEventListener("click", async ev => {
@@ -60,9 +61,10 @@ function targetRow({ message, data, entry, index, actor, showBreakdown }) {
   if (showBreakdown) row.querySelector(".apply").dataset.tooltip = breakdownHTML(calc, data.profile);
   row.querySelector(".apply").addEventListener("click", async ev => {
     ev.preventDefault();
-    const amount = await confirmAmount({ actor, entry, data, showBreakdown });
-    if (amount === null) return;
-    await applyDamage(actor, amount, { messageId: message.id, index, label: message.flags.elaria.roll?.label ?? "" });
+    const choice = await confirmAmount({ actor, entry, data, showBreakdown });
+    if (!choice) return;
+    await applyDamage(actor, choice.amount, { messageId: message.id, index, resource: choice.resource,
+      label: message.flags.elaria.roll?.label ?? "" });
     refresh(message);
   });
   return row;
@@ -82,9 +84,10 @@ function selectedRow({ message, data, entry, index, showBreakdown }) {
         ui.notifications.warn(game.i18n.format("ELARIA.Damage.already", { name: actor.name }));
         continue;
       }
-      const amount = await confirmAmount({ actor, entry, data, showBreakdown });
-      if (amount === null) continue;
-      await applyDamage(actor, amount, { messageId: message.id, index, label: message.flags.elaria.roll?.label ?? "" });
+      const choice = await confirmAmount({ actor, entry, data, showBreakdown });
+      if (!choice) continue;
+      await applyDamage(actor, choice.amount, { messageId: message.id, index, resource: choice.resource,
+        label: message.flags.elaria.roll?.label ?? "" });
     }
     refresh(message);
   });
@@ -94,8 +97,8 @@ function selectedRow({ message, data, entry, index, showBreakdown }) {
 
 /**
  * Confirm (and optionally change) the amount before it's taken off. With several hits and a once-only bonus,
- * toggles choose which hit the bonus goes on (armour comes off each hit, so it can matter). Returns the amount,
- * or null.
+ * toggles choose which hit the bonus goes on (armour comes off each hit, so it can matter). The GM also picks
+ * what it comes off (HP, FTG or MP). Returns { amount, resource }, or null.
  */
 async function confirmAmount({ actor, entry, data, showBreakdown }) {
   const many = showBreakdown && (entry.hits?.length ?? 0) > 1 && (entry.flat ?? 0) !== 0;
@@ -109,6 +112,9 @@ async function confirmAmount({ actor, entry, data, showBreakdown }) {
     <div class="breakdown-slot">${showBreakdown ? breakdownHTML(calc, data.profile) : ""}</div>
     <label class="amount-row"><span>${L("ELARIA.Damage.amount")}</span>
       <input type="number" name="amount" value="${calc.final}" step="1" autofocus></label>
+    ${game.user.isGM ? `<label class="amount-row" data-tooltip="${esc(L("ELARIA.Damage.resourceHint"))}"><span>${L("ELARIA.Damage.resource")}</span>
+      <select name="resource">${Object.entries(DAMAGE_RESOURCES).filter(([k]) => actor.system.resources?.[k])
+        .map(([k, label]) => `<option value="${k}">${esc(L(label))}</option>`).join("")}</select></label>` : ""}
     <p class="hint">${L("ELARIA.Damage.negativeHeals")}</p>`;
   const result = await foundry.applications.api.DialogV2.wait({
     window: { title: game.i18n.format("ELARIA.Damage.applyTitle", { name: actor.name }), icon: "fa-solid fa-heart-crack" },
@@ -128,12 +134,13 @@ async function confirmAmount({ actor, entry, data, showBreakdown }) {
     },
     buttons: [
       { action: "apply", label: L("ELARIA.Damage.apply"), icon: "fa-solid fa-check", default: true,
-        callback: (event, button) => Number(button.form.elements.amount.value) },
+        callback: (event, button) => ({ amount: Number(button.form.elements.amount.value),
+          resource: button.form.elements.resource?.value || "hp" }) },
       { action: "cancel", label: L("ELARIA.Damage.cancel"), icon: "fa-solid fa-xmark" }
     ],
     rejectClose: false
   });
-  return typeof result === "number" && Number.isFinite(result) ? Math.round(result) : null;
+  return result && Number.isFinite(result.amount) ? { amount: Math.round(result.amount), resource: result.resource } : null;
 }
 
 /** Re-draw the card here so the button shows "Applied". */

@@ -224,6 +224,12 @@ export function breakdownHTML(c, p) {
 
 const logKey = (messageId, index) => `${messageId}-${index}`;
 
+/**
+ * What damage can be taken from. The GM can send a card's damage to FTG or MP instead of HP (armour and
+ * resistance apply as usual); players always apply to HP. Add an entry here for a new resource.
+ */
+export const DAMAGE_RESOURCES = { hp: "ELARIA.Resource.hp", ftg: "ELARIA.Resource.ftg", mp: "ELARIA.Resource.mp" };
+
 /** Has this card's damage for this target already been applied to the actor? */
 export function appliedEntry(actor, messageId, index) {
   return actor?.getFlag("elaria", "damageLog")?.[logKey(messageId, index)] ?? null;
@@ -235,47 +241,54 @@ export function canApplyTo(actor) {
 }
 
 /**
- * Take damage: temp HP first, then HP (never below 0). A negative amount heals (resistance over 100 %): HP goes
- * up to its max, temp HP isn't touched. Logged on the actor so it can't be applied twice and can be undone.
- * A drop to 0 HP opens a prompt (injury / defeated), nothing automatic.
+ * Take damage from a resource (HP unless the GM chose FTG or MP): its temp first, then the value (never below
+ * 0). A negative amount heals (resistance over 100 %): the value goes up to its max, temp isn't touched. Logged on
+ * the actor so it can't be applied twice and can be undone. A drop to 0 HP opens a prompt (injury / defeated),
+ * nothing automatic.
  */
-export async function applyDamage(actor, amount, { messageId, index, label = "" } = {}) {
+export async function applyDamage(actor, amount, { messageId, index, label = "", resource = "hp" } = {}) {
   if (!canApplyTo(actor)) return ui.notifications.warn(game.i18n.localize("ELARIA.Damage.notYours"));
   if (appliedEntry(actor, messageId, index)) return ui.notifications.warn(game.i18n.format("ELARIA.Damage.already", { name: actor.name }));
-  const hp = actor.system.resources?.hp;
-  if (!hp) return;
+  if (!game.user.isGM || !DAMAGE_RESOURCES[resource]) resource = "hp";
+  const res = actor.system.resources?.[resource];
+  if (!res) return;
+  const path = `system.resources.${resource}`;
+  const resLabel = game.i18n.localize(DAMAGE_RESOURCES[resource]);
   amount = Math.round(amount) || 0;
   if (amount < 0) {
-    const before = hp.value ?? 0;
-    const healed = Math.max(0, Math.min((hp.max ?? before) - before, -amount));
+    const before = res.value ?? 0;
+    const healed = Math.max(0, Math.min((res.max ?? before) - before, -amount));
     await actor.update({
-      "system.resources.hp.value": before + healed,
-      [`flags.elaria.damageLog.${logKey(messageId, index)}`]: { amount, temp: 0, hp: -healed, label, time: Date.now() }
+      [`${path}.value`]: before + healed,
+      [`flags.elaria.damageLog.${logKey(messageId, index)}`]: { amount, temp: 0, hp: -healed, resource, label, time: Date.now() }
     });
-    ui.notifications.info(game.i18n.format("ELARIA.Damage.healed", { n: healed, name: actor.name }));
+    ui.notifications.info(game.i18n.format("ELARIA.Damage.healedRes", { n: healed, name: actor.name, res: resLabel }));
     return amount;
   }
-  const fromTemp = Math.min(hp.temp ?? 0, amount);
-  const fromHp = Math.min(hp.value ?? 0, amount - fromTemp);
-  const before = hp.value ?? 0;
+  const fromTemp = Math.min(res.temp ?? 0, amount);
+  const fromValue = Math.min(res.value ?? 0, amount - fromTemp);
+  const before = res.value ?? 0;
   await actor.update({
-    "system.resources.hp.temp": (hp.temp ?? 0) - fromTemp,
-    "system.resources.hp.value": before - fromHp,
-    [`flags.elaria.damageLog.${logKey(messageId, index)}`]: { amount, temp: fromTemp, hp: fromHp, label, time: Date.now() }
+    [`${path}.temp`]: (res.temp ?? 0) - fromTemp,
+    [`${path}.value`]: before - fromValue,
+    [`flags.elaria.damageLog.${logKey(messageId, index)}`]: { amount, temp: fromTemp, hp: fromValue, resource, label, time: Date.now() }
   });
-  ui.notifications.info(game.i18n.format("ELARIA.Damage.applied", { n: amount, name: actor.name }));
-  if (before > 0 && before - fromHp <= 0) await zeroHpPrompt(actor);
+  ui.notifications.info(resource === "hp"
+    ? game.i18n.format("ELARIA.Damage.applied", { n: amount, name: actor.name })
+    : game.i18n.format("ELARIA.Damage.appliedRes", { n: amount, name: actor.name, res: resLabel }));
+  if (resource === "hp" && before > 0 && before - fromValue <= 0) await zeroHpPrompt(actor);
   return amount;
 }
 
-/** Give back what a card took (temp and HP as they were taken). */
+/** Give back what a card took (temp and value, from the resource it was taken from). */
 export async function undoDamage(actor, messageId, index) {
   const entry = appliedEntry(actor, messageId, index);
   if (!entry || !canApplyTo(actor)) return;
-  const hp = actor.system.resources.hp;
+  const resource = DAMAGE_RESOURCES[entry.resource] ? entry.resource : "hp";
+  const res = actor.system.resources[resource];
   await actor.update({
-    "system.resources.hp.temp": (hp.temp ?? 0) + (entry.temp ?? 0),
-    "system.resources.hp.value": Math.min(hp.max ?? Infinity, (hp.value ?? 0) + (entry.hp ?? 0)),
+    [`system.resources.${resource}.temp`]: (res.temp ?? 0) + (entry.temp ?? 0),
+    [`system.resources.${resource}.value`]: Math.min(res.max ?? Infinity, (res.value ?? 0) + (entry.hp ?? 0)),
     [`flags.elaria.damageLog.${logKey(messageId, index)}`]: null
   });
   ui.notifications.info(game.i18n.format("ELARIA.Damage.undone", { n: Math.abs(entry.amount), name: actor.name }));

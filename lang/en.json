@@ -827,6 +827,10 @@
       "healedTo": "{name} healed for {n}",
       "healed": "{name} heals {n} HP.",
       "negativeHeals": "A negative amount heals (resistance over 100 %).",
+      "resource": "Take it from",
+      "resourceHint": "GM: send this damage to FTG or MP instead of HP (armour and resistance already apply). Temp is used first, as with HP.",
+      "appliedRes": "{name} loses {n} {res}.",
+      "healedRes": "{name} regains {n} {res}.",
       "flatOn": "Once-only bonus ({n}) goes on:"
     },
     "Material": {
@@ -1024,6 +1028,9 @@
       "noLater": "There's no later window to delay to this round.",
       "delayed": "<b>{name}</b> delays: the {side} window moves to after the window at {init}.",
       "actNowLabel": "Act now instead:",
+      "passLabel": "Pass this window to:",
+      "passHint": "Let someone on your side who hasn't acted yet take this window instead of you. You haven't acted, so you can still act in a later window this round.",
+      "passed": "<b>{from}</b> passes the window to <b>{to}</b>.",
       "actNowHint": "GM: someone else on this side acts in the current window (the one acting now hasn't acted after all)",
       "nextWindow": "next window {init}",
       "nextRound": "next round",

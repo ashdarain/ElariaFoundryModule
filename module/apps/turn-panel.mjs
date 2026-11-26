@@ -80,9 +80,12 @@ export class ElariaTurnPanel extends HandlebarsApplicationMixin(ApplicationV2) {
       };
     });
 
-    const actNow = gm && current
+    // Someone else on the side acts in this window: the GM's "Act now instead", or the acting player passing it.
+    const delayedHere = current && flagsOf(current).reserved === combat.round;
+    const canPass = !gm && !!current?.isOwner && !delayedHere;
+    const actNow = (gm || canPass) && current && !delayedHere
       ? combat.turns.filter(c => c.id !== current.id && sideOf(c) === curSide && !isOut(c)
-        && Number.isFinite(c.initiative) && !hasActed(combat, c)).map(unit)
+        && Number.isFinite(c.initiative) && !hasActed(combat, c) && flagsOf(c).reserved !== combat.round).map(unit)
       : [];
     return {
       active: true, gm, round: combat.round,
@@ -92,7 +95,7 @@ export class ElariaTurnPanel extends HandlebarsApplicationMixin(ApplicationV2) {
         pickedBy: by && by.id !== current.id ? by.name : ""
       } : null,
       canEnd, canDelay: canEnd && combat.turns.slice(combat.turn + 1).some(c => Number.isFinite(c.initiative) && !isOut(c)),
-      actNow, sides: sideData
+      actNow, passMode: canPass, sides: sideData
     };
   }
 
@@ -112,7 +115,7 @@ export class ElariaTurnPanel extends HandlebarsApplicationMixin(ApplicationV2) {
   }
 
   static #onActNow(event, target) {
-    return request("actNow", game.combat, { id: target.dataset.id });
+    return request(game.user.isGM ? "actNow" : "passTurn", game.combat, { id: target.dataset.id });
   }
 
   static #onToggleActed(event, target) {

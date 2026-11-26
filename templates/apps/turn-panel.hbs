@@ -18,8 +18,12 @@
   {{/if}}
   {{#if actNow.length}}
   <div class="act-now">
+    {{#if passMode}}
+    <span class="row-label" data-tooltip="ELARIA.Turn.passHint">{{localize "ELARIA.Turn.passLabel"}}</span>
+    {{else}}
     <span class="row-label" data-tooltip="ELARIA.Turn.actNowHint">{{localize "ELARIA.Turn.actNowLabel"}}</span>
-    <div class="chips">{{#each actNow}}<a class="chip" data-action="actNow" data-id="{{id}}" data-tooltip="{{name}}"><img src="{{img}}" alt=""></a>{{/each}}</div>
+    {{/if}}
+    <div class="chips">{{#each actNow}}<a class="chip" data-action="actNow" data-id="{{id}}" data-tooltip="{{name}}"><img src="{{img}}" alt=""><span>{{name}}</span></a>{{/each}}</div>
   </div>
   {{/if}}
 

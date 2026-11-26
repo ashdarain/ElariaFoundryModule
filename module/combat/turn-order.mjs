@@ -403,17 +403,27 @@ function doSetNext(combat, side, pickId, byId) {
 }
 
 /** GM: someone else acts in the current window instead (the one there now hasn't acted after all). */
-function doActNow(combat, id) {
+/**
+ * Someone else on the side acts in the current window instead: the GM's "Act now instead", or the acting player
+ * passing their window (they haven't acted, so they can still act in a later window this round). Not to or from
+ * a unit that delayed into its window this round (it has to act there).
+ */
+function doActNow(combat, id, { passedBy = null } = {}) {
   return serial(async () => {
     const current = combat.combatant;
     const turns = snapshot(combat);
     const unit = turns.find(t => t.id === id);
     if (!current || !unit || unit.id === current.id || !canAct(unit, combat.round)) return;
+    if (unit.side !== sideOf(current) || unit.reserved === combat.round || flagsOf(current).reserved === combat.round) return;
     const updates = merge(swapUpdates(turns, id, current.id),
       [{ _id: id, "flags.elaria.acted": combat.round }, { _id: current.id, "flags.elaria.acted": null }]);
     await combat.updateEmbeddedDocuments("Combatant", updates, { combatTurn: combat.turn, turnEvents: false });
-    await combat.update({ turn: combat.turn, [`flags.elaria.picker.${sideOf(current)}`]: id, "flags.elaria.pickedBy": null,
+    await combat.update({ turn: combat.turn, [`flags.elaria.picker.${sideOf(current)}`]: id, "flags.elaria.pickedBy": passedBy,
       "flags.elaria.windowKey": `${combat.round}:${combat.turn}:${id}:${foundry.utils.randomID(4)}` }, { diff: false });
+    if (passedBy) {
+      await announce(combat, game.i18n.format("ELARIA.Turn.passed", { from: esc(current.name),
+        to: esc(combat.combatants.get(id)?.name) }), sideOf(current));
+    }
   });
 }
 
@@ -505,6 +515,8 @@ const ACTIONS = {
   removeWindow: (combat, d, user) => (combat.combatants.get(d.deadId)?.actor?.testUserPermission(user, "OWNER")
     ? doRemoveWindow(combat, d.deadId, d.targetId) : null),
   actNow: (combat, d, user) => (user.isGM ? doActNow(combat, d.id) : null),
+  passTurn: (combat, d, user) => (combat.combatant?.actor?.testUserPermission(user, "OWNER")
+    ? doActNow(combat, d.id, { passedBy: combat.combatant.id }) : null),
   restoreWindow: (combat, d, user) => (combat.combatants.get(d.id)?.actor?.testUserPermission(user, "OWNER")
     ? doRestoreWindow(combat, d.id) : null),
   toggleActed: (combat, d, user) => (user.isGM ? doToggleActed(combat, d.id) : null)
